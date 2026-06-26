@@ -18,11 +18,16 @@ scope for this pass is the **core experience first**.
 For this pass:
 
 - **Wired for real:** always-on-top, magnetic snap (in-app window drag), tray, a basic
-  Web-Audio completion chime with volume, and the live "Done animation" (ripple) selection.
+  Web-Audio completion chime with volume, the live "Done animation" (ripple) selection, and a
+  **global show/hide shortcut** (`CommandOrControl+Alt+P`, see `electron/shortcuts.ts`).
 - **Persisted as prefs, no OS behavior yet (no-ops):** launch-at-login, do-not-disturb,
-  hide-during-screen-sharing, pause-when-idle, global shortcut, native notifications, the
-  ticking sound, real alarm sound files, and the alternate timer-style / notch-layout
-  renderings (the island always draws the circular ring this pass).
+  hide-during-screen-sharing, pause-when-idle, the start/pause global shortcut (the "⌥ Space"
+  shown in Settings), native notifications, the ticking sound, real alarm sound files, and the
+  alternate timer-style / notch-layout renderings (the island always draws the circular ring
+  this pass).
+
+Note: the show/hide accelerator is currently hard-coded. Making it user-configurable (key
+capture + persistence) is a follow-up.
 
 Every deferred toggle is still stored and round-trips through Settings, so turning the behavior
 on later is a localized change in the main process, not a data-model change.

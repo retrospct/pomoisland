@@ -80,12 +80,17 @@ docs/adr/        Architecture decision records
 machine driven by persisted durations, drag + magnetic notch snap, the complete Settings
 panel (General + Preferences tabs from `SettingsPanel.dc.html`) with live theme/accent
 re-skin and a live "Done animation" preview, persistence across restart, tray lifecycle,
-always-on-top, and a synthesized completion chime.
+always-on-top, a synthesized completion chime, and a **global show/hide shortcut**
+(`⌘⌥P` / `Ctrl+Alt+P`).
 
 **Deferred to a follow-up** (persisted as preferences but not yet wired to the OS — see
 [ADR-0004](docs/adr/0004-defer-os-integrations.md)): launch-at-login, do-not-disturb,
-hide-during-screen-sharing, pause-when-idle, the global shortcut, native notifications,
-the ticking sound, real bundled alarm sound files, and the alternate timer-style /
-notch-layout renderings (the island currently always draws the circular ring). The
-collapsed island also snaps to the top of the work area rather than literally wrapping the
-hardware notch outline.
+hide-during-screen-sharing, pause-when-idle, the start/pause global shortcut (the "⌥ Space"
+shown in Settings), native notifications, the ticking sound, real bundled alarm sound files,
+and the alternate timer-style / notch-layout renderings (the island currently always draws
+the circular ring). The collapsed island also snaps to the top of the work area rather than
+literally wrapping the hardware notch outline.
+
+> **Animations are intentionally un-tuned.** The completion/breathe/peek/transition timings
+> are ports of the design prototype; fine-tuning their feel (durations, easing, choreography)
+> is a deliberate **later-stage** task.

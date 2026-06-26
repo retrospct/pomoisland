@@ -86,6 +86,17 @@ export function getIslandWindow(): BrowserWindow | null {
   return islandWin
 }
 
+/** Toggle the island between shown and hidden (used by the tray and the global shortcut). */
+export function toggleIslandVisibility(): void {
+  if (!islandWin) return
+  if (islandWin.isVisible()) {
+    islandWin.hide()
+  } else {
+    islandWin.show()
+    islandWin.focus()
+  }
+}
+
 /** Resize the island window to fit content, keeping its anchor (top-center if snapped). */
 export function resizeIsland(size: IslandSize): void {
   if (!islandWin) return

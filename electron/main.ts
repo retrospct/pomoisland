@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { registerIpc } from './ipc'
+import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
 import { getPrefs } from './store'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
@@ -20,6 +21,7 @@ app.whenReady().then(() => {
   if (process.platform === 'darwin' && app.dock) app.dock.hide()
 
   bootstrap()
+  registerGlobalShortcuts()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createIslandWindow()
@@ -35,4 +37,5 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   timer?.stop()
   destroyTray()
+  unregisterGlobalShortcuts()
 })

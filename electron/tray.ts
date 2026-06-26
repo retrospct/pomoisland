@@ -1,5 +1,6 @@
 import { Menu, nativeImage, Tray } from 'electron'
-import { createSettingsWindow, getIslandWindow } from './windows'
+import { SHOW_HIDE_ACCELERATOR } from './shortcuts'
+import { createSettingsWindow, toggleIslandVisibility } from './windows'
 
 let tray: Tray | null = null
 
@@ -12,12 +13,8 @@ export function createTray(): Tray {
   const menu = Menu.buildFromTemplate([
     {
       label: 'Show / Hide Island',
-      click: () => {
-        const win = getIslandWindow()
-        if (!win) return
-        if (win.isVisible()) win.hide()
-        else win.show()
-      },
+      accelerator: SHOW_HIDE_ACCELERATOR,
+      click: () => toggleIslandVisibility(),
     },
     { label: 'Settings…', click: () => createSettingsWindow() },
     { type: 'separator' },
