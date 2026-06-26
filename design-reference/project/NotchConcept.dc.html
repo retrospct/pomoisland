@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<style>
+@keyframes ncGlow { 0%,100%{opacity:.28} 50%{opacity:.85} }
+@keyframes ncDot { 0%,100%{transform:scale(1);opacity:.95} 50%{transform:scale(1.7);opacity:.4} }
+@keyframes ncSheen { 0%,100%{opacity:.5} 50%{opacity:1} }
+@keyframes ncComet { from{stroke-dashoffset:100} to{stroke-dashoffset:0} }
+@keyframes ncUnder { 0%,100%{opacity:.32;transform:scaleX(1)} 50%{opacity:.62;transform:scaleX(1.06)} }
+</style>
+</helmet>
+<div style="position:relative;width:260px;height:128px;background:#1E211C;border-radius:16px 16px 9px 9px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);font-family:'IBM Plex Mono',monospace;">
+  <div style="position:absolute;top:7px;left:13px;font-family:'Inter',sans-serif;font-size:9px;color:rgba(255,255,255,0.3);">Pomodoro</div>
+  <div style="position:absolute;top:7px;right:13px;font-family:'Inter',sans-serif;font-size:9px;color:rgba(255,255,255,0.3);font-variant-numeric:tabular-nums;">9:41</div>
+
+  <svg width="260" height="72" viewBox="0 0 260 72" style="position:absolute;top:0;left:0;z-index:2;overflow:visible;">
+    <sc-if value="{{ isUnderlight }}" hint-placeholder-val="{{ false }}">
+      <ellipse cx="130" cy="35" rx="84" ry="18" fill="{{ accent }}" style="filter:blur(10px);transform-box:fill-box;transform-origin:center;animation:ncUnder 2.6s ease-in-out infinite;"></ellipse>
+      <ellipse cx="130" cy="32" rx="56" ry="11" fill="{{ accentBright }}" opacity="0.55" style="filter:blur(6px);transform-box:fill-box;transform-origin:center;animation:ncUnder 2.6s ease-in-out infinite .25s;"></ellipse>
+    </sc-if>
+
+    <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0 Z" fill="#050506"></path>
+    <circle cx="130" cy="13" r="3.4" fill="#0A0A0B" stroke="#26292E" stroke-width="1.3"></circle>
+
+    <sc-if value="{{ isUnderlight }}" hint-placeholder-val="{{ false }}">
+      <path d="M55 17 Q55 30 68 30 L192 30 Q205 30 205 17" fill="none" stroke="{{ accent }}" stroke-width="4.5" stroke-linecap="round" opacity="0.9" style="filter:blur(3px);animation:ncGlow 2.6s ease-in-out infinite;"></path>
+      <path d="M59 26 Q61 30 68 30 L192 30 Q199 30 201 26" fill="none" stroke="{{ accentBright }}" stroke-width="1.6" stroke-linecap="round" opacity="0.92"></path>
+    </sc-if>
+
+    <sc-if value="{{ drawFullOutline }}" hint-placeholder-val="{{ false }}">
+      <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" fill="none" stroke="rgba(242,241,236,0.13)" stroke-width="2.5"></path>
+      <sc-if value="{{ isGlow }}" hint-placeholder-val="{{ false }}">
+        <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" fill="none" stroke="{{ accentBright }}" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ dashArray }}" stroke-dashoffset="{{ dashOffset }}" style="filter:blur(3.5px);animation:ncGlow 2.1s ease-in-out infinite;"></path>
+      </sc-if>
+      <path ref="{{ pathRef }}" d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" fill="none" stroke="{{ accent }}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="{{ dashArray }}" stroke-dashoffset="{{ dashOffset }}"></path>
+      <sc-if value="{{ hasFront }}" hint-placeholder-val="{{ false }}">
+        <circle cx="{{ fx }}" cy="{{ fy }}" r="7" fill="{{ accent }}" opacity="0.4" style="filter:blur(3px);transform-box:fill-box;transform-origin:center;animation:ncDot 1.6s ease-in-out infinite;"></circle>
+        <circle cx="{{ fx }}" cy="{{ fy }}" r="2.8" fill="{{ accentBright }}" style="animation:ncSheen 1.6s ease-in-out infinite;"></circle>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isTwoSide }}" hint-placeholder-val="{{ false }}">
+      <path d="{{ leftPath }}" pathLength="100" fill="none" stroke="rgba(242,241,236,0.13)" stroke-width="2.5"></path>
+      <path d="{{ rightPath }}" pathLength="100" fill="none" stroke="rgba(242,241,236,0.13)" stroke-width="2.5"></path>
+      <path d="{{ leftPath }}" pathLength="100" fill="none" stroke="{{ accent }}" stroke-width="2.8" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="{{ twoOffset }}"></path>
+      <path d="{{ rightPath }}" pathLength="100" fill="none" stroke="{{ accent }}" stroke-width="2.8" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="{{ twoOffset }}"></path>
+      <circle cx="130" cy="30" r="3.2" fill="{{ accentBright }}" opacity="{{ meetOpacity }}" style="filter:blur(0.6px);"></circle>
+    </sc-if>
+
+    <sc-if value="{{ isComet }}" hint-placeholder-val="{{ false }}">
+      <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" pathLength="100" fill="none" stroke="rgba(242,241,236,0.10)" stroke-width="2.5"></path>
+      <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" pathLength="100" fill="none" stroke="{{ accent }}" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 86" style="filter:blur(3px);animation:ncComet 2.4s linear infinite;"></path>
+      <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" pathLength="100" fill="none" stroke="{{ accentBright }}" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="13 87" style="animation:ncComet 2.4s linear infinite;"></path>
+      <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" pathLength="100" fill="none" stroke="{{ accent }}" stroke-width="4" stroke-linecap="round" stroke-dasharray="11 89" style="filter:blur(2px);animation:ncComet 2.4s linear infinite;animation-delay:-1.2s;"></path>
+      <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0" pathLength="100" fill="none" stroke="{{ accentBright }}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="10 90" style="animation:ncComet 2.4s linear infinite;animation-delay:-1.2s;"></path>
+    </sc-if>
+  </svg>
+
+  <sc-if value="{{ isBelow }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:33px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:10px;background:#17191D;border-radius:999px;padding:6px 14px 6px 7px;box-shadow:0 12px 28px rgba(0,0,0,.45);">
+      <svg width="26" height="26" viewBox="0 0 26 26" style="transform:rotate(-90deg);flex:0 0 auto;">
+        <circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(242,241,236,0.16)" stroke-width="2.6"></circle>
+        <circle cx="13" cy="13" r="9.5" fill="none" stroke="{{ accent }}" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="{{ ringCirc }}" stroke-dashoffset="{{ ringOffset }}"></circle>
+      </svg>
+      <div style="display:inline-flex;align-items:center;gap:6px;line-height:1;">
+        <svg width="13" height="13" viewBox="0 0 13 13" style="flex:0 0 auto;"><circle cx="6.5" cy="6.5" r="5.3" fill="none" stroke="{{ accent }}" stroke-width="1.4"></circle><circle cx="6.5" cy="6.5" r="1.7" fill="{{ accent }}"></circle></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#F2F1EC;font-variant-numeric:tabular-nums;">{{ time }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;padding-left:9px;border-left:1px solid rgba(242,241,236,0.12);">
+        <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4"><span style="{{ d.style }}"></span></sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showReadout }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:43px;left:50%;transform:translateX(-50%);text-align:center;">
+      <div style="font-size:8px;letter-spacing:0.18em;color:{{ accent }};font-weight:500;margin-bottom:3px;">{{ label }}</div>
+      <div style="font-size:19px;font-weight:500;color:#F2F1EC;font-variant-numeric:tabular-nums;letter-spacing:0.01em;">{{ time }}</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  pathRef = React.createRef();
+  state = { len:0, fx:130, fy:30 };
+  ha(hex,a){ const h=(hex||'#8FC8C0').replace('#',''); const r=parseInt(h.substring(0,2),16),g=parseInt(h.substring(2,4),16),b=parseInt(h.substring(4,6),16); return 'rgba('+r+','+g+','+b+','+a+')'; }
+  componentDidMount(){ requestAnimationFrame(()=>this.measure()); }
+  measure(){
+    const path=this.pathRef.current;
+    if(!path || !path.getTotalLength) return;
+    try {
+      const len=path.getTotalLength();
+      const prog=Math.min(1,Math.max(0,Number(this.props.progress)||0.62));
+      const pt=path.getPointAtLength(len*prog);
+      this.setState({ len, fx:+pt.x.toFixed(2), fy:+pt.y.toFixed(2) });
+    } catch(e){}
+  }
+  renderVals(){
+    const p=this.props;
+    const num=(v,d)=>{const n=Number(v); return isFinite(n)?n:d;};
+    const variant=p.variant||'outline';
+    const isBelow=variant==='below';
+    const isOutline=variant==='outline';
+    const isGlow=variant==='glow';
+    const isFront=variant==='front';
+    const isUnderlight=variant==='underlight';
+    const isConverge=variant==='converge';
+    const isSplit=variant==='split';
+    const isComet=variant==='comet';
+    const isTwoSide=isConverge||isSplit;
+    const drawFullOutline=isOutline||isGlow||isFront;
+    const showReadout=!isBelow;
+    const progress=Math.min(1,Math.max(0,num(p.progress,0.62)));
+    const accent=p.accent||'#8FC8C0';
+    const accentBright=p.accentBright||'#CDEDE7';
+    const time=p.time||'24:00';
+    const label=p.label||'FOCUS';
+    const len=this.state.len;
+    const dashArray = len? len.toFixed(2) : '1000';
+    const dashOffset = len? (len*(1-progress)).toFixed(2) : '1000';
+    const r=9.5, ringCirc=2*Math.PI*r, ringOffset=(ringCirc*(1-progress)).toFixed(2);
+    const twoOffset=(100*(1-progress)).toFixed(2);
+    const leftPath = isSplit ? 'M130 30 L68 30 Q55 30 55 17 L55 0' : 'M55 0 L55 17 Q55 30 68 30 L130 30';
+    const rightPath = isSplit ? 'M130 30 L192 30 Q205 30 205 17 L205 0' : 'M205 0 L205 17 Q205 30 192 30 L130 30';
+    const meetOpacity = isConverge ? (progress*progress).toFixed(2) : '0';
+    const sessionTotal=num(p.sessionTotal,4), sessionIndex=num(p.sessionIndex,1);
+    const dots=[];
+    for(let i=0;i<sessionTotal;i++){
+      const done=i<sessionIndex, current=i===sessionIndex;
+      dots.push({ style:{ width:current?'6px':'5px', height:current?'6px':'5px', borderRadius:'999px', background:(done||current)?accent:'rgba(242,241,236,0.22)', boxShadow:current?'0 0 0 2.5px '+this.ha(accent,0.18):'none', flex:'0 0 auto' } });
+    }
+    return {
+      isBelow, isGlow, isFront, drawFullOutline, showReadout,
+      isUnderlight, isTwoSide, isComet, isConverge, isSplit,
+      leftPath, rightPath, twoOffset, meetOpacity,
+      hasFront: isFront && len>0,
+      accent, accentBright, time, label,
+      dashArray, dashOffset, fx:this.state.fx, fy:this.state.fy,
+      ringCirc:ringCirc.toFixed(2), ringOffset, dots,
+      pathRef:this.pathRef
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/colors.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/typography.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/styles.css">
+<script src="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/_ds_bundle.js"></script>
+</helmet>
+
+<!-- ===== TITLE ===== -->
+<div style="position:absolute;left:80px;top:60px;width:660px;">
+  <div style="font-family:var(--font-mono);font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--teal);font-weight:500;margin-bottom:14px;">Pomodoro · Dynamic Island</div>
+  <h1 style="font-family:var(--font-display);font-weight:500;font-size:46px;line-height:1.04;letter-spacing:-0.02em;color:var(--ink);margin:0 0 16px;">Stay in the pocket.</h1>
+  <p style="font-family:var(--font-sans);font-size:17px;line-height:1.6;letter-spacing:-0.005em;color:var(--ink-2);margin:0;max-width:540px;">A focus timer that lives where your eyes already are — wrapped around the MacBook notch, or floating on any display. It glances small, expands on a tap, and nudges you along.</p>
+</div>
+
+<!-- ===== SYSTEM NOTE POST-IT ===== -->
+<div style="position:absolute;left:800px;top:64px;width:300px;background:#FBEFA6;padding:18px 18px 16px;box-shadow:0 6px 20px rgba(23,25,29,0.12);transform:rotate(1.4deg);font-family:var(--font-sans);">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A6D12;margin-bottom:9px;">For the build</div>
+  <div style="font-size:13.5px;line-height:1.5;color:#4A3D0E;">Same island component, two placements. <b>Mode 1</b> hugs the camera notch (Electron window pinned top-center). <b>Mode 2</b> is a free-floating window, draggable anywhere. Collapsed = glanceable; tap to expand controls.</div>
+</div>
+
+<!-- ===== MODE 1 HEADER ===== -->
+<div style="position:absolute;left:80px;top:288px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">01 — Dynamic Island <span style="color:var(--faint);">· around the notch · live</span></div>
+
+<!-- ===== LIVE DEMO CARD ===== -->
+<div style="position:absolute;left:80px;top:324px;width:860px;background:var(--card);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:24px;box-sizing:border-box;">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
+    <div style="font-family:var(--font-display);font-size:19px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);">Hover to peek, click to expand, drag to snap.</div>
+    <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;color:var(--faint);">{{ stateReadout }}</div>
+  </div>
+
+  <!-- faux MacBook screen -->
+  <div ref="{{ screenRef }}" onClick="{{ backdropClick }}" style="position:relative;width:100%;height:330px;background:#1E211C;border-radius:22px 22px 10px 10px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);user-select:none;" data-comment-anchor="cf8616a510-div">
+    <!-- menu bar -->
+    <div style="position:absolute;top:0;left:0;right:0;height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-family:var(--font-sans);font-size:12px;color:rgba(255,255,255,0.5);z-index:1;" data-comment-anchor="bf8036767a-div">
+      <div style="display:flex;align-items:center;gap:16px;"><span style="font-size:13px;">&#63743;</span><span style="font-weight:600;color:rgba(255,255,255,0.62);">Pomodoro</span><span>File</span><span>Session</span><span>View</span></div>
+      <div style="display:flex;align-items:center;gap:13px;"><span>&#9683;</span><span>&#128246;</span><span style="font-variant-numeric:tabular-nums;">9:41</span></div>
+    </div>
+    <!-- soft desktop marks -->
+    <div style="position:absolute;left:34px;bottom:30px;width:46px;height:46px;border-radius:11px;background:rgba(255,255,255,0.05);"></div>
+    <div style="position:absolute;left:34px;bottom:92px;width:46px;height:46px;border-radius:11px;background:rgba(255,255,255,0.04);"></div>
+    <!-- physical hardware notch -->
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:176px;height:28px;background:#000;border-radius:0 0 14px 14px;z-index:2;"></div>
+    <!-- magnetic snap glow -->
+    <sc-if value="{{ snapGlow }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:216px;height:50px;border-radius:0 0 22px 22px;box-shadow:0 0 0 2px rgba(143,200,192,0.75), 0 0 28px 6px rgba(143,200,192,0.4);z-index:3;pointer-events:none;"></div>
+    </sc-if>
+    <!-- drop hint when dragging away -->
+    <sc-if value="{{ showDropHint }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:202px;height:36px;border:1.5px dashed rgba(143,200,192,0.55);border-top:none;border-radius:0 0 19px 19px;z-index:3;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;"><span style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.13em;color:rgba(143,200,192,0.9);">DROP TO SNAP</span></div>
+    </sc-if>
+    <!-- island (draggable, snaps to notch) -->
+    <div data-island="1" onMouseDown="{{ startDrag }}" onMouseEnter="{{ peekEnter }}" onMouseLeave="{{ peekLeave }}" style="{{ mountStyle }}">
+      <dc-import name="Island" notch="{{ snapped }}" peek="{{ peekActive }}" status="{{ status }}" mode="{{ mode }}" total="{{ total }}" remaining="{{ remaining }}" expanded="{{ expanded }}" session-index="{{ sessionIndex }}" session-total="{{ sessionTotal }}" task="{{ task }}" messages-on="{{ showMessages }}" on-toggle-expand="{{ toggleExpand }}" on-play-pause="{{ playPause }}" on-reset="{{ reset }}" on-skip="{{ skip }}" on-switch-mode="{{ switchMode }}" on-toggle-messages="{{ toggleMessages }}" on-quit="{{ quit }}" hint-size="320px,210px"></dc-import>
+    </div>
+    <!-- toast -->
+    <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(8,9,10,0.92);color:#F2F1EC;font-family:var(--font-sans);font-size:12.5px;letter-spacing:-0.005em;padding:8px 16px;border-radius:999px;z-index:8;box-shadow:0 8px 24px rgba(0,0,0,0.42);">{{ toast }}</div>
+    </sc-if>
+  </div>
+
+  <!-- stage controls -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap;">
+    <x-import component-from-global-scope="FolioDesignSystem_e1268b.Button" variant="primary" size="md" onClick="{{ playPause }}" hint-size="120px,42px">{{ playPauseLabel }}</x-import>
+    <x-import component-from-global-scope="FolioDesignSystem_e1268b.Button" variant="outline" size="md" onClick="{{ reset }}" hint-size="90px,42px">Reset</x-import>
+    <x-import component-from-global-scope="FolioDesignSystem_e1268b.Button" variant="outline" size="md" onClick="{{ skip }}" hint-size="120px,42px">Skip to end</x-import>
+    <x-import component-from-global-scope="FolioDesignSystem_e1268b.Button" variant="ghost" size="md" onClick="{{ toggleExpand }}" hint-size="110px,42px">{{ expandLabel }}</x-import>
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint);">Demo speed</span>
+      <div style="display:inline-flex;border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;font-family:var(--font-mono);font-size:13px;">
+        <button onClick="{{ setSpeed1 }}" style="{{ speed1Style }}">1&times;</button>
+        <button onClick="{{ setSpeed20 }}" style="{{ speed20Style }}">20&times;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODE 2 HEADER ===== -->
+<div style="position:absolute;left:980px;top:288px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">02 — Standalone <span style="color:var(--faint);">· any display</span></div>
+
+<!-- ===== MODE 2 CARD ===== -->
+<div style="position:absolute;left:980px;top:324px;width:560px;background:var(--card);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:24px;box-sizing:border-box;">
+  <div style="font-family:var(--font-display);font-size:19px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Floats anywhere</div>
+  <p style="font-family:var(--font-sans);font-size:14px;line-height:1.55;color:var(--muted);margin:0 0 18px;">On an external monitor there's no notch — so the island becomes a free window. Defaults to top-center, drag it anywhere.</p>
+  <!-- faux external monitor -->
+  <div style="position:relative;width:100%;height:330px;background:#23262B;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.04);">
+    <div style="position:absolute;top:0;left:0;right:0;height:22px;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:0 14px;font-family:var(--font-sans);font-size:11px;color:rgba(255,255,255,0.42);"><span>&#9683;</span><span>3:12</span></div>
+    <!-- default position island (top center) -->
+    <div style="position:absolute;top:34px;left:50%;transform:translateX(-50%);z-index:2;">
+      <dc-import name="Island" status="running" mode="focus" total="1500" remaining="1044" session-index="0" session-total="4" hint-size="220px,52px"></dc-import>
+    </div>
+    <!-- drag affordance + path -->
+    <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;" viewBox="0 0 512 330" preserveAspectRatio="none">
+      <path d="M256 96 C 230 150, 180 180, 150 214" fill="none" stroke="rgba(226,162,74,0.45)" stroke-width="1.6" stroke-dasharray="4 5" stroke-linecap="round"></path>
+    </svg>
+    <!-- ghost moved position -->
+    <div style="position:absolute;top:214px;left:42px;z-index:2;opacity:0.5;">
+      <dc-import name="Island" status="paused" mode="focus" total="1500" remaining="640" session-index="0" session-total="4" hint-size="220px,52px"></dc-import>
+    </div>
+    <div style="position:absolute;top:262px;left:46px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(226,162,74,0.9);z-index:3;">Drag to place</div>
+  </div>
+</div>
+
+<!-- ===== GALLERY HEADER ===== -->
+<div style="position:absolute;left:80px;top:840px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">03 — Every state</div>
+<div style="position:absolute;left:80px;top:866px;font-family:var(--font-sans);font-size:14px;color:var(--faint);">The collapsed pill across the session lifecycle, plus the expanded panel.</div>
+
+<!-- gallery cards row 1 -->
+<div style="position:absolute;left:80px;top:912px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">Idle / Ready</div>
+  <div style="height:78px;background:#1E211C;border-radius:12px;display:grid;place-items:center;"><dc-import name="Island" status="idle" mode="focus" total="1500" remaining="1500" session-index="0" session-total="4" hint-size="200px,48px"></dc-import></div>
+</div>
+<div style="position:absolute;left:392px;top:912px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">Running</div>
+  <div style="height:78px;background:#1E211C;border-radius:12px;display:grid;place-items:center;"><dc-import name="Island" status="running" mode="focus" total="1500" remaining="912" session-index="1" session-total="4" hint-size="200px,48px"></dc-import></div>
+</div>
+<div style="position:absolute;left:704px;top:912px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Paused</div>
+  <div style="height:78px;background:#1E211C;border-radius:12px;display:grid;place-items:center;"><dc-import name="Island" status="paused" mode="focus" total="1500" remaining="540" session-index="1" session-total="4" hint-size="200px,48px"></dc-import></div>
+</div>
+<div style="position:absolute;left:1016px;top:912px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--clay);margin-bottom:14px;">Break</div>
+  <div style="height:78px;background:#1E211C;border-radius:12px;display:grid;place-items:center;"><dc-import name="Island" status="running" mode="break" total="300" remaining="168" session-index="1" session-total="4" hint-size="200px,48px"></dc-import></div>
+</div>
+
+<!-- gallery row 2 -->
+<div style="position:absolute;left:80px;top:1066px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">Complete · ripple</div>
+  <div style="height:78px;background:#1E211C;border-radius:12px;display:grid;place-items:center;overflow:hidden;"><dc-import name="Island" status="complete" mode="focus" total="1500" remaining="0" session-index="1" session-total="4" hint-size="200px,48px"></dc-import></div>
+</div>
+<div style="position:absolute;left:392px;top:1066px;width:420px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Expanded panel</div>
+  <div style="background:#1E211C;border-radius:12px;padding:20px;display:grid;place-items:center;"><dc-import name="Island" status="running" mode="focus" total="1500" remaining="765" expanded="true" session-index="1" session-total="4" task="Draft the Q3 narrative" hint-size="320px,210px"></dc-import></div>
+</div>
+
+<!-- animation note post-it -->
+<div style="position:absolute;left:846px;top:1066px;width:280px;background:#FBEFA6;padding:18px;box-shadow:0 6px 20px rgba(23,25,29,0.12);transform:rotate(-1.2deg);font-family:var(--font-sans);">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A6D12;margin-bottom:9px;">Motion</div>
+  <div style="font-size:13px;line-height:1.5;color:#4A3D0E;">Ring <b>breathes</b> while running. Panel <b>springs</b> open. Completing a block plays a clean <b>ripple flourish</b>. Final minute the ring shifts to a warm amber. All quick, none looping for attention.</div>
+</div>
+
+
+<!-- ===== NOTCH LAYOUTS ===== -->
+<div style="position:absolute;left:80px;top:1474px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">04 — Notch layouts <span style="color:var(--faint);">· content respects the lens</span></div>
+<div style="position:absolute;left:80px;top:1500px;font-family:var(--font-sans);font-size:14px;color:var(--faint);max-width:820px;">Collapsed clusters sit to the left and right of the camera, never under it. Three densities — then a hover <b style="color:var(--muted);font-weight:600;">peek</b> that reveals task and progress without fully opening.</div>
+
+<div style="position:absolute;left:80px;top:1548px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">Split · ring · time · dots</div>
+  <div style="position:relative;height:96px;background:#1E211C;border-radius:11px;overflow:hidden;">
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:24px;background:#000;border-radius:0 0 12px 12px;z-index:1;"></div>
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:2;"><dc-import name="Island" notch="true" layout="split" status="running" mode="focus" total="1500" remaining="912" session-index="1" session-total="4" hint-size="210px,46px"></dc-import></div>
+  </div>
+</div>
+
+<div style="position:absolute;left:392px;top:1548px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">Minimal · time · dots</div>
+  <div style="position:relative;height:96px;background:#1E211C;border-radius:11px;overflow:hidden;">
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:24px;background:#000;border-radius:0 0 12px 12px;z-index:1;"></div>
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:2;"><dc-import name="Island" notch="true" layout="minimal" status="running" mode="focus" total="1500" remaining="912" session-index="1" session-total="4" hint-size="210px,46px"></dc-import></div>
+  </div>
+</div>
+
+<div style="position:absolute;left:704px;top:1548px;width:280px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">Compact · ring · dots</div>
+  <div style="position:relative;height:96px;background:#1E211C;border-radius:11px;overflow:hidden;">
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:24px;background:#000;border-radius:0 0 12px 12px;z-index:1;"></div>
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:2;"><dc-import name="Island" notch="true" layout="compact" status="running" mode="focus" total="1500" remaining="912" session-index="1" session-total="4" hint-size="210px,46px"></dc-import></div>
+  </div>
+</div>
+
+<div style="position:absolute;left:1016px;top:1548px;width:340px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--clay);margin-bottom:14px;">Peek · on hover</div>
+  <div style="position:relative;height:168px;background:#1E211C;border-radius:11px;overflow:hidden;">
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:24px;background:#000;border-radius:0 0 12px 12px;z-index:1;"></div>
+    <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:2;"><dc-import name="Island" notch="true" peek="true" status="running" mode="focus" total="1500" remaining="912" session-index="1" session-total="4" task="Draft the Q3 narrative" hint-size="266px,150px"></dc-import></div>
+  </div>
+</div>
+
+<!-- ===== NOTCH-NATIVE PROGRESS ===== -->
+<div style="position:absolute;left:80px;top:1850px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">05 — Notch-native progress <span style="color:var(--faint);">· the camera is opaque</span></div>
+<div style="position:absolute;left:80px;top:1876px;font-family:var(--font-sans);font-size:14px;color:var(--faint);max-width:780px;">The hardware notch blocks anything drawn over it — so the timer can't live on the camera. These keep it legible: drop the readout below the notch, or trace progress along the notch's own outline.</div>
+
+<div style="position:absolute;left:1184px;top:1872px;width:272px;background:#FBEFA6;padding:16px;box-shadow:0 6px 20px rgba(23,25,29,0.12);transform:rotate(1deg);font-family:var(--font-sans);">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A6D12;margin-bottom:8px;">Why</div>
+  <div style="font-size:12.5px;line-height:1.5;color:#4A3D0E;">The camera housing is real, opaque hardware. UI either sits <b>below</b> it or hugs its <b>outline</b> — never on top.</div>
+</div>
+
+<div style="position:absolute;left:80px;top:1926px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">A · Below the notch</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Readout clears the camera entirely.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="below" label="FOCUS" time="24:00" progress="0.55" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:412px;top:1926px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">B · Notch-outline bar</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">The edge fills as time elapses.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="outline" label="FOCUS" time="24:00" progress="0.62" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:744px;top:1926px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">C · Outline + glow</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Filled edge emits a soft glow.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="glow" label="FOCUS" time="16:20" progress="0.4" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:1076px;top:1926px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--clay);margin-bottom:6px;">D · Glow at the front</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Leading point pulses as it advances.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="front" label="FOCUS" time="09:12" progress="0.72" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:80px;top:2186px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">E · Underlight</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Light spills out from beneath the housing.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="underlight" label="FOCUS" time="18:30" progress="0.5" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:412px;top:2186px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">F · Converge</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Both sides fill inward, meeting at center.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="converge" label="FOCUS" time="12:00" progress="0.5" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:744px;top:2186px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">G · Split</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Grows from center bottom out to both corners.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="split" label="FOCUS" time="21:40" progress="0.45" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:1076px;top:2186px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--clay);margin-bottom:6px;">H · Comet</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:14px;">Two sparks chase around the outline.</div>
+  <div style="display:flex;justify-content:center;"><dc-import name="NotchConcept" variant="comet" label="FOCUS" time="07:50" progress="0.66" accent="#A78BFA" accent-bright="#D9CCFF" hint-size="260px,128px"></dc-import></div>
+</div>
+
+<!-- ===== COMPLETE RIPPLE EXPLORATION ===== -->
+<div style="position:absolute;left:80px;top:2470px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">06 — Completion ripple <span style="color:var(--faint);">· timing &amp; intensity</span></div>
+<div style="position:absolute;left:80px;top:2496px;font-family:var(--font-sans);font-size:14px;color:var(--faint);max-width:820px;">Slower now, so each ring is felt. Four ways to shape the burst — vary the count, stagger, and how sharply each ripple fades.</div>
+
+<div style="position:absolute;left:80px;top:2546px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Burst</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:16px;">3 rings, tight stagger, fading strength.</div>
+  <div style="height:92px;background:#1E211C;border-radius:11px;display:grid;place-items:center;overflow:hidden;"><dc-import name="RippleConcept" variant="burst" hint-size="170px,46px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:412px;top:2546px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Echo</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:16px;">Wide stagger, slow, calm spacing.</div>
+  <div style="height:92px;background:#1E211C;border-radius:11px;display:grid;place-items:center;overflow:hidden;"><dc-import name="RippleConcept" variant="echo" hint-size="170px,46px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:744px;top:2546px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--teal);margin-bottom:4px;">Heartbeat</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:16px;">Two strong pulses, then a beat of rest.</div>
+  <div style="height:92px;background:#1E211C;border-radius:11px;display:grid;place-items:center;overflow:hidden;"><dc-import name="RippleConcept" variant="heartbeat" hint-size="170px,46px"></dc-import></div>
+</div>
+
+<div style="position:absolute;left:1076px;top:2546px;width:300px;background:var(--card);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-sm);padding:18px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.13em;text-transform:uppercase;color:var(--clay);margin-bottom:4px;">Bloom</div>
+  <div style="font-family:var(--font-sans);font-size:11.5px;color:var(--faint);margin-bottom:16px;">One big, slow, deliberate wave.</div>
+  <div style="height:92px;background:#1E211C;border-radius:11px;display:grid;place-items:center;overflow:hidden;"><dc-import name="RippleConcept" variant="bloom" hint-size="170px,46px"></dc-import></div>
+</div>
+<!-- ===== SETTINGS ===== -->
+<div style="position:absolute;left:80px;top:2880px;font-family:var(--font-mono);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);font-weight:500;">07 — Settings <span style="color:var(--faint);">· opened from the ⋯ menu · interactive</span></div>
+<div style="position:absolute;left:80px;top:2906px;font-family:var(--font-sans);font-size:14px;color:var(--faint);max-width:820px;">A real preferences window. Two presets plus a Custom mode whose fields stay editable, alarm &amp; animation pickers, accent + light/dark theming (live), timer-style and layout choices, and the behavior toggles. Click around — the sidebar, theme, and accent all respond.</div>
+
+<div style="position:absolute;left:80px;top:2960px;width:780px;background:var(--card);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:16px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;">Timer · dark · classic</div>
+  <dc-import name="Settings" theme="dark" section="timer" accent="#8FC8C0" hint-size="780px,600px"></dc-import>
+</div>
+
+<div style="position:absolute;left:900px;top:2960px;width:780px;background:var(--card);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:16px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;">Appearance · accent &amp; timer style</div>
+  <dc-import name="Settings" theme="dark" section="appearance" accent="#8FC8C0" hint-size="780px,600px"></dc-import>
+</div>
+
+<div style="position:absolute;left:80px;top:3640px;width:780px;background:var(--card);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-md);padding:16px;box-sizing:border-box;">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--clay);margin-bottom:12px;">Sounds · light theme</div>
+  <dc-import name="Settings" theme="light" section="sounds" accent="#0F5E57" hint-size="780px,600px"></dc-import>
+</div>
+
+<div style="position:absolute;left:900px;top:3640px;width:300px;background:#FBEFA6;padding:18px;box-shadow:0 6px 20px rgba(23,25,29,0.12);transform:rotate(1deg);font-family:var(--font-sans);">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8A6D12;margin-bottom:9px;">Settings notes</div>
+  <div style="font-size:13px;line-height:1.5;color:#4A3D0E;">Window is fully themed off a single accent + light/dark token set, so the same surface reskins instantly. <b>Custom</b> preset persists its own focus / break lengths. Everything here maps to a real preference the Electron app would store.</div>
+</div></x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { status:'idle', mode:'focus', total:1500, remaining:1500, sessionIndex:0, sessionTotal:4, expanded:false, speed:1, task:'Draft the Q3 narrative', snapped:true, dragging:false, dragX:0, dragY:0, nearSnap:false, toast:null, peek:false, showMessages:true };
+  _screen = React.createRef();
+
+  componentDidMount(){
+    this._timer=setInterval(()=>this.tick(),250);
+    this._mm=(e)=>this.onDrag(e); this._mu=()=>this.endDrag();
+    window.addEventListener('mousemove',this._mm);
+    window.addEventListener('mouseup',this._mu);
+  }
+  componentWillUnmount(){
+    clearInterval(this._timer); clearTimeout(this._next); clearTimeout(this._toast);
+    window.removeEventListener('mousemove',this._mm);
+    window.removeEventListener('mouseup',this._mu);
+  }
+
+  startDrag = (e) => {
+    if(this.state.expanded) return;
+    if(e && e.target && e.target.closest && e.target.closest('button')) return;
+    this._dragging=true; this._moved=false;
+    this.setState({dragging:true, peek:false});
+  };
+  peekEnter = () => { if(this.state.expanded || this.state.dragging || !this.state.snapped) return; this.setState({peek:true}); };
+  peekLeave = () => { if(this.state.peek) this.setState({peek:false}); };
+  onDrag = (e) => {
+    if(!this._dragging) return;
+    const sc=this._screen.current; if(!sc) return;
+    const r=sc.getBoundingClientRect();
+    let x=e.clientX-r.left, y=e.clientY-r.top;
+    x=Math.max(46,Math.min(r.width-46,x));
+    y=Math.max(2,Math.min(r.height-30,y));
+    this._moved=true;
+    const near = Math.abs(x-r.width/2)<100 && y<60;
+    this.setState({snapped:false, dragX:x, dragY:y, nearSnap:near});
+  };
+  endDrag = () => {
+    if(!this._dragging) return;
+    this._dragging=false;
+    this._justDragged=this._moved;
+    if(this._moved){ this.setState({dragging:false, snapped:this.state.nearSnap, nearSnap:false}); }
+    else { this.setState({dragging:false, nearSnap:false}); }
+    setTimeout(()=>{ this._justDragged=false; },40);
+  };
+
+  showToast(msg){ clearTimeout(this._toast); this.setState({toast:msg}); this._toast=setTimeout(()=>this.setState({toast:null}),1900); }
+  switchMode = () => {
+    const s=this.state;
+    if(s.mode==='focus'){ this.setState({mode:'break',total:300,remaining:300}); this.showToast('Switched to break'); }
+    else { this.setState({mode:'focus',total:1500,remaining:1500}); this.showToast('Switched to focus'); }
+  };
+  toggleMessages = () => this.setState(s=>({showMessages:!s.showMessages}));
+  backdropClick = (e) => {
+    if(!this.state.expanded) return;
+    if(e && e.target && e.target.closest && e.target.closest('[data-island]')) return;
+    this.setState({expanded:false});
+  };
+  quit = () => { clearTimeout(this._next); this.setState({status:'idle',mode:'focus',total:1500,remaining:1500,sessionIndex:0,expanded:false}); this.showToast('Timer quit — back to idle'); };
+
+  tick(){
+    const s=this.state;
+    if(s.status!=='running') return;
+    const step=s.speed*0.25;
+    const rem=s.remaining-step;
+    if(rem<=0){ this.complete(); } else { this.setState({remaining:rem}); }
+  }
+  complete(){
+    clearTimeout(this._next);
+    this.setState({remaining:0,status:'complete'});
+    this._next=setTimeout(()=>this.advance(),2600);
+  }
+  advance(){
+    const s=this.state;
+    if(s.mode==='focus'){
+      const idx=s.sessionIndex+1;
+      const isLong=idx%4===0;
+      this.setState({mode:'break',total:isLong?900:300,remaining:isLong?900:300,status:'running',sessionIndex:idx});
+    } else {
+      this.setState({mode:'focus',total:1500,remaining:1500,status:'running'});
+    }
+  }
+
+  playPause = () => {
+    const s=this.state;
+    if(s.status==='running') this.setState({status:'paused'});
+    else if(s.status==='paused'||s.status==='idle') this.setState({status:'running'});
+    else if(s.status==='complete'){ clearTimeout(this._next); this.advance(); }
+  };
+  reset = () => {
+    clearTimeout(this._next);
+    this.setState({status:'idle',mode:'focus',total:1500,remaining:1500,sessionIndex:0});
+  };
+  skip = () => { clearTimeout(this._next); this.setState({remaining:4,status:'running'}); };
+  toggleExpand = () => { if(this._justDragged) return; this.setState(s=>({expanded:!s.expanded})); };
+  setSpeed1 = () => this.setState({speed:1});
+  setSpeed20 = () => this.setState({speed:20});
+
+  renderVals(){
+    const s=this.state;
+    const segBase='border:none;cursor:pointer;padding:8px 14px;background:transparent;color:var(--muted);font-family:var(--font-mono);font-size:13px;transition:all .15s;';
+    const segOn='border:none;cursor:pointer;padding:8px 14px;background:var(--teal);color:var(--on-ink);font-family:var(--font-mono);font-size:13px;';
+    const t=Math.ceil(s.remaining), mm=Math.floor(t/60), ss=t%60;
+    const time=(mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss;
+    const modeLabel = s.mode==='break'?'Break':'Focus';
+    const statusWord = s.status==='complete'?'done':s.status;
+    const snapTrans = s.dragging? 'none' : 'left .34s cubic-bezier(.34,1.3,.5,1), top .34s cubic-bezier(.34,1.3,.5,1)';
+    const mountStyle = s.snapped
+      ? { position:'absolute', top:'0px', left:'50%', transform:'translateX(-50%)', zIndex:6, transition:snapTrans }
+      : { position:'absolute', left:s.dragX+'px', top:s.dragY+'px', transform:'translate(-50%,0)', zIndex:6, transition:snapTrans, cursor:'grabbing' };
+    return {
+      status:s.status, mode:s.mode, total:s.total, remaining:s.remaining,
+      expanded:s.expanded, sessionIndex:s.sessionIndex, sessionTotal:s.sessionTotal, task:s.task,
+      playPause:this.playPause, reset:this.reset, skip:this.skip, toggleExpand:this.toggleExpand,
+      setSpeed1:this.setSpeed1, setSpeed20:this.setSpeed20,
+      snapped:s.snapped, dragging:s.dragging, nearSnap:s.nearSnap, toast:s.toast, hasToast:!!s.toast,
+      screenRef:this._screen, mountStyle,
+      startDrag:this.startDrag, switchMode:this.switchMode, quit:this.quit,
+      backdropClick:this.backdropClick, showMessages:s.showMessages, toggleMessages:this.toggleMessages,
+      peekEnter:this.peekEnter, peekLeave:this.peekLeave,
+      peekActive: s.peek && !s.expanded && s.snapped && !s.dragging,
+      snapGlow: s.dragging && s.nearSnap,
+      showDropHint: s.dragging && !s.snapped,
+      playPauseLabel: s.status==='running'?'Pause':(s.status==='complete'?'Continue':'Start'),
+      expandLabel: s.expanded?'Collapse':'Expand',
+      speed1Style: s.speed===1?segOn:segBase,
+      speed20Style: s.speed===20?segOn:segBase,
+      stateReadout: modeLabel+' · '+statusWord+' · '+time
+    };
+  }
+}
+</script>
+</body>
+</html>

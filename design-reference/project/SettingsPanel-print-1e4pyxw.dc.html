@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style data-omelette-print-defaults>
+@media print {
+  @page { margin: 0.5in; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, table, pre, blockquote, img, svg, tr, [class~="card" i] { break-inside: avoid; }
+  img, svg { max-width: 100%; }
+  p { orphans: 3; widows: 3; }
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<style>
+  .sp-range{ -webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:var(--sp-border,#CFCDC4);outline:none;accent-color:var(--sp-teal,#0F5E57); }
+  .sp-range::-webkit-slider-thumb{ -webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--sp-teal,#0F5E57);cursor:pointer;border:2px solid var(--sp-surface,#FCFCFA);box-shadow:0 1px 3px rgba(0,0,0,.25); }
+  .sp-scroll::-webkit-scrollbar{width:4px} .sp-scroll::-webkit-scrollbar-track{background:transparent} .sp-scroll::-webkit-scrollbar-thumb{background:var(--sp-border,#CFCDC4);border-radius:999px}
+  .sp-tip{position:relative}
+  .sp-tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:var(--sp-text,#17191D);color:var(--sp-surface,#FCFCFA);font-family:'Inter',sans-serif;font-size:11px;white-space:nowrap;padding:4px 8px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:10}
+  .sp-tip:hover::after{opacity:1}
+</style>
+</helmet>
+<div class="sp-root" style="width:880px;box-sizing:border-box;background:var(--sp-surface,#FCFCFA);border:1px solid var(--sp-border,#CFCDC4);border-radius:16px;box-shadow:0 24px 70px rgba(23,25,29,0.18),0 4px 12px rgba(23,25,29,0.08);overflow:hidden;font-family:'Inter',sans-serif;display:flex;flex-direction:column;max-height:900px;">
+
+  <!-- header -->
+  <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 28px 0;background:var(--sp-bg,#F5F5F1);">
+    <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:500;letter-spacing:-0.015em;color:var(--sp-text,#17191D);line-height:1;">Settings</div>
+    <button style="border:1px solid var(--sp-border,#CFCDC4);cursor:pointer;background:transparent;color:var(--sp-muted,#565C63);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:8px 20px;border-radius:10px;">Close</button>
+  </div>
+
+  <!-- tab bar -->
+  <div style="flex:0 0 auto;padding:14px 28px 0;background:var(--sp-bg,#F5F5F1);border-bottom:1px solid var(--sp-line,#E3E1D9);">
+    <div style="display:flex;gap:0;border-bottom:2px solid transparent;width:fit-content;">
+      <button onClick="{{ onTabTimer }}" style="position:relative;background:none;border:none;cursor:pointer;padding:0 20px 12px 0;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;color:{{ tabTimerColor }};transition:color .15s;">General
+        <sc-if value="{{ isTimer }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;left:0;right:20px;bottom:-1px;height:2px;background:var(--sp-teal,#0F5E57);border-radius:999px;"></span></sc-if>
+      </button>
+      <button onClick="{{ onTabAppearance }}" style="position:relative;background:none;border:none;cursor:pointer;padding:0 20px 12px 0;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;color:{{ tabAppearanceColor }};transition:color .15s;">Preferences
+        <sc-if value="{{ isAppearance }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:0;right:20px;bottom:-1px;height:2px;background:var(--sp-teal,#0F5E57);border-radius:999px;"></span></sc-if>
+      </button>
+    </div>
+  </div>
+
+  <!-- scrollable content -->
+  <div class="sp-scroll" style="flex:1;overflow-y:auto;padding:24px 28px 28px;background:var(--sp-surface,#FCFCFA);">
+
+    <!-- ===== TIMER TAB ===== -->
+    <sc-if value="{{ isTimer }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+
+      <!-- Timer left: preset -->
+      <div>
+        <div style="margin-bottom:24px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Timer preset</div>
+          <div style="display:flex;border:1px solid var(--sp-border,#CFCDC4);border-radius:11px;overflow:hidden;margin-bottom:12px;">
+            <sc-if value="{{ presetClassicSel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onPresetClassic }}" style="flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;background:var(--sp-seg-on-bg);color:var(--sp-seg-on-text);">Classic</button></sc-if>
+            <sc-if value="{{ presetClassicOff }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onPresetClassic }}" style="flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;background:transparent;color:var(--sp-muted);">Classic</button></sc-if>
+            <sc-if value="{{ presetFocusSel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onPresetFocus }}" style="flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;background:var(--sp-seg-on-bg);color:var(--sp-seg-on-text);border-left:1px solid var(--sp-border,#CFCDC4);">Focus</button></sc-if>
+            <sc-if value="{{ presetFocusOff }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onPresetFocus }}" style="flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;background:transparent;color:var(--sp-muted);border-left:1px solid var(--sp-border,#CFCDC4);">Focus</button></sc-if>
+            <sc-if value="{{ presetCustomSel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ onPresetCustom }}" style="flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;background:var(--sp-seg-on-bg);color:var(--sp-seg-on-text);border-left:1px solid var(--sp-border,#CFCDC4);">Custom</button></sc-if>
+            <sc-if value="{{ presetCustomOff }}" hint-placeholder-val="{{ true }}"><button onClick="{{ onPresetCustom }}" style="flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;background:transparent;color:var(--sp-muted);border-left:1px solid var(--sp-border,#CFCDC4);">Custom</button></sc-if>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 11px; border: 1px solid var(--sp-line,#E3E1D9); border-radius: 11px; padding: 14px 15px; background-color: #2a2e3400">
+            <sc-for list="{{ steppers }}" as="st" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-family:'Inter',sans-serif;font-size:13px;color:var(--sp-body,#23262B);">{{ st.label }}</span>
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <button onClick="{{ st.dec }}" style="width:26px;height:26px;border-radius:7px;border:1px solid var(--sp-border,#CFCDC4);background:var(--sp-surface,#FCFCFA);color:var(--sp-body,#23262B);cursor:pointer;font-size:16px;line-height:1;display:grid;place-items:center;padding:0;">−</button>
+                  <span style="font-family: 'IBM Plex Mono',monospace; font-size: 14px; color: #8fc7c0; min-width: 54px; text-align: center">{{ st.value }}</span>
+                  <button onClick="{{ st.inc }}" style="width:26px;height:26px;border-radius:7px;border:1px solid var(--sp-border,#CFCDC4);background:var(--sp-surface,#FCFCFA);color:var(--sp-body,#23262B);cursor:pointer;font-size:16px;line-height:1;display:grid;place-items:center;padding:0;">+</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+        <div style="margin-top: 20px; border-top: 1px solid var(--sp-line,#E3E1D9); border-style: none; display: flex; flex-direction: column; gap: 16px; justify-content: center; align-items: stretch" data-comment-anchor="c75b3576c2-div">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:0;">Shortcuts &amp; goal</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:11px;border-top:1px solid var(--sp-line,#E3E1D9);">
+            <div>
+              <div style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">Global shortcut</div>
+              <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--sp-faint,#878D93);margin-top:2px;">Start / pause from anywhere.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;flex:0 0 auto;">
+              <kbd style="font-family: 'IBM Plex Mono',monospace; font-size: 12px; color: #8FC8C0; background: var(--sp-field,#F5F5F1); border: 1px solid var(--sp-border,#CFCDC4); border-radius: 7px; padding: 5px 9px" data-comment-anchor="36fe0ebf7b-kbd">⌥</kbd>
+              <kbd style="font-family: 'IBM Plex Mono',monospace; font-size: 12px; color: #8FC8C0; background: var(--sp-field,#F5F5F1); border: 1px solid var(--sp-border,#CFCDC4); border-radius: 7px; padding: 5px 9px">Space</kbd>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:11px;border-top:1px solid var(--sp-line,#E3E1D9);">
+            <div>
+              <div style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">Daily goal</div>
+              <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--sp-faint,#878D93);margin-top:2px;">Focus blocks to aim for each day.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;flex:0 0 auto;">
+              <button onClick="{{ decGoal }}" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--sp-border,#CFCDC4);background:var(--sp-field,#F5F5F1);color:var(--sp-body,#23262B);cursor:pointer;font-size:16px;display:grid;place-items:center;padding:0;">−</button>
+              <span style="font-family: 'IBM Plex Mono',monospace; font-size: 15px; color: #8FC8C0; min-width: 52px; text-align: center">{{ dailyGoal }}<span style="font-size:10px;color:var(--sp-faint,#878D93);margin-left:3px;">pom</span></span>
+              <button onClick="{{ incGoal }}" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--sp-border,#CFCDC4);background:var(--sp-field,#F5F5F1);color:var(--sp-body,#23262B);cursor:pointer;font-size:16px;display:grid;place-items:center;padding:0;">+</button>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- Timer right: sound + animation + behavior -->
+      <div>
+        <!-- BEHAVIOR -->
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Behavior</div>
+          <div style="display:flex;flex-direction:column;gap:13px;">
+            <sc-for list="{{ behaviors }}" as="b" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:11px;border-top:1px solid var(--sp-line,#E3E1D9);">
+                <div>
+                  <div style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">{{ b.label }}</div>
+                  <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--sp-faint,#878D93);margin-top:2px;line-height:1.35;">{{ b.desc }}</div>
+                </div>
+                <button onClick="{{ b.onClick }}" style="{{ b.track }};"><span style="{{ b.knob }};"></span></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ===== APPEARANCE TAB ===== -->
+    <sc-if value="{{ isAppearance }}" hint-placeholder-val="{{ false }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+
+      <!-- Appearance left: timer style + layout -->
+      <div>
+        <!-- COLORS -->
+        <div style="margin-bottom:22px;" data-comment-anchor="a2552f9164-div">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Colors</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+            <span style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">Accent</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <sc-for list="{{ accents }}" as="a" hint-placeholder-count="6"><button onClick="{{ a.onClick }}" title="{{ a.key }}" style="{{ a.style }};"></button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--sp-line,#E3E1D9);">
+            <span style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">Theme</span>
+            <div style="display:flex;gap:3px;background:var(--sp-field,#F5F5F1);border:1px solid var(--sp-border,#CFCDC4);border-radius:11px;padding:3px;">
+              <sc-if value="{{ themeSystemSel }}" hint-placeholder-val="{{ false }}"><button class="sp-tip" data-tip="System" onClick="{{ onSet }}" data-field="theme" data-val="system" style="position:relative;width:34px;height:30px;border:none;cursor:pointer;border-radius:8px;background:var(--sp-seg-on-bg);display:grid;place-items:center;color:var(--sp-seg-on-text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4" stroke-linecap="round"></path></svg></button></sc-if>
+              <sc-if value="{{ themeSystemOff }}" hint-placeholder-val="{{ true }}"><button class="sp-tip" data-tip="System" onClick="{{ onSet }}" data-field="theme" data-val="system" style="position:relative;width:34px;height:30px;border:none;cursor:pointer;border-radius:8px;background:transparent;display:grid;place-items:center;color:var(--sp-faint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4" stroke-linecap="round"></path></svg></button></sc-if>
+              <sc-if value="{{ themeLightSel }}" hint-placeholder-val="{{ false }}"><button class="sp-tip" data-tip="Light" onClick="{{ onSet }}" data-field="theme" data-val="light" style="position:relative;width:34px;height:30px;border:none;cursor:pointer;border-radius:8px;background:var(--sp-seg-on-bg);display:grid;place-items:center;color:var(--sp-seg-on-text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-linecap="round"></path></svg></button></sc-if>
+              <sc-if value="{{ themeLightOff }}" hint-placeholder-val="{{ false }}"><button class="sp-tip" data-tip="Light" onClick="{{ onSet }}" data-field="theme" data-val="light" style="position:relative;width:34px;height:30px;border:none;cursor:pointer;border-radius:8px;background:transparent;display:grid;place-items:center;color:var(--sp-faint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-linecap="round"></path></svg></button></sc-if>
+              <sc-if value="{{ themeDarkSel }}" hint-placeholder-val="{{ true }}"><button class="sp-tip" data-tip="Dark" onClick="{{ onSet }}" data-field="theme" data-val="dark" style="position:relative;width:34px;height:30px;border:none;cursor:pointer;border-radius:8px;background:var(--sp-seg-on-bg);display:grid;place-items:center;color:var(--sp-seg-on-text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="transform:rotate(180deg)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></sc-if>
+              <sc-if value="{{ themeDarkOff }}" hint-placeholder-val="{{ false }}"><button class="sp-tip" data-tip="Dark" onClick="{{ onSet }}" data-field="theme" data-val="dark" style="position:relative;width:34px;height:30px;border:none;cursor:pointer;border-radius:8px;background:transparent;display:grid;place-items:center;color:var(--sp-faint);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="transform:rotate(180deg)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></sc-if>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--sp-line,#E3E1D9);">
+          <div>
+            <div style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">Show session dots</div>
+            <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--sp-faint,#878D93);margin-top:2px;">The little round-progress markers.</div>
+          </div>
+          <button onClick="{{ onToggle }}" data-k="showDots" style="position:relative;width:40px;height:23px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.showDots }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--sp-teal,#0F5E57);"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface,#FCFCFA);box-shadow:0 1px 2px rgba(0,0,0,.22);transform:translateX(17px);display:block;"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.showDots }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--sp-border,#CFCDC4);"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface,#FCFCFA);box-shadow:0 1px 2px rgba(0,0,0,.22);display:block;"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="margin-bottom:24px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Timer style</div>
+          <div style="display:flex;gap:10px;">
+            <button onClick="{{ onStyleCircular }}" style="position:relative;flex:1;border:1.5px solid var(--sp-border,#E3E1D9);background:var(--sp-surface,#FCFCFA);border-radius:12px;padding:22px 10px 18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .15s;">
+              <sc-if value="{{ styleCircularSel }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--sp-teal,#0F5E57);border-radius:12px;background:var(--sp-tint,#E4EEEC);z-index:0;"></span></sc-if>
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="position:relative;z-index:1;"><circle cx="15" cy="15" r="11" stroke="var(--sp-border,#CFCDC4)" stroke-width="2.4" opacity="0.3"></circle><path d="M15 4 a11 11 0 0 1 9.5 16.5" stroke="var(--sp-teal,#0F5E57)" stroke-width="2.4" stroke-linecap="round"></path></svg>
+              <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--sp-body,#23262B);">Circular</span>
+            </button>
+            <button onClick="{{ onStyleOutline }}" style="position:relative;flex:1;border:1.5px solid var(--sp-border,#E3E1D9);background:var(--sp-surface,#FCFCFA);border-radius:12px;padding:22px 10px 18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .15s;">
+              <sc-if value="{{ styleOutlineSel }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--sp-teal,#0F5E57);border-radius:12px;background:var(--sp-tint,#E4EEEC);z-index:0;"></span></sc-if>
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="position:relative;z-index:1;"><path d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4" stroke="var(--sp-teal,#0F5E57)" stroke-width="2.4" stroke-linecap="round"></path></svg>
+              <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--sp-body,#23262B);">Notch-outline</span>
+            </button>
+            <button onClick="{{ onStyleBar }}" style="position:relative;flex:1;border:1.5px solid var(--sp-border,#E3E1D9);background:var(--sp-surface,#FCFCFA);border-radius:12px;padding:22px 10px 18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .15s;">
+              <sc-if value="{{ styleBarSel }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--sp-teal,#0F5E57);border-radius:12px;background:var(--sp-tint,#E4EEEC);z-index:0;"></span></sc-if>
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="position:relative;z-index:1;"><rect x="4" y="12.5" width="22" height="5" rx="2.5" stroke="var(--sp-border,#CFCDC4)" stroke-width="2" opacity="0.3"></rect><rect x="4" y="12.5" width="13" height="5" rx="2.5" fill="var(--sp-teal,#0F5E57)"></rect></svg>
+              <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--sp-body,#23262B);">Progress bar</span>
+            </button>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Notch layout</div>
+          <div style="display:flex;gap:10px;">
+            <button onClick="{{ onLayoutSplit }}" style="position:relative;flex:1;border:1.5px solid var(--sp-border,#E3E1D9);background:var(--sp-surface,#FCFCFA);border-radius:12px;padding:20px 10px 16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .15s;">
+              <sc-if value="{{ layoutSplitSel }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--sp-teal,#0F5E57);border-radius:12px;background:var(--sp-tint,#E4EEEC);z-index:0;"></span></sc-if>
+              <svg width="42" height="22" viewBox="0 0 42 22" fill="none" style="position:relative;z-index:1;"><rect x="14" y="0" width="14" height="7" rx="2" fill="var(--sp-border,#CFCDC4)" opacity="0.5"></rect><circle cx="5" cy="14" r="3" fill="var(--sp-teal,#0F5E57)"></circle><rect x="28" y="11" width="10" height="4" rx="2" fill="var(--sp-teal,#0F5E57)"></rect></svg>
+              <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--sp-body,#23262B);">Split</span>
+            </button>
+            <button onClick="{{ onLayoutMinimal }}" style="position:relative;flex:1;border:1.5px solid var(--sp-border,#E3E1D9);background:var(--sp-surface,#FCFCFA);border-radius:12px;padding:20px 10px 16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .15s;">
+              <sc-if value="{{ layoutMinimalSel }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--sp-teal,#0F5E57);border-radius:12px;background:var(--sp-tint,#E4EEEC);z-index:0;"></span></sc-if>
+              <svg width="42" height="22" viewBox="0 0 42 22" fill="none" style="position:relative;z-index:1;"><rect x="14" y="0" width="14" height="7" rx="2" fill="var(--sp-border,#CFCDC4)" opacity="0.5"></rect><rect x="6" y="12" width="10" height="4" rx="2" fill="var(--sp-teal,#0F5E57)"></rect></svg>
+              <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--sp-body,#23262B);">Minimal</span>
+            </button>
+            <button onClick="{{ onLayoutCompact }}" style="position:relative;flex:1;border:1.5px solid var(--sp-border,#E3E1D9);background:var(--sp-surface,#FCFCFA);border-radius:12px;padding:20px 10px 16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .15s;">
+              <sc-if value="{{ layoutCompactSel }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--sp-teal,#0F5E57);border-radius:12px;background:var(--sp-tint,#E4EEEC);z-index:0;"></span></sc-if>
+              <svg width="42" height="22" viewBox="0 0 42 22" fill="none" style="position:relative;z-index:1;"><rect x="14" y="0" width="14" height="7" rx="2" fill="var(--sp-border,#CFCDC4)" opacity="0.5"></rect><circle cx="5" cy="14" r="3" fill="var(--sp-teal,#0F5E57)"></circle><circle cx="35" cy="14" r="3" fill="var(--sp-teal,#0F5E57)"></circle></svg>
+              <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--sp-body,#23262B);">Compact</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance right: colors + theme + dots -->
+      <div>
+        <!-- ALARM & SOUND -->
+        <div style="margin-bottom:22px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Alarm &amp; sound</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:13px;">
+            <sc-for list="{{ sounds }}" as="s" hint-placeholder-count="5"><button onClick="{{ s.onClick }}" style="{{ s.style }};"><span>{{ s.label }}</span></button></sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <svg width="17" height="15" viewBox="0 0 17 15" style="flex:0 0 auto;"><path d="M1 5 H4 L8 1.5 V13.5 L4 10 H1 Z" fill="var(--sp-muted,#565C63)"></path><path d="M11 4 a4 4 0 0 1 0 7 M13 2 a7 7 0 0 1 0 11" fill="none" stroke="var(--sp-faint,#878D93)" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            <input type="range" min="0" max="100" value="{{ volume }}" onInput="{{ onVolume }}" class="sp-range" style="flex:1;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sp-muted,#565C63);min-width:34px;text-align:right;">{{ volume }}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--sp-line,#E3E1D9);margin-bottom:11px;">
+            <div>
+              <div style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">Ticking sound</div>
+              <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--sp-faint,#878D93);margin-top:2px;">A soft tick each second while focusing</div>
+            </div>
+            <button onClick="{{ onTick }}" style="position:relative;width:40px;height:23px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+              <sc-if value="{{ tickOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--sp-teal,#0F5E57);"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface,#FCFCFA);box-shadow:0 1px 2px rgba(0,0,0,.22);transform:translateX(17px);display:block;"></span></span></sc-if>
+              <sc-if value="{{ tickOff }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--sp-border,#CFCDC4);"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface,#FCFCFA);box-shadow:0 1px 2px rgba(0,0,0,.22);display:block;"></span></span></sc-if>
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:11px;border-top:1px solid var(--sp-line,#E3E1D9);">
+            <div>
+              <div style="font-family:'Inter',sans-serif;font-size:13.5px;color:var(--sp-body,#23262B);">System notification on finish</div>
+              <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--sp-faint,#878D93);margin-top:2px;">Banner in Notification Center when a block ends.</div>
+            </div>
+            <button onClick="{{ onToggle }}" data-k="notify" style="position:relative;width:40px;height:23px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+              <sc-if value="{{ flags.notify }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--sp-teal,#0F5E57);"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface,#FCFCFA);box-shadow:0 1px 2px rgba(0,0,0,.22);transform:translateX(17px);display:block;"></span></span></sc-if>
+              <sc-if value="{{ flagsOff.notify }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--sp-border,#CFCDC4);"><span style="position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface,#FCFCFA);box-shadow:0 1px 2px rgba(0,0,0,.22);display:block;"></span></span></sc-if>
+            </button>
+          </div>
+        </div>
+        <!-- ALARM ANIMATION -->
+        <div style="margin-bottom:22px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sp-faint,#878D93);margin-bottom:11px;font-weight:500;">Done&nbsp;<span style="color: var(--sp-faint,#878D93); letter-spacing: 0.14em;">ANIMATION</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px;">
+            <sc-for list="{{ ripples }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.onClick }}" style="{{ r.style }};"><span>{{ r.label }}</span></button></sc-for>
+          </div>
+          <div style="height:64px;background:#1E211C;border-radius:10px;display:grid;place-items:center;overflow:hidden;">
+            <dc-import name="RippleConcept" variant="{{ ripple }}" hint-size="170px,46px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:880,&quot;height&quot;:780}}">
+class Component extends DCLogic {
+  state = {
+    tab:'general',
+    preset:'classic',
+    cFocus:25, cShort:5, cLong:15, cSessions:4,
+    timerStyle:'circular', layout:'split',
+    accent:'teal', theme:'dark',
+    ripple:'burst', sound:'chime', volume:70, tick:false,
+    autoStart:true, dnd:true, launchLogin:false, messages:true,
+    hideShare:false, pauseIdle:true, notify:true, showDots:true, dailyGoal:8
+  };
+
+  set(k,v){ this.setState({[k]:v}); }
+  bump(k,delta,min,max){ this.setState(s=>({[k]:Math.max(min,Math.min(max,s[k]+delta))})); }
+  onToggle = (e) => { const k=e.currentTarget.dataset.k; this.setState(s=>({[k]:!s[k]})); };
+  onTick = () => this.set('tick',!this.state.tick);
+
+  _resolvedTheme(t){
+    if(t==='system') return window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+    return t||'dark';
+  }
+  _applyTheme(){
+    const s=this.state;
+    const resolved=this._resolvedTheme(s.theme);
+    const dark=resolved==='dark';
+    const ACC={ teal:'#8FC8C0', clay:'#E2A24A', blue:'#6F9CEB', violet:'#A88BE0', rose:'#E08AA6', green:'#84B26A' };
+    const accentColor=ACC[s.accent||'teal'];
+    const tok=this.tokens(resolved);
+    const css='.sp-root{'
+      +Object.entries(tok).map(([k,v])=>k+':'+v).join(';')
+      +';--sp-pv-text:'+(dark?'#F2F1EC':'#17191D')
+      +';--sp-pv-bg:'+(dark?'#17191D':'#F2F1EC')
+      +';--sp-pv-track:'+(dark?'rgba(242,241,236,0.15)':'rgba(23,25,29,0.13)')
+      +';--sp-pv-accent:'+accentColor
+      +';--sp-pv-icon:'+(dark?accentColor:'#1A1C1F')
+      +'}';
+    let el=document.getElementById('sp-theme');
+    if(!el){el=document.createElement('style');el.id='sp-theme';document.head.appendChild(el);}
+    el.textContent=css;
+  }
+  componentDidMount(){ this._applyTheme(); }
+  componentDidUpdate(){ this._applyTheme(); }
+  componentWillUnmount(){ const el=document.getElementById('sp-theme'); if(el)el.remove(); }
+
+  tokens(theme){
+    if(theme==='dark') return {
+      '--sp-bg':'#212429','--sp-surface':'#191B1F','--sp-field':'#2A2E34',
+      '--sp-text':'#F2F1EC','--sp-body':'rgba(242,241,236,0.9)','--sp-muted':'rgba(242,241,236,0.62)',
+      '--sp-faint':'rgba(242,241,236,0.42)','--sp-line':'rgba(242,241,236,0.08)',
+      '--sp-border':'rgba(242,241,236,0.14)','--sp-teal':'#8FC8C0',
+      '--sp-tint':'rgba(143,200,192,0.14)','--sp-chip-on-bg':'rgba(143,200,192,0.16)',
+      '--sp-chip-on-text':'#8FC8C0','--sp-chip-on-border':'#8FC8C0',
+      '--sp-seg-on-bg':'#8FC8C0','--sp-seg-on-text':'#17191D'
+    };
+    return {
+      '--sp-bg':'#F5F5F1','--sp-surface':'#FCFCFA','--sp-field':'#F5F5F1',
+      '--sp-text':'#17191D','--sp-body':'#23262B','--sp-muted':'#565C63',
+      '--sp-faint':'#878D93','--sp-line':'#E3E1D9','--sp-border':'#CFCDC4',
+      '--sp-teal':'#0F5E57','--sp-tint':'#E4EEEC',
+      '--sp-chip-on-bg':'#E4EEEC','--sp-chip-on-text':'#0F5E57','--sp-chip-on-border':'#0F5E57',
+      '--sp-seg-on-bg':'#0F5E57','--sp-seg-on-text':'#F2F1EC'
+    };
+  }
+
+  seg(on){ return "flex:1;text-align:center;border:none;cursor:pointer;padding:9px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.03em;transition:all .15s;background:"+(on?'var(--sp-seg-on-bg)':'transparent')+";color:"+(on?'var(--sp-seg-on-text)':'var(--sp-muted)'); }
+  segSm(on){ return "border:none;cursor:pointer;padding:7px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.04em;transition:all .15s;background:"+(on?'var(--sp-seg-on-bg)':'transparent')+";color:"+(on?'var(--sp-seg-on-text)':'var(--sp-muted)'); }
+  chip(on){ return "border:1px solid "+(on?'var(--sp-chip-on-border)':'var(--sp-border)')+";background:"+(on?'var(--sp-chip-on-bg)':'transparent')+";color:"+(on?'var(--sp-chip-on-text)':'var(--sp-muted)')+";cursor:pointer;padding:7px 14px;border-radius:999px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:"+(on?600:500)+";transition:all .15s"; }
+  togTrack(on){ return "width:40px;height:23px;border-radius:999px;border:none;cursor:pointer;position:relative;padding:0;flex:0 0 auto;background:"+(on?'var(--sp-teal)':'var(--sp-border)')+";transition:background .18s"; }
+  togKnob(on){ return "position:absolute;top:3px;left:"+(on?'20':'3')+"px;width:17px;height:17px;border-radius:50%;background:var(--sp-surface);transition:left .18s;display:block;box-shadow:0 1px 2px rgba(0,0,0,.22)"; }
+
+  renderVals(){
+    const s=this.state;
+    const resolved=this._resolvedTheme(s.theme);
+    const dark=resolved==='dark';
+    const ACC={ teal:'#8FC8C0', clay:'#E2A24A', blue:'#6F9CEB', violet:'#A88BE0', rose:'#E08AA6', green:'#84B26A' };
+    const PT={ classic:{f:25,s:5,l:15,n:4}, focus:{f:50,s:10,l:20,n:4} };
+    const eff = s.preset==='custom' ? {f:s.cFocus,s:s.cShort,l:s.cLong,n:s.cSessions} : PT[s.preset];
+
+    const PRESET_VALS={classic:{cFocus:25,cShort:5,cLong:15},focus:{cFocus:50,cShort:10,cLong:20}};
+    const presets=[['classic','Classic'],['focus','Focus'],['custom','Custom']].map(([k,label])=>(
+      { label, style:this.seg(s.preset===k), onClick:()=>this.setState(PRESET_VALS[k]?{preset:k,...PRESET_VALS[k]}:{preset:k}) }
+    ));
+    const mk=(field,min,max,step,label,unit)=>({
+      label, value: s[field]+(unit?' '+unit:''),
+      dec:()=>this.setState(s2=>({[field]:Math.max(min,s2[field]-step),preset:'custom'})),
+      inc:()=>this.setState(s2=>({[field]:Math.min(max,s2[field]+step),preset:'custom'}))
+    });
+    const steppers=[
+      mk('cFocus',5,180,5,'Focus','min'),
+      mk('cShort',1,60,1,'Short break','min'),
+      mk('cLong',5,60,5,'Long break','min'),
+      mk('cSessions',2,8,1,'Sessions until long break','')
+    ];
+
+    const accents=Object.keys(ACC).map(k=>{
+      const on=s.accent===k, c=ACC[k];
+      return { key:k, onClick:()=>this.set('accent',k),
+        style:"width:26px;height:26px;border-radius:50%;background:"+c+";cursor:pointer;border:none;padding:0;box-shadow:"+(on?'0 0 0 2px var(--sp-surface), 0 0 0 3.5px '+c:'inset 0 0 0 1px rgba(0,0,0,0.12)')+";transition:box-shadow .15s" };
+    });
+    const themes=[['light','Light'],['dark','Dark'],['system','System']].map(([k,label])=>(
+      { label, style:this.segSm(s.theme===k), onClick:()=>this.set('theme',k) }
+    ));
+    const sounds=[['chime','Chime'],['bell','Bell'],['marimba','Marimba'],['digital','Digital'],['custom','Custom…']].map(([k,label])=>(
+      { label, style:this.chip(s.sound===k), onClick:()=>this.set('sound',k) }
+    ));
+    const ripples=[['burst','Burst'],['echo','Echo'],['heartbeat','Heartbeat'],['bloom','Bloom']].map(([k,label])=>(
+      { label, style:this.chip(s.ripple===k), onClick:()=>this.set('ripple',k) }
+    ));
+    const behaviors=[
+      ['autoStart','Auto-start next session','Begin the next focus or break automatically'],
+      ['dnd','Do Not Disturb in focus','Silence other notifications while the timer runs'],
+      ['launchLogin','Launch at login','Open Pomodoro when your Mac starts up'],
+      ['messages','Motivational messages','Show an encouraging line in the expanded panel'],
+      ['hideShare','Hide during screen sharing','Auto-conceal while presenting or recording.'],
+      ['pauseIdle','Pause when Mac is idle','Stop the clock if you step away or lock the screen.']
+    ].map(([k,label,desc])=>(
+      { label, desc, track:this.togTrack(s[k]), knob:this.togKnob(s[k]), onClick:()=>this.set(k,!s[k]) }
+    ));
+
+    const flagKeys=['showDots','notify'];
+    const flags={}, flagsOff={};
+    flagKeys.forEach(k=>{ flags[k]=!!s[k]; flagsOff[k]=!s[k]; });
+
+    const tabColor = (active) => active ? 'var(--sp-text,#17191D)' : 'var(--sp-muted,#565C63)';
+
+    return {
+      isTimer: s.tab==='general', isAppearance: s.tab==='preferences',
+      onTabTimer: ()=>this.set('tab','general'),
+      onTabAppearance: ()=>this.set('tab','preferences'),
+      tabTimerColor: tabColor(s.tab==='general'),
+      tabAppearanceColor: tabColor(s.tab==='preferences'),
+      presetClassicSel: s.preset==='classic', presetClassicOff: s.preset!=='classic',
+      presetFocusSel: s.preset==='focus', presetFocusOff: s.preset!=='focus',
+      presetCustomSel: s.preset==='custom', presetCustomOff: s.preset!=='custom',
+      onPresetClassic: ()=>this.setState({preset:'classic',cFocus:25,cShort:5,cLong:15}),
+      onPresetFocus: ()=>this.setState({preset:'focus',cFocus:50,cShort:10,cLong:20}),
+      onPresetCustom: ()=>this.set('preset','custom'),
+      steppers,
+      styleCircularSel:s.timerStyle==='circular', styleOutlineSel:s.timerStyle==='outline', styleBarSel:s.timerStyle==='bar',
+      onStyleCircular:()=>this.set('timerStyle','circular'),
+      onStyleOutline:()=>this.set('timerStyle','outline'),
+      onStyleBar:()=>this.set('timerStyle','bar'),
+      layoutSplitSel:s.layout==='split', layoutMinimalSel:s.layout==='minimal', layoutCompactSel:s.layout==='compact',
+      onLayoutSplit:()=>this.set('layout','split'),
+      onLayoutMinimal:()=>this.set('layout','minimal'),
+      onLayoutCompact:()=>this.set('layout','compact'),
+      themeSystemSel:s.theme==='system', themeSystemOff:s.theme!=='system',
+      themeLightSel:s.theme==='light', themeLightOff:s.theme!=='light',
+      themeDarkSel:s.theme==='dark', themeDarkOff:s.theme!=='dark',
+      accents, sounds, ripples, behaviors, flags, flagsOff,
+      ripple:s.ripple,
+      volume:s.volume, onVolume:(e)=>this.set('volume',parseInt(e.target.value,10)),
+      tickOn:s.tick, tickOff:!s.tick, onTick:this.onTick, onToggle:this.onToggle,
+      dailyGoal:s.dailyGoal,
+      decGoal:()=>this.bump('dailyGoal',-1,1,20),
+      incGoal:()=>this.bump('dailyGoal',1,1,20)
+    };
+  }
+}
+</script>
+<script>
+(async () => {
+  if (!document.title || !document.title.trim()) document.title = "SettingsPanel";
+  // Prepend so page-supplied @page / break rules (deck-stage's margin:0,
+  // author CSS) keep source-order precedence over the baseline.
+  const baseCss = document.createElement('style');
+  baseCss.textContent = "@media print {\n  figure, table { break-inside: avoid; }\n  *, *::before, *::after {\n    print-color-adjust: exact; -webkit-print-color-adjust: exact;\n    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\n    animation-delay: -99s !important; animation-duration: .001s !important;\n    animation-iteration-count: 1 !important; animation-fill-mode: both !important;\n    animation-play-state: running !important; transition-duration: 0s !important;\n  }\n}";
+  document.head.prepend(baseCss);
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  let ds = document.querySelector('deck-stage');
+  // whenDefined never resolves when nothing registers the element, so only
+  // await it when a <deck-stage> tag exists (and race a timeout regardless).
+  if (ds && !customElements.get('deck-stage')) {
+    try {
+      await Promise.race([
+        customElements.whenDefined('deck-stage'),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {}
+    ds = document.querySelector('deck-stage');
+  }
+  // dc-runtime assigns window.DCLogic at init and mounts into #dc-root on
+  // DOMContentLoaded; settle on that subtree so React has rendered before
+  // print(). Non-DC pages fall through to weighing body.
+  const isDc = !ds && 'DCLogic' in window;
+  const settleRoot = ds || (isDc ? document.getElementById('dc-root') : null) || document.body;
+  if (settleRoot) {
+    // Weigh only content children — skip script/style/template so inline
+    // Babel/CSS doesn't register as stable "content" before the framework
+    // has mounted anything.
+    const MEDIA = 'img,svg,canvas,video,picture,iframe,embed,object';
+    const weigh = () => {
+      let text = 0, media = 0;
+      for (const c of settleRoot.children) {
+        const t = c.tagName;
+        if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+        text += (c.textContent || '').trim().length;
+        media += c.querySelectorAll(MEDIA).length + (c.matches(MEDIA) ? 1 : 0);
+      }
+      return text + media * 100;
+    };
+    // "Non-zero and stable" alone is not sufficient to mean rendered: generic
+    // body can carry a static shell while async main content is pending, and
+    // #dc-root can carry the root DC's static text while child refs are still
+    // .sc-placeholder boxes. Gate generic on readyState 'complete', and never
+    // accept stability while a dc-runtime placeholder is present.
+    const isGeneric = settleRoot === document.body;
+    const deadline = Date.now() + 15000;
+    let last = -1, stable = 0;
+    while (Date.now() < deadline) {
+      const n = weigh();
+      const ready =
+        (!isGeneric || document.readyState === 'complete') &&
+        !settleRoot.querySelector('.sc-placeholder');
+      if (n > 0 && n === last && ready) { if (++stable >= 2) break; } else { stable = 0; }
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+  // Reveal content gated on scroll or visibility before printing. Lazy <img>,
+  // IntersectionObserver fade-ins, and collapsed <details> don't render while
+  // off-screen, so a long page would print with them blank or closed. Open
+  // every <details>, force native-lazy images eager, and scroll the document
+  // through its full height to trip lazy-load + IO; then wait (bounded) for the
+  // newly-triggered images. Inert for deck-stage (slides aren't scroll-gated).
+  try {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+    for (const img of document.querySelectorAll('img[loading="lazy"]'))
+      img.loading = 'eager';
+    const scroller = document.scrollingElement || document.documentElement;
+    const full = Math.max(scroller.scrollHeight, document.body.scrollHeight);
+    const step = window.innerHeight || 800;
+    for (let y = 0; y <= full; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.scrollTo(0, 0);
+    await Promise.race([
+      Promise.all(
+        [...document.images].map((img) =>
+          img.complete
+            ? null
+            : new Promise((res) => {
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+              })
+        )
+      ),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+  } catch (e) {}
+  try { await document.fonts.ready; } catch (e) {}
+  // Jump every animation to its end state so print() never captures a slide
+  // mid-entrance. Ordering matters: the 0s-transition style must be live
+  // BEFORE data-deck-active is set so attribute-keyed transitions don't
+  // start a (now-0s) run from the pre-active base.
+  const st = document.createElement('style');
+  st.textContent = '*,*::before,*::after{animation-delay:-99s !important;animation-duration:.001s !important;animation-iteration-count:1 !important;animation-fill-mode:both !important;animation-play-state:running !important;transition-duration:0s !important}';
+  document.head.appendChild(st);
+  for (const d of document.querySelectorAll('deck-stage')) {
+    for (const c of d.children) {
+      const t = c.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+      c.setAttribute('data-deck-active', '');
+    }
+  }
+  // Re-append deck-stage's @page last so no author @page can add a margin and
+  // spill each full-bleed slide onto two sheets. Backstop for old copies.
+  if (ds) {
+    let pg = document.getElementById('deck-stage-print-page');
+    if (!pg) {
+      pg = document.createElement('style');
+      pg.textContent = '@page{size:' + (+ds.getAttribute('width') || 1920) +
+        'px ' + (+ds.getAttribute('height') || 1080) + 'px;margin:0}';
+    }
+    document.body.appendChild(pg);
+  }
+  try {
+    const sweep = () => {
+      for (const a of document.getAnimations()) {
+        try { a.finish(); } catch (e) {
+          try { a.currentTime = (a.effect && a.effect.getComputedTiming().duration) || 0; a.pause(); } catch (e2) {}
+        }
+      }
+    };
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+  } catch (e) {}
+  // Size the PDF page to the rendered design unless the file opted into
+  // standard paper via @page{size:letter|A4|…}. Decks own their own @page.
+  var __m = null;
+  try { __m = (() => {
+  var docEl = document.documentElement;
+  var doc = { width: docEl.scrollWidth, height: docEl.scrollHeight };
+
+  var ds = document.querySelector('deck-stage');
+  if (ds) {
+    var dw = Number(ds.getAttribute('width')) || 1920;
+    var dh = Number(ds.getAttribute('height')) || 1080;
+    var n = typeof ds.length === 'number' ? ds.length : ds.children.length;
+    var idx = typeof ds.index === 'number' ? ds.index : 0;
+    var frames = [];
+    for (var i = 0; i < n; i++) frames.push({ left: 0, top: 0, width: dw, height: dh });
+    return { kind: 'deck', doc: doc, frames: frames,
+      authored: frames.map(function(){return{width:true,height:true}}),
+      deck: { width: dw, height: dh, slideCount: n, index: idx },
+      signals: { paperPage: false, pxPage: false } };
+  }
+
+  var paperPage = false, pxPage = false;
+  var eachRule = function (fn) {
+    for (var s = 0; s < document.styleSheets.length; s++) {
+      var rs; try { rs = document.styleSheets[s].cssRules; } catch (e) { continue; }
+      for (var r = 0; r < rs.length; r++) {
+        fn(rs[r]);
+        if (rs[r].cssRules) for (var n = 0; n < rs[r].cssRules.length; n++) fn(rs[r].cssRules[n]);
+      }
+    }
+  };
+  eachRule(function (r) {
+    if (r.type !== 6) return;
+    var m = /\bsize\s*:\s*([^;}]+)/i.exec(r.cssText || '');
+    if (!m) return;
+    if (/\b(letter|a[3-5]|legal|ledger)\b/i.test(m[1])) paperPage = true;
+    if (/\d+(?:\.\d+)?px\b/i.test(m[1])) pxPage = true;
+  });
+  var signals = { paperPage: paperPage, pxPage: pxPage };
+
+  if (paperPage) {
+    return { kind: 'paper-doc', doc: doc, signals: signals,
+      frames: [{ left: 0, top: 0, width: doc.width, height: doc.height }],
+      authored: [{ width: false, height: false }] };
+  }
+
+  var pxVal = function (v) {
+    var m = /^(\d+(?:\.\d+)?)px$/.exec(v || ''); return m ? +m[1] : 0;
+  };
+  var authoredPx = function (el, prop) {
+    if (pxVal(el.style[prop])) return true;
+    var attr = el.getAttribute(prop);
+    if (attr && /^\d+$/.test(attr)) return true;
+    var hit = false;
+    eachRule(function (r) {
+      if (hit || r.type !== 1 || !r.style) return;
+      try { if (el.matches(r.selectorText) && pxVal(r.style[prop])) hit = true; } catch (e) {}
+    });
+    return hit;
+  };
+
+  var el = document.body;
+  for (;;) {
+    var kids = [];
+    for (var c = 0; c < el.children.length; c++) {
+      var t = el.children[c].tagName;
+      if (t !== 'SCRIPT' && t !== 'STYLE' && t !== 'TEMPLATE') kids.push(el.children[c]);
+    }
+    if (kids.length !== 1 || !(kids[0] instanceof HTMLElement)) break;
+    el.setAttribute('data-om-frame-wrap', '');
+    el = kids[0];
+    if (authoredPx(el, 'width')) break;
+  }
+
+  var sx = window.scrollX || 0, sy = window.scrollY || 0;
+  var rectOf = function (e) {
+    var r = e.getBoundingClientRect();
+    var oy; try { oy = getComputedStyle(e).overflowY; } catch (err) {}
+    var h = oy === 'visible' ? Math.max(r.height, e.scrollHeight || 0) : r.height;
+    return { left: r.left + sx, top: r.top + sy, width: r.width, height: h };
+  };
+
+  // Multi-frame: ≥2 visible non-fixed children, each with authored px width
+  // AND height, all within ±2px of each other. Off unless the page opts in
+  // via data-om-multi-frame on the stop element — guards against card grids
+  // and pricing tables that match the geometry but aren't separate canvases.
+  if (el.hasAttribute('data-om-multi-frame')) {
+    var cands = [];
+    for (var k = 0; k < el.children.length; k++) {
+      var ch = el.children[k];
+      var cs; try { cs = getComputedStyle(ch); } catch (e) { continue; }
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position === 'fixed') continue;
+      var rc = rectOf(ch);
+      if (rc.width < 2 || rc.height < 2) continue;
+      if (!authoredPx(ch, 'width') || !authoredPx(ch, 'height')) continue;
+      cands.push(rc);
+    }
+    if (cands.length >= 2) {
+      var w0 = cands[0].width, h0 = cands[0].height, ok = true;
+      for (var q = 1; q < cands.length; q++)
+        if (Math.abs(cands[q].width - w0) > 2 || Math.abs(cands[q].height - h0) > 2) ok = false;
+      if (ok) return { kind: 'multi-frame', doc: doc, signals: signals,
+        frames: cands, authored: cands.map(function(){return{width:true,height:true}}) };
+    }
+  }
+
+  return { kind: 'single-canvas', doc: doc, signals: signals,
+    frames: [rectOf(el)],
+    authored: [{ width: authoredPx(el, 'width'), height: authoredPx(el, 'height') }] };
+})(); } catch (e) {}
+  var frame = null;
+  if (__m && __m.kind === 'single-canvas') {
+    var f = __m.frames && __m.frames[0];
+    if (f && f.width >= 200 && f.height >= 200) {
+      frame = f;
+      var fst = document.createElement('style');
+      fst.textContent = '@media print{@page{size:' + f.width + 'px ' + f.height +
+        'px;margin:0}html,body,[data-om-frame-wrap]{padding:0!important;' +
+        'margin:0!important;background:none!important}}';
+      document.body.appendChild(fst);
+    }
+  }
+  // Relax break-inside on oversized elements. An element taller than a
+  // printable page can't honor break-inside: avoid — browsers either overflow
+  // it or push it whole to the next page, leaving a blank gap, then break it
+  // anyway at an arbitrary point. After the final layout (content revealed,
+  // animations jumped), find elements taller than a page that still compute
+  // break-inside: avoid and reset them to auto, so the browser breaks them at
+  // their children's boundaries instead (children keep their own avoid). PAGE_PX
+  // is a conservative portrait estimate at 96 CSS px/in — Letter/A4 usable
+  // height minus our 0.5in margins — so only clearly-oversized elements are
+  // touched and under-page elements still stay whole. Skipped for decks (slides
+  // are sized to the page) and for fixed-size canvases (frame set, or an author
+  // px-based @page) — runs as before for flowing docs on letter/A4.
+  try {
+    if (!ds && !frame && !(__m && __m.signals && __m.signals.pxPage)) {
+      const PAGE_PX = 1024;
+      // Our print defaults add a real @page margin only when the source has
+      // no @page of its own; computed style can't tell us (it reports screen
+      // media), so read the injected rule directly.
+      const defaults = document.querySelector('style[data-omelette-print-defaults]');
+      const pageInset = /@page\s*\{[^}]*margin/.test(defaults ? defaults.textContent || '' : '');
+      const SEL = 'section,article,figure,table,pre,blockquote,[class~="card" i],[class~="page" i],[class~="sheet" i]';
+      for (const el of document.body.querySelectorAll(SEL)) {
+        if (el instanceof HTMLElement && el.offsetHeight > PAGE_PX) {
+          el.setAttribute('data-om-oversized', '');
+          // Fake-paged docs simulate sheets with over-tall break-after:page
+          // boxes; honoring the break spills half-blank pages and ends a
+          // colored box mid-sheet. Flow them, and (only when we own the page
+          // inset) drop the redundant padding/background via the rule below.
+          const cs = getComputedStyle(el);
+          if (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always') {
+            el.setAttribute('data-om-fakepage', '');
+          }
+        }
+      }
+      const ost = document.createElement('style');
+      ost.textContent = '@media print{' +
+        '[data-om-oversized]{break-inside:auto !important;page-break-inside:auto !important}' +
+        '[data-om-fakepage]{break-after:auto !important;page-break-after:auto !important}' +
+        (pageInset ? '[data-om-fakepage]{padding:0 !important;background:none !important}' : '') +
+        '}';
+      document.head.appendChild(ost);
+    }
+  } catch (e) {}
+  // macOS Preview renders Skia-PDF Luminosity soft-masks as opaque grey boxes;
+  // swap the CSS that triggers them for Preview-safe forms.
+  try {
+    for (const el of document.body.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+
+      if (cs.boxShadow !== 'none' && cs.filter === 'none') {
+        const outs = [], kept = [];
+        for (const s of cs.boxShadow.split(/,(?![^(]*[)])/)) {
+          const t = s.trim();
+          const m = t.match(/^(rgba?[(][^)]+[)]) (-?[0-9.]+px) (-?[0-9.]+px) ([0-9.]+px) -?[0-9.]+px$/);
+          if (m && parseFloat(m[4]) > 0) outs.push('drop-shadow(' + m[2] + ' ' + m[3] + ' ' + m[4] + ' ' + m[1] + ')');
+          else kept.push(t);
+        }
+        if (outs.length) {
+          el.style.setProperty('filter', outs.join(' '), 'important');
+          el.style.setProperty('box-shadow', kept.join(', ') || 'none', 'important');
+        }
+      }
+
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage;
+      if (mask && mask !== 'none' && cs.filter === 'none') el.style.setProperty('filter', 'opacity(1)', 'important');
+    }
+  } catch (e) {}
+  setTimeout(() => { try { window.print(); } catch (e) {} }, 200);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+/* Folio — color tokens
+   A warm-paper editorial palette: cream neutrals, deep teal primary,
+   burnt-clay secondary. Base palette first, semantic aliases below. */
+:root {
+  /* ---- Base neutrals (warm paper) ---- */
+  --paper:        #F5F5F1; /* app background */
+  --paper-dim:    #EFEFE9; /* recessed background */
+  --card:         #FCFCFA; /* raised surface */
+  --ink:          #17191D; /* near-black, primary text & dark surfaces */
+  --ink-2:        #23262B; /* slightly lifted ink, body on cards */
+  --muted:        #565C63; /* secondary text */
+  --faint:        #878D93; /* tertiary text, captions */
+  --line:         #E3E1D9; /* hairline borders */
+  --line-strong:  #CFCDC4; /* stronger borders, dividers */
+
+  /* ---- Ink-surface (text/colors that sit on --ink) ---- */
+  --on-ink:       #F2F1EC; /* primary text on dark */
+  --on-ink-teal:  #8FC8C0; /* teal accent on dark */
+
+  /* ---- Teal (primary brand) ---- */
+  --teal:         #0F5E57; /* primary accent */
+  --teal-press:   #0B4842; /* pressed / darker */
+  --teal-soft:    #E4EEEC; /* tinted surface */
+  --teal-line:    rgba(15,94,87,0.22); /* teal divider on tinted bg */
+
+  /* ---- Clay (secondary brand) ---- */
+  --clay:         #9A5316; /* secondary accent, warnings/"don't" */
+  --clay-press:   #7C4211;
+  --clay-soft:    #F3E7DB;
+
+  /* ---- Semantic: surfaces ---- */
+  --surface-page:    var(--paper);
+  --surface-card:    var(--card);
+  --surface-sunken:  var(--paper-dim);
+  --surface-invert:  var(--ink);
+  --surface-accent:  var(--teal-soft);
+
+  /* ---- Semantic: text ---- */
+  --text-strong:   var(--ink);
+  --text-body:     var(--ink-2);
+  --text-muted:    var(--muted);
+  --text-faint:    var(--faint);
+  --text-invert:   var(--on-ink);
+  --text-accent:   var(--teal);
+
+  /* ---- Semantic: borders ---- */
+  --border-subtle: var(--line);
+  --border-strong: var(--line-strong);
+  --border-accent: var(--teal);
+
+  /* ---- Semantic: interactive ---- */
+  --action-primary:        var(--teal);
+  --action-primary-press:  var(--teal-press);
+  --action-secondary:      var(--clay);
+  --action-secondary-press:var(--clay-press);
+  --focus-ring:            rgba(15,94,87,0.35);
+}

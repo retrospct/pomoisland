@@ -1,0 +1,16 @@
+html,
+body.settings-body {
+  margin: 0;
+  padding: 0;
+  background: #191b1f;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+button {
+  font: inherit;
+}

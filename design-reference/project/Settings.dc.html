@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+</helmet>
+<div style="{{ windowStyle }};">
+
+  <!-- title bar -->
+  <div style="flex:0 0 auto;height:44px;display:flex;align-items:center;padding:0 16px;gap:14px;border-bottom:1px solid var(--s-line);background:var(--s-panel);">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="width:12px;height:12px;border-radius:999px;background:#ED6A5E;"></span>
+      <span style="width:12px;height:12px;border-radius:999px;background:#F4BF4F;"></span>
+      <span style="width:12px;height:12px;border-radius:999px;background:#61C554;"></span>
+    </div>
+    <div style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.13em;text-transform:uppercase;color:var(--s-faint);">Pomodoro · Settings</div>
+    <div style="width:54px;"></div>
+  </div>
+
+  <!-- body -->
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- sidebar -->
+    <div style="flex:0 0 188px;background:var(--s-panel);border-right:1px solid var(--s-line);padding:14px 12px;display:flex;flex-direction:column;gap:3px;">
+      <button onClick="{{ onSection }}" data-k="timer" style="position:relative;display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 11px;border-radius:9px;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;color:var(--s-text);">
+        <sc-if value="{{ navActive.timer }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:9px;background:var(--s-elev);box-shadow:inset 2px 0 0 var(--s-accent);z-index:0;"></span></sc-if>
+        <span style="position:relative;z-index:1;display:flex;align-items:center;gap:11px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Timer</span></span>
+      </button>
+      <button onClick="{{ onSection }}" data-k="sounds" style="position:relative;display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 11px;border-radius:9px;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;color:var(--s-text);">
+        <sc-if value="{{ navActive.sounds }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:9px;background:var(--s-elev);box-shadow:inset 2px 0 0 var(--s-accent);z-index:0;"></span></sc-if>
+        <span style="position:relative;z-index:1;display:flex;align-items:center;gap:11px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M17 8.5a4 4 0 0 1 0 7" stroke-linecap="round"></path></svg><span>Sounds &amp; Alerts</span></span>
+      </button>
+      <button onClick="{{ onSection }}" data-k="appearance" style="position:relative;display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 11px;border-radius:9px;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;color:var(--s-text);">
+        <sc-if value="{{ navActive.appearance }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:9px;background:var(--s-elev);box-shadow:inset 2px 0 0 var(--s-accent);z-index:0;"></span></sc-if>
+        <span style="position:relative;z-index:1;display:flex;align-items:center;gap:11px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 0 0 18c1.7 0 2-1.3 1-2.3-.8-.8-.3-2.2.8-2.2H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z"></path></svg><span>Appearance</span></span>
+      </button>
+      <button onClick="{{ onSection }}" data-k="behavior" style="position:relative;display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 11px;border-radius:9px;cursor:pointer;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;color:var(--s-text);">
+        <sc-if value="{{ navActive.behavior }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:9px;background:var(--s-elev);box-shadow:inset 2px 0 0 var(--s-accent);z-index:0;"></span></sc-if>
+        <span style="position:relative;z-index:1;display:flex;align-items:center;gap:11px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M5 12h14M5 17h14" stroke-linecap="round"></path><circle cx="9" cy="7" r="2.2" fill="var(--s-panel)"></circle><circle cx="15" cy="17" r="2.2" fill="var(--s-panel)"></circle></svg><span>Behavior</span></span>
+      </button>
+      <div style="flex:1;"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;color:var(--s-faint);padding:8px 10px;">v1.0 · 4 sessions / round</div>
+    </div>
+
+    <!-- content -->
+    <div style="flex:1;min-width:0;overflow:auto;padding:24px 28px 30px;background:var(--s-bg);">
+
+      <!-- ===== TIMER ===== -->
+      <sc-if value="{{ isTimer }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:10px;">Preset</div>
+        <div style="display:flex;gap:3px;background:var(--s-elev);padding:3px;border-radius:11px;margin-bottom:8px;">
+          <sc-for list="{{ presets }}" as="pr" hint-placeholder-count="3">
+            <button onClick="{{ onPreset }}" data-k="{{ pr.k }}" style="{{ pr.style }};">{{ pr.label }}<span style="opacity:.6;font-size:10px;">{{ pr.detail }}</span></button>
+          </sc-for>
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-bottom:18px;">{{ presetHint }}</div>
+
+        <div style="display:flex;gap:12px;margin-bottom:22px;">
+          <div style="flex:1;background:var(--s-elev);border:1px solid var(--s-line);border-radius:13px;padding:15px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--s-sub);margin-bottom:9px;">Focus</div>
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:500;color:var(--s-text);line-height:1;">{{ focusMin }}</span><span style="font-family:'Inter',sans-serif;font-size:12px;color:var(--s-faint);">min</span></div>
+            <sc-if value="{{ editable }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;margin-top:12px;"><button onClick="{{ onStep }}" data-field="focusMin" data-dir="-1" style="{{ stepStyle }};">&minus;</button><button onClick="{{ onStep }}" data-field="focusMin" data-dir="1" style="{{ stepStyle }};">+</button></div></sc-if>
+          </div>
+          <div style="flex:1;background:var(--s-elev);border:1px solid var(--s-line);border-radius:13px;padding:15px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--s-sub);margin-bottom:9px;">Short break</div>
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:500;color:var(--s-text);line-height:1;">{{ shortMin }}</span><span style="font-family:'Inter',sans-serif;font-size:12px;color:var(--s-faint);">min</span></div>
+            <sc-if value="{{ editable }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;margin-top:12px;"><button onClick="{{ onStep }}" data-field="shortMin" data-dir="-1" style="{{ stepStyle }};">&minus;</button><button onClick="{{ onStep }}" data-field="shortMin" data-dir="1" style="{{ stepStyle }};">+</button></div></sc-if>
+          </div>
+          <div style="flex:1;background:var(--s-elev);border:1px solid var(--s-line);border-radius:13px;padding:15px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--s-sub);margin-bottom:9px;">Long break</div>
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:500;color:var(--s-text);line-height:1;">{{ longMin }}</span><span style="font-family:'Inter',sans-serif;font-size:12px;color:var(--s-faint);">min</span></div>
+            <sc-if value="{{ editable }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;margin-top:12px;"><button onClick="{{ onStep }}" data-field="longMin" data-dir="-1" style="{{ stepStyle }};">&minus;</button><button onClick="{{ onStep }}" data-field="longMin" data-dir="1" style="{{ stepStyle }};">+</button></div></sc-if>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Long break after</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Focus sessions before the longer rest.</div></div>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto;"><button onClick="{{ onStep }}" data-field="longEvery" data-dir="-1" style="{{ stepStyle }};">&minus;</button><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--s-text);min-width:48px;text-align:center;">{{ longEvery }}<span style="font-size:11px;color:var(--s-faint);"> ses</span></span><button onClick="{{ onStep }}" data-field="longEvery" data-dir="1" style="{{ stepStyle }};">+</button></div>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin:18px 0 4px;">Automation</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Auto-start breaks</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">When focus ends, the break begins on its own.</div></div>
+          <button onClick="{{ onToggle }}" data-k="autoBreak" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.autoBreak }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.autoBreak }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Auto-start next focus</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Roll straight into the next session after a break.</div></div>
+          <button onClick="{{ onToggle }}" data-k="autoFocus" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.autoFocus }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.autoFocus }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== SOUNDS ===== -->
+      <sc-if value="{{ isSounds }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:10px;">Alarm sound</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:20px;">
+          <sc-for list="{{ alarms }}" as="a" hint-placeholder-count="5">
+            <button onClick="{{ onSet }}" data-field="alarm" data-val="{{ a.k }}" style="{{ a.row }};">
+              <span style="display:flex;align-items:center;gap:11px;">
+                <span style="{{ a.dot }};"><span style="{{ a.dotIn }};"></span></span>
+                <span style="font-family:'Inter',sans-serif;font-size:13px;color:var(--s-text);">{{ a.label }}</span>
+              </span>
+              <span style="display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:var(--s-elev);"><svg width="9" height="10" viewBox="0 0 9 10"><path d="M1 1 L8 5 L1 9 Z" fill="var(--s-sub)"></path></svg></span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid var(--s-line);">
+          <div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);flex:0 0 auto;">Volume</div>
+          <div style="display:flex;align-items:center;gap:12px;flex:1;max-width:260px;"><input type="range" min="0" max="100" value="{{ volume }}" onChange="{{ onVol }}" style="flex:1;accent-color:var(--s-accent);height:4px;cursor:pointer;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--s-sub);min-width:34px;text-align:right;">{{ volume }}</span></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Ticking while focusing</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">A soft clock tick for presence. Off by default.</div></div>
+          <button onClick="{{ onToggle }}" data-k="tickOn" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.tickOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.tickOn }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin:20px 0 10px;">Completion animation</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+          <sc-for list="{{ animations }}" as="an" hint-placeholder-count="5">
+            <button onClick="{{ onSet }}" data-field="anim" data-val="{{ an.k }}" style="{{ an.chip }};"><span style="{{ an.swatch }};"></span>{{ an.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);margin-top:12px;">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">System notification on finish</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Banner in Notification Center when a block ends.</div></div>
+          <button onClick="{{ onToggle }}" data-k="notify" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.notify }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.notify }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== APPEARANCE ===== -->
+      <sc-if value="{{ isAppearance }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:10px;">Theme</div>
+        <div style="display:flex;gap:3px;background:var(--s-elev);padding:3px;border-radius:11px;margin-bottom:20px;max-width:320px;">
+          <sc-for list="{{ themes }}" as="th" hint-placeholder-count="3">
+            <button onClick="{{ onSet }}" data-field="theme" data-val="{{ th.k }}" style="{{ th.style }};">{{ th.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:12px;">Accent</div>
+        <div style="display:flex;gap:13px;margin-bottom:22px;">
+          <sc-for list="{{ accents }}" as="ac" hint-placeholder-count="6">
+            <button onClick="{{ onSet }}" data-field="accent" data-val="{{ ac.c }}" title="{{ ac.k }}" style="{{ ac.style }};"></button>
+          </sc-for>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:11px;">Timer style</div>
+        <div style="display:flex;gap:9px;margin-bottom:22px;">
+          <button onClick="{{ onSet }}" data-field="timerType" data-val="circular" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;border-radius:11px;cursor:pointer;border:1.5px solid var(--s-line);background:transparent;">
+            <sc-if value="{{ ttSel.circular }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--s-accent);border-radius:11px;background:var(--s-elev);z-index:0;"></span></sc-if>
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="position:relative;z-index:1;"><circle cx="15" cy="15" r="11" stroke="var(--s-sub)" stroke-width="2.4" opacity="0.3"></circle><path d="M15 4 a11 11 0 0 1 9.5 16.5" stroke="var(--s-accent)" stroke-width="2.4" stroke-linecap="round"></path></svg>
+            <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;color:var(--s-text);">Circular</span>
+          </button>
+          <button onClick="{{ onSet }}" data-field="timerType" data-val="outline" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;border-radius:11px;cursor:pointer;border:1.5px solid var(--s-line);background:transparent;">
+            <sc-if value="{{ ttSel.outline }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--s-accent);border-radius:11px;background:var(--s-elev);z-index:0;"></span></sc-if>
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="position:relative;z-index:1;"><path d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4" stroke="var(--s-accent)" stroke-width="2.4" stroke-linecap="round"></path></svg>
+            <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;color:var(--s-text);">Notch outline</span>
+          </button>
+          <button onClick="{{ onSet }}" data-field="timerType" data-val="bar" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;border-radius:11px;cursor:pointer;border:1.5px solid var(--s-line);background:transparent;">
+            <sc-if value="{{ ttSel.bar }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--s-accent);border-radius:11px;background:var(--s-elev);z-index:0;"></span></sc-if>
+            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="position:relative;z-index:1;"><rect x="4" y="12.5" width="22" height="5" rx="2.5" stroke="var(--s-sub)" stroke-width="2" opacity="0.3"></rect><rect x="4" y="12.5" width="13" height="5" rx="2.5" fill="var(--s-accent)"></rect></svg>
+            <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;color:var(--s-text);">Progress bar</span>
+          </button>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:11px;">Collapsed notch layout</div>
+        <div style="display:flex;gap:9px;margin-bottom:14px;">
+          <button onClick="{{ onSet }}" data-field="layout" data-val="split" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;border-radius:11px;cursor:pointer;border:1.5px solid var(--s-line);background:transparent;">
+            <sc-if value="{{ loSel.split }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--s-accent);border-radius:11px;background:var(--s-elev);z-index:0;"></span></sc-if>
+            <svg width="34" height="20" viewBox="0 0 34 20" fill="none" style="position:relative;z-index:1;"><rect x="11" y="0" width="12" height="7" rx="2" fill="var(--s-sub)" opacity="0.4"></rect><circle cx="5" cy="12" r="2.4" fill="var(--s-accent)"></circle><rect x="24" y="10" width="7" height="4" rx="2" fill="var(--s-accent)"></rect></svg>
+            <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;color:var(--s-text);">Split</span>
+          </button>
+          <button onClick="{{ onSet }}" data-field="layout" data-val="minimal" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;border-radius:11px;cursor:pointer;border:1.5px solid var(--s-line);background:transparent;">
+            <sc-if value="{{ loSel.minimal }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--s-accent);border-radius:11px;background:var(--s-elev);z-index:0;"></span></sc-if>
+            <svg width="34" height="20" viewBox="0 0 34 20" fill="none" style="position:relative;z-index:1;"><rect x="11" y="0" width="12" height="7" rx="2" fill="var(--s-sub)" opacity="0.4"></rect><rect x="6" y="10" width="9" height="4" rx="2" fill="var(--s-accent)"></rect></svg>
+            <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;color:var(--s-text);">Minimal</span>
+          </button>
+          <button onClick="{{ onSet }}" data-field="layout" data-val="compact" style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;border-radius:11px;cursor:pointer;border:1.5px solid var(--s-line);background:transparent;">
+            <sc-if value="{{ loSel.compact }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:1.5px solid var(--s-accent);border-radius:11px;background:var(--s-elev);z-index:0;"></span></sc-if>
+            <svg width="34" height="20" viewBox="0 0 34 20" fill="none" style="position:relative;z-index:1;"><rect x="11" y="0" width="12" height="7" rx="2" fill="var(--s-sub)" opacity="0.4"></rect><circle cx="6" cy="12" r="2.4" fill="var(--s-accent)"></circle><circle cx="26" cy="12" r="2.4" fill="var(--s-accent)"></circle></svg>
+            <span style="position:relative;z-index:1;font-family:'Inter',sans-serif;font-size:12px;color:var(--s-text);">Compact</span>
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Show session dots</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">The little round-progress markers.</div></div>
+          <button onClick="{{ onToggle }}" data-k="showDots" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.showDots }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.showDots }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Micro-messages</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Playful nudges like “Breathe…” and “In the pocket.”</div></div>
+          <button onClick="{{ onToggle }}" data-k="showMessages" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.showMessages }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.showMessages }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ===== BEHAVIOR ===== -->
+      <sc-if value="{{ isBehavior }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin-bottom:4px;">System</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Launch at login</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Open Pomodoro when you sign in.</div></div>
+          <button onClick="{{ onToggle }}" data-k="launchLogin" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.launchLogin }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.launchLogin }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Always on top</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Keep the island above other windows.</div></div>
+          <button onClick="{{ onToggle }}" data-k="alwaysTop" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.alwaysTop }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.alwaysTop }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Magnetic snap to notch</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Drag near the camera and it locks into place.</div></div>
+          <button onClick="{{ onToggle }}" data-k="magnetic" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.magnetic }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.magnetic }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Hide during screen sharing</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Auto-conceal while presenting or recording.</div></div>
+          <button onClick="{{ onToggle }}" data-k="hideShare" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.hideShare }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.hideShare }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Pause when Mac is idle</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Stop the clock if you step away or lock the screen.</div></div>
+          <button onClick="{{ onToggle }}" data-k="pauseIdle" style="position:relative;width:42px;height:25px;border:none;padding:0;cursor:pointer;background:transparent;flex:0 0 auto;">
+            <sc-if value="{{ flags.pauseIdle }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-accent);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transform:translateX(17px);"></span></span></sc-if>
+            <sc-if value="{{ flagsOff.pauseIdle }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;border-radius:999px;background:var(--s-track);"><span style="position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span></sc-if>
+          </button>
+        </div>
+
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--s-faint);margin:20px 0 4px;">Shortcuts &amp; goal</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Global shortcut</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Start / pause from anywhere.</div></div>
+          <div style="display:flex;align-items:center;gap:5px;flex:0 0 auto;"><kbd style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--s-text);background:var(--s-elev);border:1px solid var(--s-line);border-radius:7px;padding:5px 10px;">&#8997;</kbd><kbd style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--s-text);background:var(--s-elev);border:1px solid var(--s-line);border-radius:7px;padding:5px 10px;">Space</kbd></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--s-line);">
+          <div><div style="font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--s-text);">Daily goal</div><div style="font-family:'Inter',sans-serif;font-size:11.5px;color:var(--s-sub);margin-top:2px;">Focus blocks to aim for each day.</div></div>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto;"><button onClick="{{ onStep }}" data-field="dailyGoal" data-dir="-1" style="{{ stepStyle }};">&minus;</button><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;color:var(--s-text);min-width:54px;text-align:center;">{{ dailyGoal }}<span style="font-size:11px;color:var(--s-faint);"> pom</span></span><button onClick="{{ onStep }}" data-field="dailyGoal" data-dir="1" style="{{ stepStyle }};">+</button></div>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:780,&quot;height&quot;:600},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;,&quot;auto&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#8FC8C0&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;section&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;timer&quot;,&quot;sounds&quot;,&quot;appearance&quot;,&quot;behavior&quot;],&quot;default&quot;:&quot;sounds&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;preset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;classic&quot;,&quot;focus&quot;,&quot;custom&quot;],&quot;default&quot;:&quot;classic&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { section:null, theme:null, accent:null, preset:'classic',
+    focusMin:25, shortMin:5, longMin:15, longEvery:4, dailyGoal:8,
+    autoBreak:true, autoFocus:false, tickOn:false, notify:true,
+    showDots:true, showMessages:true, launchLogin:true, alwaysTop:true,
+    magnetic:true, hideShare:false, pauseIdle:true,
+    alarm:'chime', volume:70, anim:'ripple', timerType:'circular', layout:'split' };
+
+  onSection = (e) => this.setState({ section:e.currentTarget.dataset.k });
+  onSet = (e) => { const d=e.currentTarget.dataset; this.setState({ [d.field]: d.val }); };
+  onToggle = (e) => { const k=e.currentTarget.dataset.k; this.setState(s=>({ [k]: !s[k] })); };
+  onVol = (e) => this.setState({ volume: parseInt(e.target.value,10) });
+  onPreset = (e) => {
+    const k=e.currentTarget.dataset.k;
+    if(k==='classic') this.setState({preset:k,focusMin:25,shortMin:5,longMin:15});
+    else if(k==='focus') this.setState({preset:k,focusMin:50,shortMin:10,longMin:20});
+    else this.setState({preset:'custom'});
+  };
+  onStep = (e) => {
+    const d=e.currentTarget.dataset, f=d.field, dir=parseInt(d.dir,10);
+    const cfg={ focusMin:[5,90,5], shortMin:[1,30,1], longMin:[5,60,5], longEvery:[2,8,1], dailyGoal:[1,16,1] }[f];
+    this.setState(s=>{
+      let v=s[f]+dir*cfg[2]; v=Math.max(cfg[0],Math.min(cfg[1],v));
+      const patch={[f]:v};
+      if(f==='focusMin'||f==='shortMin'||f==='longMin') patch.preset='custom';
+      return patch;
+    });
+  };
+
+  lum(hex){ const h=hex.replace('#',''); const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); return (0.299*r+0.587*g+0.114*b)/255; }
+  palette(theme){
+    if(theme==='light') return { bg:'#FBFAF5',panel:'#F1EFE7',elev:'#FFFFFF',text:'#1F2124',sub:'#63635A',faint:'#9A9A8E',line:'rgba(23,25,29,0.10)',track:'rgba(23,25,29,0.14)' };
+    return { bg:'#191B1F',panel:'#212429',elev:'#2A2E34',text:'#F2F1EC',sub:'rgba(242,241,236,0.62)',faint:'rgba(242,241,236,0.4)',line:'rgba(242,241,236,0.10)',track:'rgba(242,241,236,0.16)' };
+  }
+  seg(on){
+    return "flex:1;text-align:center;padding:8px 6px;border-radius:8px;cursor:pointer;border:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:12px;transition:all .15s;background:"+(on?'var(--s-accent)':'transparent')+";color:"+(on?'var(--s-accent-ink)':'var(--s-sub)');
+  }
+
+  renderVals(){
+    const s=this.state;
+    const section = s.section || this.props.section || 'timer';
+    const theme = s.theme || this.props.theme || 'dark';
+    const accent = s.accent || this.props.accent || '#8FC8C0';
+    const accentInk = this.lum(accent) > 0.6 ? '#17191D' : '#FFFFFF';
+    const p=this.palette(theme==='auto'?'dark':theme);
+
+    const windowStyle = "width:100%;height:100%;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif;background:var(--s-bg);color:var(--s-text)"
+      +";--s-bg:"+p.bg+";--s-panel:"+p.panel+";--s-elev:"+p.elev+";--s-text:"+p.text+";--s-sub:"+p.sub+";--s-faint:"+p.faint+";--s-line:"+p.line+";--s-track:"+p.track+";--s-accent:"+accent+";--s-accent-ink:"+accentInk;
+
+    const stepStyle = "width:30px;height:28px;border-radius:8px;border:1px solid var(--s-line);background:var(--s-elev);color:var(--s-text);cursor:pointer;font-size:15px;line-height:1;font-family:'IBM Plex Mono',monospace";
+    const presetHints = { classic:'The original Pomodoro rhythm — 25 on, 5 off, a long 15 every four.', focus:'Longer deep-work blocks for flow states — 50 on, 10 off.', custom:'Dial in your own. The fields below stay editable.' };
+
+    const presets = [['classic','Classic',' · 25/5/15'],['focus','Deep Focus',' · 50/10/20'],['custom','Custom','']].map(([k,label,detail])=>({ k,label,detail, style:this.seg(s.preset===k) }));
+    const themes = [['light','Light'],['dark','Dark'],['auto','Auto']].map(([k,label])=>({ k,label, style:this.seg(theme===k) }));
+
+    const alarms = [['chime','Chime'],['marimba','Marimba'],['bell','Soft bell'],['pebble','Pebble'],['birdsong','Birdsong'],['custom','Custom…']].map(([k,label])=>{
+      const sel=s.alarm===k;
+      return { k,label,
+        row:"display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;cursor:pointer;width:100%;text-align:left;transition:all .14s;border:1px solid "+(sel?'var(--s-line)':'transparent')+";background:"+(sel?'var(--s-elev)':'transparent'),
+        dot:"width:15px;height:15px;border-radius:999px;display:grid;place-items:center;flex:0 0 auto;box-sizing:border-box;border:1.5px solid "+(sel?'var(--s-accent)':'var(--s-faint)'),
+        dotIn:"width:7px;height:7px;border-radius:999px;display:block;background:"+(sel?'var(--s-accent)':'transparent') };
+    });
+    const animations = [['ripple','Ripple'],['bloom','Bloom'],['heartbeat','Heartbeat'],['confetti','Confetti'],['none','None']].map(([k,label])=>{
+      const sel=s.anim===k;
+      return { k,label,
+        chip:"display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--s-text);transition:all .14s;border:1.5px solid "+(sel?'var(--s-accent)':'var(--s-line)')+";background:"+(sel?'var(--s-elev)':'transparent'),
+        swatch:"width:8px;height:8px;border-radius:999px;display:block;background:"+(k==='none'?'var(--s-faint)':'var(--s-accent)')+";opacity:"+(k==='none'?'0.5':'1') };
+    });
+    const accents = [['teal','#8FC8C0'],['clay','#E2A24A'],['blue','#6F9CEB'],['violet','#A88BE0'],['rose','#E08AA6'],['green','#84B26A']].map(([k,c])=>{
+      const sel=accent===c;
+      return { k,c, style:"width:30px;height:30px;border-radius:999px;cursor:pointer;border:none;flex:0 0 auto;transition:all .15s;background:"+c+";box-shadow:"+(sel?'0 0 0 2px var(--s-bg), 0 0 0 4px '+c:'0 0 0 1px rgba(0,0,0,0.15)') };
+    });
+
+    const flagKeys=['autoBreak','autoFocus','tickOn','notify','showDots','showMessages','launchLogin','alwaysTop','magnetic','hideShare','pauseIdle'];
+    const flags={}, flagsOff={};
+    flagKeys.forEach(k=>{ flags[k]=!!s[k]; flagsOff[k]=!s[k]; });
+
+    return {
+      windowStyle, stepStyle, presetHint:presetHints[s.preset], editable:s.preset==='custom',
+      isTimer:section==='timer', isSounds:section==='sounds', isAppearance:section==='appearance', isBehavior:section==='behavior',
+      navActive:{ timer:section==='timer', sounds:section==='sounds', appearance:section==='appearance', behavior:section==='behavior' },
+      ttSel:{ circular:s.timerType==='circular', outline:s.timerType==='outline', bar:s.timerType==='bar' },
+      loSel:{ split:s.layout==='split', minimal:s.layout==='minimal', compact:s.layout==='compact' },
+      onSection:this.onSection, onSet:this.onSet, onToggle:this.onToggle, onPreset:this.onPreset, onStep:this.onStep, onVol:this.onVol,
+      presets, themes, alarms, animations, accents, flags, flagsOff,
+      focusMin:s.focusMin, shortMin:s.shortMin, longMin:s.longMin, longEvery:s.longEvery, dailyGoal:s.dailyGoal, volume:s.volume
+    };
+  }
+}
+</script>
+</body>
+</html>

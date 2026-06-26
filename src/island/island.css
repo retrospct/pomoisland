@@ -1,0 +1,46 @@
+/* Transparent window body so only the island is visible (ADR-0003). */
+html,
+body.island-body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#root {
+  /* The island anchors top-center; content sizes itself and the window follows. */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.island-icon-btn:hover {
+  background: rgba(242, 241, 236, 0.08) !important;
+  color: #f2f1ec !important;
+}
+
+.island-menu-item:hover {
+  background: rgba(143, 200, 192, 0.12);
+}
+.island-menu-item--danger:hover {
+  background: rgba(226, 162, 74, 0.12);
+}
+
+.island-pill {
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.island-pill:hover {
+  transform: translateY(-1.5px);
+}
+
+.island-primary-btn {
+  transition: transform 0.16s;
+}
+.island-primary-btn:hover {
+  transform: scale(1.06);
+}
+.island-primary-btn:active {
+  transform: scale(0.96);
+}

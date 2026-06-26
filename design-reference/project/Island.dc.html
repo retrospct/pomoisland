@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<style>
+@keyframes islandRippleA { 0%{transform:scale(1);opacity:.92} 65%{opacity:.3} 100%{transform:scale(2.0);opacity:0} }
+@keyframes islandRippleB { 0%{transform:scale(1);opacity:.62} 65%{opacity:.2} 100%{transform:scale(2.12);opacity:0} }
+@keyframes islandRippleC { 0%{transform:scale(1);opacity:.4} 65%{opacity:.13} 100%{transform:scale(2.22);opacity:0} }
+@keyframes islandGlow { 0%,100%{opacity:.22} 50%{opacity:.66} }
+@keyframes islandPop { 0%{transform:scale(0);opacity:0} 55%{transform:scale(1.16)} 100%{transform:scale(1);opacity:1} }
+@keyframes islandBreathe { 0%,100%{transform:rotate(-90deg) scale(1)} 50%{transform:rotate(-90deg) scale(1.075)} }
+</style>
+</helmet>
+<div style="display:contents;">
+
+<sc-if value="{{ collapsed }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;display:inline-flex;">
+  <sc-if value="{{ isComplete }}" hint-placeholder-val="{{ false }}">
+    <span style="position:absolute;inset:0;border-radius:999px;box-shadow:0 0 34px 6px {{ accentSoft }};animation:islandGlow 2.6s ease-in-out infinite;pointer-events:none;z-index:0;"></span>
+    <span style="position:absolute;inset:-1px;border-radius:999px;border:2.5px solid {{ accentBright }};animation:islandRippleA 2.6s cubic-bezier(.16,.6,.3,1) infinite;pointer-events:none;z-index:3;"></span>
+    <span style="position:absolute;inset:-1px;border-radius:999px;border:2px solid {{ accent }};animation:islandRippleB 2.6s cubic-bezier(.16,.6,.3,1) .34s infinite;pointer-events:none;z-index:3;"></span>
+    <span style="position:absolute;inset:-1px;border-radius:999px;border:1.5px solid {{ accent }};animation:islandRippleC 2.6s cubic-bezier(.16,.6,.3,1) .68s infinite;pointer-events:none;z-index:3;"></span>
+  </sc-if>
+  <div onClick="{{ onToggleExpand }}" style="position:relative;z-index:2;display:inline-flex;align-items:center;gap:11px;background:#17191D;color:#F2F1EC;border-radius:{{ wrapRadius }};padding:{{ wrapPadTop }} 18px 7px 8px;min-width:{{ wrapMinWidth }};justify-content:{{ wrapJustify }};box-shadow:0 14px 38px rgba(0,0,0,.42),0 3px 9px rgba(0,0,0,.3);cursor:pointer;user-select:none;min-height:44px;box-sizing:border-box;transition:transform .28s cubic-bezier(.22,.61,.36,1);" style-hover="transform:translateY(-1.5px)">
+    <sc-if value="{{ notch }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:5px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#08090A;box-shadow:inset 0 0 0 1.5px #2A2E33;z-index:4;"></span></sc-if>
+    <sc-if value="{{ showRing }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative;width:30px;height:30px;display:grid;place-items:center;flex:0 0 auto;">
+      <svg width="30" height="30" viewBox="0 0 30 30" style="transform:rotate(-90deg);transform-origin:center;animation:{{ ringAnim }};">
+        <circle cx="15" cy="15" r="11" fill="none" stroke="rgba(242,241,236,0.15)" stroke-width="3"></circle>
+        <circle cx="15" cy="15" r="11" fill="none" stroke="{{ accent }}" stroke-width="3" stroke-linecap="round" stroke-dasharray="{{ ringCirc }}" stroke-dashoffset="{{ ringOffset }}"></circle>
+      </svg>
+      <div style="position:absolute;display:grid;place-items:center;">
+        <sc-if value="{{ glyphPlay }}" hint-placeholder-val="{{ false }}"><svg width="10" height="11" viewBox="0 0 10 11"><path d="M1 1 L9 5.5 L1 10 Z" fill="{{ accent }}"></path></svg></sc-if>
+        <sc-if value="{{ glyphPause }}" hint-placeholder-val="{{ false }}"><svg width="9" height="11" viewBox="0 0 9 11"><rect x="0.5" width="2.6" height="11" rx="1.1" fill="{{ accent }}"></rect><rect x="5.9" width="2.6" height="11" rx="1.1" fill="{{ accent }}"></rect></svg></sc-if>
+        <sc-if value="{{ glyphCheck }}" hint-placeholder-val="{{ false }}"><svg width="13" height="11" viewBox="0 0 13 11" style="animation:islandPop .55s cubic-bezier(.2,1.2,.4,1);"><path d="M1 5.5 L4.8 9.5 L12 1.5" fill="none" stroke="{{ accent }}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+        <sc-if value="{{ glyphCup }}" hint-placeholder-val="{{ false }}"><svg width="15" height="12" viewBox="0 0 15 12"><path d="M2 4 h7.5 v3.2 a3.6 3.6 0 0 1 -7.5 0 z" fill="none" stroke="{{ accent }}" stroke-width="1.5"></path><path d="M9.5 4.4 h1.8 a1.8 1.8 0 0 1 0 3.6 h-1.3" fill="none" stroke="{{ accent }}" stroke-width="1.5"></path></svg></sc-if>
+      </div>
+    </div>
+    </sc-if>
+    <sc-if value="{{ showTimeText }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:3px;line-height:1;flex:0 0 auto;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;color:{{ accent }};font-weight:500;white-space:nowrap;">{{ statusLabel }}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;letter-spacing:0.01em;font-variant-numeric:tabular-nums;color:#F2F1EC;white-space:nowrap;">{{ timeStr }}</span>
+    </div>
+    </sc-if>
+    <div style="display:flex;align-items:center;gap:5px;flex:0 0 auto;">
+      <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4"><span style="{{ d.style }}"></span></sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ peekMode }}" hint-placeholder-val="{{ false }}">
+<div style="width:266px;box-sizing:border-box;background:#17191D;color:#F2F1EC;border-radius:{{ peekRadius }};padding:{{ peekPadTop }} 18px 15px;box-shadow:0 22px 56px rgba(0,0,0,.46),0 4px 12px rgba(0,0,0,.3);font-family:'Inter',sans-serif;position:relative;cursor:pointer;" onClick="{{ onToggleExpand }}">
+  <sc-if value="{{ notch }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#08090A;box-shadow:inset 0 0 0 1.5px #2A2E33;z-index:4;"></span></sc-if>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;color:{{ accent }};font-weight:500;">{{ statusLabel }}</span>
+    <div style="display:flex;align-items:center;gap:5px;">
+      <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4"><span style="{{ d.style }}"></span></sc-for>
+    </div>
+  </div>
+  <div style="font-size:12.5px;color:{{ taskColor }};font-style:{{ taskFontStyle }};letter-spacing:-0.005em;margin-bottom:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ displayTask }}</div>
+  <div style="height:4px;border-radius:999px;background:rgba(242,241,236,0.13);overflow:hidden;margin-bottom:13px;">
+    <div style="height:100%;width:{{ pctW }};background:{{ accent }};border-radius:999px;transition:width .35s;"></div>
+  </div>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:500;line-height:0.92;letter-spacing:0.01em;font-variant-numeric:tabular-nums;color:#F2F1EC;">{{ timeStr }}</div>
+    <div style="display:flex;align-items:center;gap:6px;flex:0 0 auto;">
+      <button onClick="{{ onPlayPauseStop }}" title="Play / pause" style="width:32px;height:32px;border-radius:50%;border:none;background:{{ accent }};color:#17191D;display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0;">
+        <sc-if value="{{ playPauseIsPause }}" hint-placeholder-val="{{ true }}"><svg width="10" height="12" viewBox="0 0 10 12"><rect x="0.8" width="3" height="12" rx="1.2" fill="currentColor"></rect><rect x="6.2" width="3" height="12" rx="1.2" fill="currentColor"></rect></svg></sc-if>
+        <sc-if value="{{ playPauseIsPlay }}" hint-placeholder-val="{{ false }}"><svg width="11" height="12" viewBox="0 0 11 12" style="margin-left:1px;"><path d="M1 1 L10 6 L1 11 Z" fill="currentColor"></path></svg></sc-if>
+      </button>
+      <button onClick="{{ onSkipStop }}" title="Next" style="width:28px;height:32px;border-radius:50%;border:none;background:transparent;color:rgba(242,241,236,0.85);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0;">
+        <svg width="14" height="12" viewBox="0 0 14 12"><path d="M1 1 L9 6 L1 11 Z" fill="currentColor"></path><rect x="10.4" y="0.8" width="2.5" height="10.4" rx="1" fill="currentColor"></rect></svg>
+      </button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ expanded }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ onToggleExpand }}" style="width:320px;box-sizing:border-box;background:#17191D;color:#F2F1EC;border-radius:{{ panelRadius }};padding:{{ panelPadTop }} 22px 18px;box-shadow:0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32);font-family:'Inter',sans-serif;position:relative;cursor:pointer;">
+  <sc-if value="{{ notch }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#08090A;box-shadow:inset 0 0 0 1.5px #2A2E33;z-index:4;"></span></sc-if>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;color:{{ accent }};font-weight:500;white-space:nowrap;">{{ statusLabel }}</span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4"><span style="{{ d.style }}"></span></sc-for>
+    </div>
+  </div>
+  <div style="font-size:13.5px;color:{{ taskColor }};font-style:{{ taskFontStyle }};margin-bottom:15px;letter-spacing:-0.005em;">{{ displayTask }}</div>
+  <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
+    <div style="position:relative;width:64px;height:64px;flex:0 0 auto;">
+      <svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg);transform-origin:center;animation:{{ ringAnim2 }};">
+        <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(242,241,236,0.13)" stroke-width="4"></circle>
+        <circle cx="32" cy="32" r="27" fill="none" stroke="{{ accent }}" stroke-width="4" stroke-linecap="round" stroke-dasharray="{{ ringCirc2 }}" stroke-dashoffset="{{ ringOffset2 }}"></circle>
+      </svg>
+      <div style="position:absolute;inset:0;display:grid;place-items:center;">
+        <sc-if value="{{ glyphCheck }}" hint-placeholder-val="{{ false }}"><svg width="18" height="15" viewBox="0 0 18 15"><path d="M1.5 7.5 L6.5 13 L16.5 2" fill="none" stroke="{{ accent }}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+        <sc-if value="{{ glyphCup }}" hint-placeholder-val="{{ false }}"><svg width="20" height="17" viewBox="0 0 20 17"><path d="M3 5 h10 v4.4 a5 5 0 0 1 -10 0 z" fill="none" stroke="{{ accent }}" stroke-width="1.7"></path><path d="M13 5.5 h2.6 a2.4 2.4 0 0 1 0 4.8 h-1.8" fill="none" stroke="{{ accent }}" stroke-width="1.7"></path></svg></sc-if>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:38px;font-weight:500;line-height:0.95;letter-spacing:0.005em;font-variant-numeric:tabular-nums;">{{ timeStr }}</span>
+      <sc-if value="{{ messagesOn }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Fraunces',serif;font-style:italic;font-size:14px;line-height:1.25;color:{{ accent }};letter-spacing:-0.01em;">{{ micro }}</span></sc-if>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:11px;">
+    <button onClick="{{ onResetStop }}" style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(242,241,236,0.18);background:transparent;color:rgba(242,241,236,0.78);display:grid;place-items:center;cursor:pointer;transition:all .16s;" style-hover="background:rgba(242,241,236,0.08);color:#F2F1EC">
+      <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8 a5 5 0 1 0 1.5 -3.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path><path d="M4 2.2 L4.3 5 L7 4.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
+    <button onClick="{{ onPlayPauseStop }}" style="width:54px;height:54px;border-radius:50%;border:none;background:{{ accent }};color:#17191D;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px {{ accentSoft }};transition:transform .16s;" style-hover="transform:scale(1.06)" style-active="transform:scale(0.96)">
+      <sc-if value="{{ playPauseIsPause }}" hint-placeholder-val="{{ false }}"><svg width="16" height="18" viewBox="0 0 16 18"><rect x="1" width="4.4" height="18" rx="1.6" fill="currentColor"></rect><rect x="10.6" width="4.4" height="18" rx="1.6" fill="currentColor"></rect></svg></sc-if>
+      <sc-if value="{{ playPauseIsPlay }}" hint-placeholder-val="{{ true }}"><svg width="16" height="18" viewBox="0 0 16 18" style="margin-left:2px;"><path d="M1 1 L15 9 L1 17 Z" fill="currentColor"></path></svg></sc-if>
+    </button>
+    <button onClick="{{ onSkipStop }}" style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(242,241,236,0.18);background:transparent;color:rgba(242,241,236,0.78);display:grid;place-items:center;cursor:pointer;transition:all .16s;" style-hover="background:rgba(242,241,236,0.08);color:#F2F1EC">
+      <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2 L10 8 L2 14 Z" fill="currentColor"></path><rect x="11.5" y="2" width="2.4" height="12" rx="1" fill="currentColor"></rect></svg>
+    </button>
+    <div style="flex:1;"></div>
+    <div style="position:relative;">
+      <button onClick="{{ toggleMenu }}" style="width:42px;height:42px;border-radius:50%;border:none;background:transparent;color:rgba(242,241,236,0.7);display:grid;place-items:center;cursor:pointer;transition:all .16s;" style-hover="background:rgba(242,241,236,0.08);color:#F2F1EC">
+        <svg width="18" height="6" viewBox="0 0 18 6"><circle cx="2.6" cy="3" r="1.7" fill="currentColor"></circle><circle cx="9" cy="3" r="1.7" fill="currentColor"></circle><circle cx="15.4" cy="3" r="1.7" fill="currentColor"></circle></svg>
+      </button>
+      <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;bottom:50px;right:0;width:178px;background:#23262B;border:1px solid rgba(242,241,236,0.1);border-radius:13px;padding:6px;box-shadow:0 18px 44px rgba(0,0,0,.55);z-index:20;">
+          <button onClick="{{ pickSwitch }}" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:transparent;border:none;color:#F2F1EC;font-family:'Inter',sans-serif;font-size:13px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:background .14s;" style-hover="background:rgba(143,200,192,0.12)">
+            <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 4 h7 M2 4 l2.4 -2.2 M2 4 l2.4 2.2 M12 10 h-7 M12 10 l-2.4 -2.2 M12 10 l-2.4 2.2" fill="none" stroke="#8FC8C0" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            {{ switchLabel }}
+          </button>
+          <button onClick="{{ pickSettings }}" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:transparent;border:none;color:#F2F1EC;font-family:'Inter',sans-serif;font-size:13px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:background .14s;" style-hover="background:rgba(143,200,192,0.12)">
+            <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="2.4" fill="none" stroke="#B8BDC2" stroke-width="1.3"></circle><path d="M7 1.4 v1.6 M7 11 v1.6 M1.4 7 h1.6 M11 7 h1.6 M3 3 l1.1 1.1 M9.9 9.9 l1.1 1.1 M11 3 l-1.1 1.1 M4.1 9.9 l-1.1 1.1" fill="none" stroke="#B8BDC2" stroke-width="1.3" stroke-linecap="round"></path></svg>
+            Settings
+          </button>
+          <div style="height:1px;background:rgba(242,241,236,0.09);margin:5px 9px;"></div>
+          <button onClick="{{ pickQuit }}" style="display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:transparent;border:none;color:#E2A24A;font-family:'Inter',sans-serif;font-size:13px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:background .14s;" style-hover="background:rgba(226,162,74,0.12)">
+            <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5.4 2 H2.4 a0.6 0.6 0 0 0 -0.6 0.6 v8.8 a0.6 0.6 0 0 0 0.6 0.6 H5.4 M8.4 4.4 L11.6 7 L8.4 9.6 M11.6 7 H5" fill="none" stroke="#E2A24A" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            Quit
+          </button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ settingsOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;bottom:50px;right:0;width:214px;background:#23262B;border:1px solid rgba(242,241,236,0.1);border-radius:13px;padding:13px;box-shadow:0 18px 44px rgba(0,0,0,.55);z-index:20;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,241,236,0.5);">Settings</span>
+            <button onClick="{{ closeSettings }}" style="background:transparent;border:none;color:rgba(242,241,236,0.5);cursor:pointer;font-size:15px;line-height:1;padding:0 2px;" style-hover="color:#F2F1EC">&times;</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-family:'Inter',sans-serif;font-size:13px;color:#F2F1EC;">Encouraging messages</span>
+            <button onClick="{{ onToggleMessages }}" style="{{ toggleTrackStyle }}"><span style="{{ toggleKnobStyle }}"></span></button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { menuOpen:false, settingsOpen:false };
+  toggleMenu = (e) => { if(e&&e.stopPropagation)e.stopPropagation(); this.setState(s=>({menuOpen:!s.menuOpen, settingsOpen:false})); };
+  closeSettings = () => this.setState({settingsOpen:false});
+  ha(hex,a){ const h=hex.replace('#',''); const r=parseInt(h.substring(0,2),16),g=parseInt(h.substring(2,4),16),b=parseInt(h.substring(4,6),16); return 'rgba('+r+','+g+','+b+','+a+')'; }
+  renderVals(){
+    const p=this.props;
+    const num=(v,d)=>{const n=Number(v); return isFinite(n)?n:d;};
+    const bool=(v)=>v===true||v==='true';
+    const status=p.status||'idle';
+    const mode=p.mode||'focus';
+    const total=num(p.total,1500);
+    let remaining=p.remaining==null?total:num(p.remaining,total);
+    if(remaining<0)remaining=0;
+    const expanded=bool(p.expanded);
+    const peekMode=bool(p.peek) && !expanded;
+    const collapsed=!expanded && !peekMode;
+    const sessionTotal=num(p.sessionTotal,4);
+    const sessionIndex=num(p.sessionIndex,0);
+    const showConfetti=p.showConfetti==null?true:bool(p.showConfetti);
+    const notch=bool(p.notch);
+    const messagesOn = p.messagesOn==null?true:bool(p.messagesOn);
+    const layout=p.layout||'split';
+    const showRing = layout!=='minimal';
+    const showTimeText = layout!=='compact';
+
+    const isFocus=mode==='focus', isBreak=mode==='break';
+    const isRunning=status==='running', isPaused=status==='paused',
+          isIdle=status==='idle', isComplete=status==='complete';
+
+    const tealL='#8FC8C0', clayL='#E2A24A', urgent='#ECB24E';
+    let accent = isBreak? clayL : tealL;
+    const frac = total>0? Math.min(1,Math.max(0,(total-remaining)/total)) : 0;
+    if(isFocus && isRunning && remaining<=60) accent=urgent;
+    const accentBright = (accent===urgent)?'#F7DFA8':(isBreak?'#F4D7A4':'#CDEDE7');
+
+    const t=Math.ceil(remaining);
+    const mm=Math.floor(t/60), ss=t%60;
+    const timeStr=(mm<10?'0':'')+mm+':'+(ss<10?'0':'')+ss;
+
+    const R=11, C=2*Math.PI*R, ringOffset=C*(1-frac);
+    const R2=27, C2=2*Math.PI*R2, ringOffset2=C2*(1-frac);
+    const sweepLen=(C*frac), sweepLen2=(C2*frac);
+    const cometStyle={ '--l': sweepLen+'px', animation:'ringComet 2.4s cubic-bezier(.45,0,.55,1) infinite', strokeDashoffset:0, opacity:0 };
+    const cometStyle2={ '--l': sweepLen2+'px', animation:'ringComet 2.4s cubic-bezier(.45,0,.55,1) infinite', strokeDashoffset:0, opacity:0 };
+
+    const statusLabel = isComplete? (isBreak?'BREAK DONE':'FOCUS DONE')
+        : isBreak? 'BREAK'
+        : isPaused? 'PAUSED'
+        : isIdle? (isBreak?'BREAK':'READY')
+        : 'FOCUS';
+    const sessionLabel = Math.min(sessionIndex+1,sessionTotal)+' OF '+sessionTotal;
+
+    const rawTask=(p.task==null?'':String(p.task)).trim();
+    const hasTask=rawTask.length>0;
+    const displayTask = hasTask? rawTask : (isBreak?'Break time':'No task set');
+    const taskColor = hasTask?'rgba(242,241,236,0.62)':'rgba(242,241,236,0.4)';
+    const taskFontStyle = hasTask?'normal':'italic';
+
+    let micro;
+    if(isIdle) micro = isBreak?'Step away for a bit.':'Ready when you are.';
+    else if(isPaused) micro='Paused \u2014 pick it back up.';
+    else if(isComplete) micro = isBreak?'Break\u2019s over. Back to it?':'Nice work. Take a breather.';
+    else if(isBreak) micro='Breathe. Look away from the screen.';
+    else if(frac<0.45) micro='Settle in.';
+    else if(frac<0.85) micro='Nice, past the halfway mark.';
+    else micro='Almost there \u2014 hold the line.';
+
+    const remainLabel = timeStr + ' left';
+    const pctW = Math.round(frac*100)+'%';
+
+    const dots=[];
+    for(let i=0;i<sessionTotal;i++){
+      const done = i<sessionIndex || (i===sessionIndex && isComplete);
+      const current = i===sessionIndex && !isComplete;
+      dots.push({
+        style:{
+          width: current?'7px':'6px', height: current?'7px':'6px',
+          borderRadius:'999px',
+          background: (done||current)? accent : 'rgba(242,241,236,0.22)',
+          boxShadow: current? '0 0 0 3px '+this.ha(accent,0.18) : 'none',
+          flex:'0 0 auto', transition:'all .3s'
+        }
+      });
+    }
+
+    const glyph = isComplete?'check': isPaused?'pause': isIdle?'play': isBreak?'cup':'none';
+
+    let particles=[];
+    if(isComplete && showConfetti && collapsed){
+      const cols=[tealL,'#E2A24A','#F2F1EC',accent,'#8FC8C0'];
+      for(let i=0;i<14;i++){
+        const ang=(i/14)*Math.PI*2 + (i%2?0.3:-0.2);
+        const dist=44+(i%3)*16;
+        const dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist-12;
+        particles.push({ style:{
+          position:'absolute', left:'50%', top:'45%', zIndex:1,
+          width:(i%3===0?'5px':'4px'), height:(i%4===0?'10px':'4px'),
+          background: cols[i%cols.length],
+          borderRadius: i%2?'999px':'1px',
+          '--dx': dx+'px', '--dy': dy+'px',
+          transform:'translate(-50%,-50%)',
+          animation:'islandConfetti 1.15s cubic-bezier(.18,.7,.3,1) forwards',
+          animationDelay:(i*0.012)+'s', opacity:0
+        }});
+      }
+    }
+
+    const noop=()=>{};
+    const switchLabel = isBreak? 'Switch to focus' : 'Switch to break';
+    const onPlayPause = p.onPlayPause||noop;
+    return {
+      notch, layout, showRing, showTimeText,
+      wrapRadius: notch? '0 0 20px 20px' : '999px',
+      wrapJustify: notch? 'space-between' : 'flex-start',
+      wrapMinWidth: notch? '208px' : '0px',
+      wrapPadTop: notch? '11px' : '7px',
+      panelRadius: notch? '0 0 26px 26px' : '26px',
+      panelPadTop: notch? '24px' : '20px',
+      peekRadius: notch? '0 0 22px 22px' : '22px',
+      peekPadTop: notch? '21px' : '15px',
+      switchLabel,
+      menuOpen: this.state.menuOpen,
+      toggleMenu: this.toggleMenu,
+      pickSwitch: (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState({menuOpen:false}); (p.onSwitchMode||noop)(); },
+      pickSettings: (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState({menuOpen:false, settingsOpen:true}); },
+      closeSettings: this.closeSettings,
+      settingsOpen: this.state.settingsOpen,
+      messagesOn,
+      onToggleMessages: ()=>{ (p.onToggleMessages||noop)(); },
+      toggleTrackStyle: { width:'38px', height:'22px', borderRadius:'999px', border:'none', cursor:'pointer', position:'relative', padding:0, flex:'0 0 auto', background: messagesOn? accent : 'rgba(242,241,236,0.2)', transition:'background .18s' },
+      toggleKnobStyle: { position:'absolute', top:'3px', left: messagesOn?'19px':'3px', width:'16px', height:'16px', borderRadius:'50%', background:'#17191D', transition:'left .18s', display:'block' },
+      pickQuit: (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState({menuOpen:false}); (p.onQuit||noop)(); },
+      collapsed, expanded, peekMode, timeStr, statusLabel, sessionLabel, micro,
+      displayTask, taskColor, taskFontStyle, remainLabel, pctW,
+      accent, accentBright, accentSoft:this.ha(accent,0.4),
+      ringCirc:C, ringOffset, ringCirc2:C2, ringOffset2,
+      ringAnim: isRunning? 'islandBreathe 3.4s ease-in-out infinite':'none',
+      ringAnim2: isRunning? 'islandBreathe 3.4s ease-in-out infinite':'none',
+      dots, particles,
+      isRunning,isPaused,isIdle,isComplete,isBreak,isFocus,
+      glyphPlay:glyph==='play', glyphPause:glyph==='pause', glyphCheck:glyph==='check', glyphCup:glyph==='cup',
+      playPauseIsPause:isRunning, playPauseIsPlay:!isRunning,
+      onPlayPause, onPlayPauseStop:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); onPlayPause(); },
+      onToggleExpand:p.onToggleExpand||noop,
+      onReset:p.onReset||noop, onSkip:p.onSkip||noop,
+      onResetStop:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); (p.onReset||noop)(); },
+      onSkipStop:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); (p.onSkip||noop)(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

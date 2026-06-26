@@ -1,0 +1,12 @@
+appId: com.pomisland.app
+productName: Pomisland
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+  hardenedRuntime: true

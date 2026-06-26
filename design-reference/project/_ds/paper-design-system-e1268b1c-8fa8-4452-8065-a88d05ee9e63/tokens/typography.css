@@ -1,0 +1,45 @@
+/* Folio — typography tokens
+   Fraunces for display/headings (editorial serif), Inter for UI/body,
+   IBM Plex Mono for eyebrows, labels, metadata. */
+:root {
+  /* ---- Families ---- */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---- Weights ---- */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ---- Display / heading scale (Fraunces) ---- */
+  --text-display:    3rem;     /* 48px hero */
+  --text-h1:         2.25rem;  /* 36px */
+  --text-h2:         1.5rem;   /* 24px */
+  --text-h3:         1.25rem;  /* 20px */
+  --text-quote:      1.1875rem;/* 19px pull quote */
+
+  /* ---- Body scale (Inter) ---- */
+  --text-lead:       1.0625rem;/* 17px lede */
+  --text-base:       1.03125rem;/* 16.5px body */
+  --text-sm:         0.9375rem;/* 15px */
+  --text-xs:         0.8125rem;/* 13px */
+
+  /* ---- Mono / label scale (IBM Plex Mono) ---- */
+  --text-eyebrow:    0.71875rem;/* 11.5px */
+  --text-label:      0.65625rem;/* 10.5px */
+
+  /* ---- Line heights ---- */
+  --leading-tight:   1.04;  /* display */
+  --leading-snug:    1.18;  /* headings */
+  --leading-normal:  1.45;  /* quotes */
+  --leading-relaxed: 1.62;  /* body */
+
+  /* ---- Letter spacing ---- */
+  --tracking-display: -0.02em;
+  --tracking-heading: -0.015em;
+  --tracking-body:    -0.005em;
+  --tracking-eyebrow: 0.16em;  /* uppercase mono */
+  --tracking-label:   0.15em;
+}

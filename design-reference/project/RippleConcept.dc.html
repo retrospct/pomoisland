@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<style>
+@keyframes rcExpand { 0%{transform:scale(1);opacity:var(--op)} 65%{opacity:calc(var(--op) * .28)} 100%{transform:scale(var(--sc));opacity:0} }
+@keyframes rcGlow { 0%,100%{opacity:.18} 50%{opacity:.6} }
+@keyframes rcPop { 0%{transform:scale(0);opacity:0} 55%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
+</style>
+</helmet>
+<div style="position:relative;display:inline-flex;">
+  <span style="position:absolute;inset:0;border-radius:999px;box-shadow:0 0 32px 6px rgba(143,200,192,0.5);animation:rcGlow 2.6s ease-in-out infinite;pointer-events:none;z-index:0;"></span>
+  <sc-for list="{{ rings }}" as="rg" hint-placeholder-count="3"><span style="{{ rg.style }}"></span></sc-for>
+  <div style="position:relative;z-index:2;display:inline-flex;align-items:center;gap:10px;background:#17191D;color:#F2F1EC;border-radius:999px;padding:7px 17px 7px 8px;box-shadow:0 14px 36px rgba(0,0,0,.42);min-height:42px;box-sizing:border-box;">
+    <div style="position:relative;width:28px;height:28px;flex:0 0 auto;">
+      <svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(-90deg);"><circle cx="14" cy="14" r="10.5" fill="none" stroke="rgba(242,241,236,0.14)" stroke-width="3"></circle><circle cx="14" cy="14" r="10.5" fill="none" stroke="#8FC8C0" stroke-width="3" stroke-linecap="round" stroke-dasharray="66" stroke-dashoffset="0"></circle></svg>
+      <div style="position:absolute;inset:0;display:grid;place-items:center;"><svg width="13" height="11" viewBox="0 0 13 11" style="animation:rcPop .5s cubic-bezier(.2,1.2,.4,1);"><path d="M1 5.5 L4.8 9.5 L12 1.5" fill="none" stroke="#8FC8C0" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;line-height:1;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;color:#8FC8C0;font-weight:500;white-space:nowrap;">FOCUS DONE</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;color:#F2F1EC;font-variant-numeric:tabular-nums;">00:00</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const p=this.props;
+    const variant=p.variant||'burst';
+    const teal='#8FC8C0', bright='#CDEDE7';
+    // each ring: peak opacity, max scale, duration, delay, width, color
+    const defs={
+      burst:   [{op:.92,sc:2.0,dur:2.6,delay:0,w:2.5,c:bright},{op:.62,sc:2.12,dur:2.6,delay:.34,w:2,c:teal},{op:.4,sc:2.22,dur:2.6,delay:.68,w:1.5,c:teal}],
+      echo:    [{op:.95,sc:2.3,dur:3.4,delay:0,w:2,c:bright},{op:.5,sc:2.3,dur:3.4,delay:.85,w:2,c:teal},{op:.26,sc:2.3,dur:3.4,delay:1.7,w:1.5,c:teal}],
+      heartbeat:[{op:.98,sc:1.95,dur:3.0,delay:0,w:2.5,c:bright},{op:.7,sc:2.05,dur:3.0,delay:.2,w:2,c:teal}],
+      bloom:   [{op:.85,sc:2.45,dur:2.8,delay:0,w:3,c:bright}]
+    };
+    const arr=defs[variant]||defs.burst;
+    const rings=arr.map(r=>({ style:{
+      position:'absolute', inset:'-1px', borderRadius:'999px',
+      border:r.w+'px solid '+r.c, pointerEvents:'none', zIndex:3,
+      '--op':r.op, '--sc':r.sc,
+      animation:'rcExpand '+r.dur+'s cubic-bezier(.16,.6,.3,1) '+r.delay+'s infinite'
+    }}));
+    return { rings };
+  }
+}
+</script>
+</body>
+</html>

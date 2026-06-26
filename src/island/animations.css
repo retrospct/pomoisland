@@ -1,0 +1,61 @@
+/* Island animations, ported from Island.dc.html and RippleConcept.dc.html. */
+
+@keyframes islandBreathe {
+  0%,
+  100% {
+    transform: rotate(-90deg) scale(1);
+  }
+  50% {
+    transform: rotate(-90deg) scale(1.075);
+  }
+}
+
+@keyframes islandPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes islandGlow {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.66;
+  }
+}
+
+/* Completion ripple. --op = peak opacity, --sc = max scale (RippleConcept defs). */
+@keyframes islandRipple {
+  0% {
+    transform: scale(1);
+    opacity: var(--op);
+  }
+  65% {
+    opacity: calc(var(--op) * 0.28);
+  }
+  100% {
+    transform: scale(var(--sc));
+    opacity: 0;
+  }
+}
+
+@keyframes islandConfetti {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(0.4);
+    opacity: 0;
+  }
+}

@@ -1,0 +1,45 @@
+/* Folio — spacing, radii, shadows, borders, motion
+   Generous editorial spacing. Subtle borders over heavy shadows. */
+:root {
+  /* ---- Spacing scale (4px base) ---- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  26px;   /* card padding inset */
+  --space-7:  34px;
+  --space-8:  42px;   /* section rhythm */
+  --space-9:  54px;   /* page top inset */
+  --space-10: 72px;
+  --space-12: 90px;   /* page bottom inset */
+
+  /* ---- Radii ---- */
+  --radius-xs:   6px;
+  --radius-sm:   10px;  /* small cards, inputs */
+  --radius-md:   14px;  /* cards, panels */
+  --radius-lg:   18px;
+  --radius-pill: 999px;
+
+  /* ---- Border widths ---- */
+  --border-hair:   1px;
+  --border-medium: 1.5px;
+  --border-accent: 3px;  /* left accent rule */
+
+  /* ---- Shadows (low, warm, restrained) ---- */
+  --shadow-none: none;
+  --shadow-sm:   0 1px 2px rgba(23,25,29,0.05);
+  --shadow-md:   0 2px 8px rgba(23,25,29,0.06), 0 1px 2px rgba(23,25,29,0.04);
+  --shadow-lg:   0 8px 28px rgba(23,25,29,0.10), 0 2px 6px rgba(23,25,29,0.05);
+
+  /* ---- Layout ---- */
+  --measure:     730px;  /* max reading width */
+  --measure-narrow: 54ch; /* lede / prose measure */
+
+  /* ---- Motion ---- */
+  --ease-out:   cubic-bezier(0.22, 0.61, 0.36, 1); /* @kind other */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);   /* @kind other */
+  --duration-fast:   120ms; /* @kind other */
+  --duration-base:   200ms; /* @kind other */
+  --duration-slow:   500ms; /* @kind other */
+}
