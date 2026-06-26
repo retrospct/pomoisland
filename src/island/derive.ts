@@ -1,7 +1,7 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
 import type { Prefs, TimerState } from '@shared/types'
 import { fmtTime, frac as fracOf } from '@shared/format'
-import { hexToRgba, resolveAccent } from '@shared/accent'
+import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
 
 export type Glyph = 'play' | 'pause' | 'check' | 'cup' | 'none'
 
@@ -40,7 +40,7 @@ export function deriveIsland(state: TimerState, prefs: Prefs): IslandView {
   const isComplete = status === 'complete'
 
   const { accent, accentBright, accentSoft } = resolveAccent({
-    base: prefs.accent,
+    base: accentHex(prefs.accent),
     mode,
     status,
     remaining,

@@ -1,417 +1,691 @@
+// Settings tab bodies, ported from SettingsPanel.dc.html. Two tabs:
+//   General      → Timer preset / durations / shortcuts+goal + Behavior
+//   Preferences  → Colors / dots / timer style / notch layout + Alarm & sound / Done animation
+// Every control writes straight through to prefs (optimistic in SettingsApp).
+
 import type { CSSProperties, ReactNode } from 'react'
-import type {
-  AlarmSound,
-  CompletionAnim,
-  Layout,
-  Prefs,
-  Preset,
-  ThemeChoice,
-  TimerType,
-} from '@shared/types'
-import { SectionLabel, SegOption, Segmented, SettingRow, Stepper, Toggle } from './controls'
+import type { AccentKey, Prefs, Ripple, Sound, ThemeChoice, TimerStyle, Layout } from '@shared/types'
+import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
+import { RIPPLE_DEFS } from '@shared/ripple'
 
 const MONO = "'IBM Plex Mono', monospace"
 const SANS = "'Inter', sans-serif"
 
-type Setter = (patch: Partial<Prefs>) => void
-
-const STEP_CFG: Record<string, [min: number, max: number, step: number]> = {
-  focusMin: [5, 90, 5],
-  shortMin: [1, 30, 1],
-  longMin: [5, 60, 5],
-  longEvery: [2, 8, 1],
-  dailyGoal: [1, 16, 1],
+export interface TabProps {
+  prefs: Prefs
+  set: (patch: Partial<Prefs>) => void
 }
 
-function stepValue(field: keyof Prefs, current: number, dir: number): number {
-  const [min, max, step] = STEP_CFG[field as string]
-  return Math.max(min, Math.min(max, current + dir * step))
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
+const cssVar = (name: string, value: string | number) => ({ [name]: value }) as CSSProperties
+
+// ---- primitives ----
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        fontFamily: MONO,
+        fontSize: 10.5,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        color: 'var(--sp-faint)',
+        marginBottom: 11,
+        fontWeight: 500,
+      }}
+    >
+      {children}
+    </div>
+  )
 }
 
-// ---------- Timer ----------
-
-const PRESET_HINTS: Record<Preset, string> = {
-  classic: 'The original Pomodoro rhythm — 25 on, 5 off, a long 15 every four.',
-  focus: 'Longer deep-work blocks for flow states — 50 on, 10 off.',
-  custom: 'Dial in your own. The fields below stay editable.',
+function ToggleSwitch({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        position: 'relative',
+        width: 40,
+        height: 23,
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer',
+        background: 'transparent',
+        flex: '0 0 auto',
+      }}
+    >
+      <span style={{ position: 'absolute', inset: 0, borderRadius: 999, background: on ? 'var(--sp-teal)' : 'var(--sp-border)', transition: 'background .18s' }}>
+        <span
+          style={{
+            position: 'absolute',
+            top: 3,
+            left: 3,
+            width: 17,
+            height: 17,
+            borderRadius: '50%',
+            background: 'var(--sp-surface)',
+            boxShadow: '0 1px 2px rgba(0,0,0,.22)',
+            transform: on ? 'translateX(17px)' : 'none',
+            transition: 'transform .18s',
+            display: 'block',
+          }}
+        />
+      </span>
+    </button>
+  )
 }
 
-function DurationCard({
-  label,
-  value,
-  editable,
-  onStep,
+function ToggleRow({
+  title,
+  desc,
+  on,
+  onClick,
+  border = true,
 }: {
-  label: string
-  value: number
-  editable: boolean
-  onStep: (dir: number) => void
+  title: string
+  desc: string
+  on: boolean
+  onClick: () => void
+  border?: boolean
 }) {
   return (
-    <div style={{ flex: 1, background: 'var(--s-elev)', border: '1px solid var(--s-line)', borderRadius: 13, padding: '15px 14px' }}>
-      <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--s-sub)', marginBottom: 9 }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-        <span style={{ fontFamily: MONO, fontSize: 30, fontWeight: 500, color: 'var(--s-text)', lineHeight: 1 }}>{value}</span>
-        <span style={{ fontFamily: SANS, fontSize: 12, color: 'var(--s-faint)' }}>min</span>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 16,
+        paddingTop: border ? 11 : 0,
+        borderTop: border ? '1px solid var(--sp-line)' : 'none',
+      }}
+    >
+      <div>
+        <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>{title}</div>
+        <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2, lineHeight: 1.35 }}>{desc}</div>
       </div>
-      {editable && (
-        <div style={{ marginTop: 12 }}>
-          <Stepper onDec={() => onStep(-1)} onInc={() => onStep(1)} />
-        </div>
-      )}
+      <ToggleSwitch on={on} onClick={onClick} />
     </div>
   )
 }
 
-export function TimerSection({ prefs, set }: { prefs: Prefs; set: Setter }) {
-  const editable = prefs.preset === 'custom'
-  const presetOpts: SegOption<Preset>[] = [
-    { value: 'classic', label: 'Classic', detail: ' · 25/5/15' },
-    { value: 'focus', label: 'Deep Focus', detail: ' · 50/10/20' },
-    { value: 'custom', label: 'Custom' },
-  ]
-  const pickPreset = (p: Preset) => {
-    if (p === 'classic') set({ preset: p, focusMin: 25, shortMin: 5, longMin: 15 })
-    else if (p === 'focus') set({ preset: p, focusMin: 50, shortMin: 10, longMin: 20 })
-    else set({ preset: 'custom' })
-  }
-  const stepDuration = (field: 'focusMin' | 'shortMin' | 'longMin', dir: number) =>
-    set({ [field]: stepValue(field, prefs[field], dir), preset: 'custom' } as Partial<Prefs>)
-
+function StepButton({ children, onClick, size = 26 }: { children: ReactNode; onClick: () => void; size?: number }) {
   return (
-    <div>
-      <SectionLabel style={{ marginBottom: 10 }}>Preset</SectionLabel>
-      <Segmented options={presetOpts} value={prefs.preset} onChange={pickPreset} />
-      <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--s-sub)', margin: '8px 0 18px' }}>{PRESET_HINTS[prefs.preset]}</div>
-
-      <div style={{ display: 'flex', gap: 12, marginBottom: 22 }}>
-        <DurationCard label="Focus" value={prefs.focusMin} editable={editable} onStep={(d) => stepDuration('focusMin', d)} />
-        <DurationCard label="Short break" value={prefs.shortMin} editable={editable} onStep={(d) => stepDuration('shortMin', d)} />
-        <DurationCard label="Long break" value={prefs.longMin} editable={editable} onStep={(d) => stepDuration('longMin', d)} />
-      </div>
-
-      <SettingRow title="Long break after" desc="Focus sessions before the longer rest.">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Stepper onDec={() => set({ longEvery: stepValue('longEvery', prefs.longEvery, -1) })} onInc={() => set({ longEvery: stepValue('longEvery', prefs.longEvery, 1) })} />
-          <span style={{ fontFamily: MONO, fontSize: 16, color: 'var(--s-text)', minWidth: 48, textAlign: 'center' }}>
-            {prefs.longEvery}
-            <span style={{ fontSize: 11, color: 'var(--s-faint)' }}> ses</span>
-          </span>
-        </div>
-      </SettingRow>
-
-      <SectionLabel style={{ margin: '18px 0 4px' }}>Automation</SectionLabel>
-      <SettingRow title="Auto-start breaks" desc="When focus ends, the break begins on its own.">
-        <Toggle on={prefs.autoBreak} onChange={(v) => set({ autoBreak: v })} />
-      </SettingRow>
-      <SettingRow title="Auto-start next focus" desc="Roll straight into the next session after a break.">
-        <Toggle on={prefs.autoFocus} onChange={(v) => set({ autoFocus: v })} />
-      </SettingRow>
-    </div>
+    <button
+      onClick={onClick}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size >= 28 ? 8 : 7,
+        border: '1px solid var(--sp-border)',
+        background: size >= 28 ? 'var(--sp-field)' : 'var(--sp-surface)',
+        color: 'var(--sp-body)',
+        cursor: 'pointer',
+        fontSize: 16,
+        lineHeight: 1,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 0,
+      }}
+    >
+      {children}
+    </button>
   )
 }
 
-// ---------- Sounds ----------
-
-const ALARMS: { k: AlarmSound; label: string }[] = [
-  { k: 'chime', label: 'Chime' },
-  { k: 'marimba', label: 'Marimba' },
-  { k: 'bell', label: 'Soft bell' },
-  { k: 'pebble', label: 'Pebble' },
-  { k: 'birdsong', label: 'Birdsong' },
-  { k: 'custom', label: 'Custom…' },
-]
-
-const ANIMS: { k: CompletionAnim; label: string }[] = [
-  { k: 'ripple', label: 'Ripple' },
-  { k: 'bloom', label: 'Bloom' },
-  { k: 'heartbeat', label: 'Heartbeat' },
-  { k: 'confetti', label: 'Confetti' },
-  { k: 'none', label: 'None' },
-]
-
-export function SoundsSection({ prefs, set }: { prefs: Prefs; set: Setter }) {
+function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
-    <div>
-      <SectionLabel style={{ marginBottom: 10 }}>Alarm sound</SectionLabel>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 20 }}>
-        {ALARMS.map((a) => {
-          const sel = prefs.alarm === a.k
-          return (
-            <button
-              key={a.k}
-              onClick={() => set({ alarm: a.k })}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 12px',
-                borderRadius: 10,
-                cursor: 'pointer',
-                width: '100%',
-                textAlign: 'left',
-                transition: 'all .14s',
-                border: `1px solid ${sel ? 'var(--s-line)' : 'transparent'}`,
-                background: sel ? 'var(--s-elev)' : 'transparent',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                <span style={{ width: 15, height: 15, borderRadius: 999, display: 'grid', placeItems: 'center', flex: '0 0 auto', boxSizing: 'border-box', border: `1.5px solid ${sel ? 'var(--s-accent)' : 'var(--s-faint)'}` }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 999, display: 'block', background: sel ? 'var(--s-accent)' : 'transparent' }} />
-                </span>
-                <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--s-text)' }}>{a.label}</span>
-              </span>
-              <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 999, background: 'var(--s-elev)' }}>
-                <svg width="9" height="10" viewBox="0 0 9 10">
-                  <path d="M1 1 L8 5 L1 9 Z" fill="var(--s-sub)" />
-                </svg>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      <SettingRow title="Volume">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: 260 }}>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={prefs.volume}
-            onChange={(e) => set({ volume: parseInt(e.target.value, 10) })}
-            style={{ flex: 1, accentColor: 'var(--s-accent)', height: 4, cursor: 'pointer' }}
-          />
-          <span style={{ fontFamily: MONO, fontSize: 12, color: 'var(--s-sub)', minWidth: 34, textAlign: 'right' }}>{prefs.volume}</span>
-        </div>
-      </SettingRow>
-      <SettingRow title="Ticking while focusing" desc="A soft clock tick for presence. Off by default.">
-        <Toggle on={prefs.tickOn} onChange={(v) => set({ tickOn: v })} />
-      </SettingRow>
-
-      <SectionLabel style={{ margin: '20px 0 10px' }}>Completion animation</SectionLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
-        {ANIMS.map((an) => {
-          const sel = prefs.anim === an.k
-          return (
-            <button
-              key={an.k}
-              onClick={() => set({ anim: an.k })}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '8px 13px',
-                borderRadius: 999,
-                cursor: 'pointer',
-                fontFamily: SANS,
-                fontSize: 12.5,
-                color: 'var(--s-text)',
-                transition: 'all .14s',
-                border: `1.5px solid ${sel ? 'var(--s-accent)' : 'var(--s-line)'}`,
-                background: sel ? 'var(--s-elev)' : 'transparent',
-              }}
-            >
-              <span style={{ width: 8, height: 8, borderRadius: 999, display: 'block', background: an.k === 'none' ? 'var(--s-faint)' : 'var(--s-accent)', opacity: an.k === 'none' ? 0.5 : 1 }} />
-              {an.label}
-            </button>
-          )
-        })}
-      </div>
-      <SettingRow title="System notification on finish" desc="Banner in Notification Center when a block ends.">
-        <Toggle on={prefs.notify} onChange={(v) => set({ notify: v })} />
-      </SettingRow>
-    </div>
+    <button
+      onClick={onClick}
+      style={{
+        border: `1px solid ${on ? 'var(--sp-teal)' : 'var(--sp-border)'}`,
+        background: on ? 'var(--sp-tint)' : 'transparent',
+        color: on ? 'var(--sp-teal)' : 'var(--sp-muted)',
+        cursor: 'pointer',
+        padding: '7px 14px',
+        borderRadius: 999,
+        fontFamily: SANS,
+        fontSize: 12.5,
+        fontWeight: on ? 600 : 500,
+        transition: 'all .15s',
+      }}
+    >
+      {label}
+    </button>
   )
 }
 
-// ---------- Appearance ----------
-
-const ACCENTS: { k: string; c: string }[] = [
-  { k: 'teal', c: '#8FC8C0' },
-  { k: 'clay', c: '#E2A24A' },
-  { k: 'blue', c: '#6F9CEB' },
-  { k: 'violet', c: '#A88BE0' },
-  { k: 'rose', c: '#E08AA6' },
-  { k: 'green', c: '#84B26A' },
-]
-
-function SelectCard({ selected, onClick, icon, label }: { selected: boolean; onClick: () => void; icon: ReactNode; label: string }) {
+function SelectCard({
+  selected,
+  onClick,
+  icon,
+  label,
+  padTop = 22,
+}: {
+  selected: boolean
+  onClick: () => void
+  icon: ReactNode
+  label: string
+  padTop?: number
+}) {
   return (
     <button
       onClick={onClick}
       style={{
         position: 'relative',
         flex: 1,
+        border: '1.5px solid var(--sp-border)',
+        background: 'var(--sp-surface)',
+        borderRadius: 12,
+        padding: `${padTop}px 10px 16px`,
+        cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
-        padding: '13px 8px',
-        borderRadius: 11,
-        cursor: 'pointer',
-        border: `1.5px solid ${selected ? 'var(--s-accent)' : 'var(--s-line)'}`,
-        background: selected ? 'var(--s-elev)' : 'transparent',
+        gap: 10,
+        transition: 'all .15s',
       }}
     >
-      <span style={{ position: 'relative', zIndex: 1 }}>{icon}</span>
-      <span style={{ position: 'relative', zIndex: 1, fontFamily: SANS, fontSize: 12, color: 'var(--s-text)' }}>{label}</span>
+      {selected && (
+        <span style={{ position: 'absolute', inset: -1.5, border: '1.5px solid var(--sp-teal)', borderRadius: 12, background: 'var(--sp-tint)', zIndex: 0 }} />
+      )}
+      <span style={{ position: 'relative', zIndex: 1, display: 'grid', placeItems: 'center' }}>{icon}</span>
+      <span style={{ position: 'relative', zIndex: 1, fontFamily: SANS, fontSize: 12, fontWeight: 500, color: 'var(--sp-body)' }}>{label}</span>
     </button>
   )
 }
 
-const TIMER_TYPE_ICONS: Record<TimerType, ReactNode> = {
-  circular: (
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-      <circle cx="15" cy="15" r="11" stroke="var(--s-sub)" strokeWidth="2.4" opacity="0.3" />
-      <path d="M15 4 a11 11 0 0 1 9.5 16.5" stroke="var(--s-accent)" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  ),
-  outline: (
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-      <path d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4" stroke="var(--s-accent)" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-  ),
-  bar: (
-    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-      <rect x="4" y="12.5" width="22" height="5" rx="2.5" stroke="var(--s-sub)" strokeWidth="2" opacity="0.3" />
-      <rect x="4" y="12.5" width="13" height="5" rx="2.5" fill="var(--s-accent)" />
-    </svg>
-  ),
+// ---- General tab ----
+
+const PRESETS: [Prefs['preset'], string][] = [
+  ['classic', 'Classic'],
+  ['focus', 'Focus'],
+  ['custom', 'Custom'],
+]
+const PRESET_VALS: Partial<Record<Prefs['preset'], Partial<Prefs>>> = {
+  classic: { cFocus: 25, cShort: 5, cLong: 15 },
+  focus: { cFocus: 50, cShort: 10, cLong: 20 },
 }
 
-const LAYOUT_ICONS: Record<Layout, ReactNode> = {
-  split: (
-    <svg width="34" height="20" viewBox="0 0 34 20" fill="none">
-      <rect x="11" y="0" width="12" height="7" rx="2" fill="var(--s-sub)" opacity="0.4" />
-      <circle cx="5" cy="12" r="2.4" fill="var(--s-accent)" />
-      <rect x="24" y="10" width="7" height="4" rx="2" fill="var(--s-accent)" />
-    </svg>
-  ),
-  minimal: (
-    <svg width="34" height="20" viewBox="0 0 34 20" fill="none">
-      <rect x="11" y="0" width="12" height="7" rx="2" fill="var(--s-sub)" opacity="0.4" />
-      <rect x="6" y="10" width="9" height="4" rx="2" fill="var(--s-accent)" />
-    </svg>
-  ),
-  compact: (
-    <svg width="34" height="20" viewBox="0 0 34 20" fill="none">
-      <rect x="11" y="0" width="12" height="7" rx="2" fill="var(--s-sub)" opacity="0.4" />
-      <circle cx="6" cy="12" r="2.4" fill="var(--s-accent)" />
-      <circle cx="26" cy="12" r="2.4" fill="var(--s-accent)" />
-    </svg>
-  ),
-}
+const BEHAVIORS: [keyof Prefs, string, string][] = [
+  ['autoStart', 'Auto-start next session', 'Begin the next focus or break automatically'],
+  ['dnd', 'Do Not Disturb in focus', 'Silence other notifications while the timer runs'],
+  ['launchLogin', 'Launch at login', 'Open Pomodoro when your Mac starts up'],
+  ['messages', 'Motivational messages', 'Show an encouraging line in the expanded panel'],
+  ['hideShare', 'Hide during screen sharing', 'Auto-conceal while presenting or recording.'],
+  ['pauseIdle', 'Pause when Mac is idle', 'Stop the clock if you step away or lock the screen.'],
+]
 
-export function AppearanceSection({ prefs, set }: { prefs: Prefs; set: Setter }) {
-  const themeOpts: SegOption<ThemeChoice>[] = [
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'auto', label: 'Auto' },
+export function GeneralTab({ prefs, set }: TabProps) {
+  const onPreset = (k: Prefs['preset']) => set(PRESET_VALS[k] ? { preset: k, ...PRESET_VALS[k] } : { preset: k })
+
+  const steppers: { label: string; value: string; dec: () => void; inc: () => void }[] = [
+    {
+      label: 'Focus',
+      value: `${prefs.cFocus} min`,
+      dec: () => set({ cFocus: clamp(prefs.cFocus - 5, 5, 180), preset: 'custom' }),
+      inc: () => set({ cFocus: clamp(prefs.cFocus + 5, 5, 180), preset: 'custom' }),
+    },
+    {
+      label: 'Short break',
+      value: `${prefs.cShort} min`,
+      dec: () => set({ cShort: clamp(prefs.cShort - 1, 1, 60), preset: 'custom' }),
+      inc: () => set({ cShort: clamp(prefs.cShort + 1, 1, 60), preset: 'custom' }),
+    },
+    {
+      label: 'Long break',
+      value: `${prefs.cLong} min`,
+      dec: () => set({ cLong: clamp(prefs.cLong - 5, 5, 60), preset: 'custom' }),
+      inc: () => set({ cLong: clamp(prefs.cLong + 5, 5, 60), preset: 'custom' }),
+    },
+    {
+      label: 'Sessions until long break',
+      value: `${prefs.cSessions}`,
+      dec: () => set({ cSessions: clamp(prefs.cSessions - 1, 2, 8), preset: 'custom' }),
+      inc: () => set({ cSessions: clamp(prefs.cSessions + 1, 2, 8), preset: 'custom' }),
+    },
   ]
+
   return (
-    <div>
-      <SectionLabel style={{ marginBottom: 10 }}>Theme</SectionLabel>
-      <div style={{ marginBottom: 20 }}>
-        <Segmented options={themeOpts} value={prefs.theme} onChange={(v) => set({ theme: v })} maxWidth={320} />
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+      {/* Left: preset + durations + shortcuts/goal */}
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>Timer preset</SectionLabel>
+          <div style={{ display: 'flex', border: '1px solid var(--sp-border)', borderRadius: 11, overflow: 'hidden', marginBottom: 12 }}>
+            {PRESETS.map(([k, label], i) => {
+              const on = prefs.preset === k
+              return (
+                <button
+                  key={k}
+                  onClick={() => onPreset(k)}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    border: 'none',
+                    borderLeft: i ? '1px solid var(--sp-border)' : 'none',
+                    cursor: 'pointer',
+                    padding: '9px 8px',
+                    fontFamily: MONO,
+                    fontSize: 11.5,
+                    letterSpacing: '0.03em',
+                    background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                    color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-muted)',
+                    transition: 'all .15s',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 11, border: '1px solid var(--sp-line)', borderRadius: 11, padding: '14px 15px' }}>
+            {steppers.map((st) => (
+              <div key={st.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>{st.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+                  <StepButton onClick={st.dec}>&minus;</StepButton>
+                  <span style={{ fontFamily: MONO, fontSize: 14, color: 'var(--sp-teal)', minWidth: 54, textAlign: 'center' }}>{st.value}</span>
+                  <StepButton onClick={st.inc}>+</StepButton>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <SectionLabel>Shortcuts &amp; goal</SectionLabel>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingTop: 11, borderTop: '1px solid var(--sp-line)' }}>
+              <div>
+                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Global shortcut</div>
+                <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>Start / pause from anywhere.</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: '0 0 auto' }}>
+                <Kbd>⌥</Kbd>
+                <Kbd>Space</Kbd>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingTop: 11, borderTop: '1px solid var(--sp-line)' }}>
+              <div>
+                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Daily goal</div>
+                <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>Focus blocks to aim for each day.</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, flex: '0 0 auto' }}>
+                <StepButton size={28} onClick={() => set({ dailyGoal: clamp(prefs.dailyGoal - 1, 1, 20) })}>
+                  &minus;
+                </StepButton>
+                <span style={{ fontFamily: MONO, fontSize: 15, color: 'var(--sp-teal)', minWidth: 52, textAlign: 'center' }}>
+                  {prefs.dailyGoal}
+                  <span style={{ fontSize: 10, color: 'var(--sp-faint)', marginLeft: 3 }}>pom</span>
+                </span>
+                <StepButton size={28} onClick={() => set({ dailyGoal: clamp(prefs.dailyGoal + 1, 1, 20) })}>
+                  +
+                </StepButton>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <SectionLabel style={{ marginBottom: 12 }}>Accent</SectionLabel>
-      <div style={{ display: 'flex', gap: 13, marginBottom: 22 }}>
-        {ACCENTS.map((ac) => {
-          const sel = prefs.accent === ac.c
-          return (
-            <button
-              key={ac.k}
-              title={ac.k}
-              onClick={() => set({ accent: ac.c })}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 999,
-                cursor: 'pointer',
-                border: 'none',
-                flex: '0 0 auto',
-                transition: 'all .15s',
-                background: ac.c,
-                boxShadow: sel ? `0 0 0 2px var(--s-bg), 0 0 0 4px ${ac.c}` : '0 0 0 1px rgba(0,0,0,0.15)',
-              }}
-            />
-          )
-        })}
+      {/* Right: behavior */}
+      <div>
+        <SectionLabel>Behavior</SectionLabel>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+          {BEHAVIORS.map(([k, label, desc]) => (
+            <ToggleRow key={k} title={label} desc={desc} on={Boolean(prefs[k])} onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)} />
+          ))}
+        </div>
       </div>
-
-      <SectionLabel style={{ marginBottom: 11 }}>Timer style</SectionLabel>
-      <div style={{ display: 'flex', gap: 9, marginBottom: 22 }}>
-        {(['circular', 'outline', 'bar'] as TimerType[]).map((t) => (
-          <SelectCard key={t} selected={prefs.timerType === t} onClick={() => set({ timerType: t })} icon={TIMER_TYPE_ICONS[t]} label={t === 'circular' ? 'Circular' : t === 'outline' ? 'Notch outline' : 'Progress bar'} />
-        ))}
-      </div>
-
-      <SectionLabel style={{ marginBottom: 11 }}>Collapsed notch layout</SectionLabel>
-      <div style={{ display: 'flex', gap: 9, marginBottom: 14 }}>
-        {(['split', 'minimal', 'compact'] as Layout[]).map((l) => (
-          <SelectCard key={l} selected={prefs.layout === l} onClick={() => set({ layout: l })} icon={LAYOUT_ICONS[l]} label={l[0].toUpperCase() + l.slice(1)} />
-        ))}
-      </div>
-
-      <SettingRow title="Show session dots" desc="The little round-progress markers.">
-        <Toggle on={prefs.showDots} onChange={(v) => set({ showDots: v })} />
-      </SettingRow>
-      <SettingRow title="Micro-messages" desc="Playful nudges like “Breathe…” and “In the pocket.”">
-        <Toggle on={prefs.showMessages} onChange={(v) => set({ showMessages: v })} />
-      </SettingRow>
     </div>
   )
 }
 
-// ---------- Behavior ----------
-
-const kbd: CSSProperties = {
-  fontFamily: MONO,
-  fontSize: 13,
-  color: 'var(--s-text)',
-  background: 'var(--s-elev)',
-  border: '1px solid var(--s-line)',
-  borderRadius: 7,
-  padding: '5px 10px',
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd
+      style={{
+        fontFamily: MONO,
+        fontSize: 12,
+        color: 'var(--sp-teal)',
+        background: 'var(--sp-field)',
+        border: '1px solid var(--sp-border)',
+        borderRadius: 7,
+        padding: '5px 9px',
+      }}
+    >
+      {children}
+    </kbd>
+  )
 }
 
-export function BehaviorSection({ prefs, set }: { prefs: Prefs; set: Setter }) {
-  return (
-    <div>
-      <SectionLabel style={{ marginBottom: 4 }}>System</SectionLabel>
-      <SettingRow title="Launch at login" desc="Open Pomodoro when you sign in.">
-        <Toggle on={prefs.launchLogin} onChange={(v) => set({ launchLogin: v })} />
-      </SettingRow>
-      <SettingRow title="Always on top" desc="Keep the island above other windows.">
-        <Toggle on={prefs.alwaysTop} onChange={(v) => set({ alwaysTop: v })} />
-      </SettingRow>
-      <SettingRow title="Magnetic snap to notch" desc="Drag near the camera and it locks into place.">
-        <Toggle on={prefs.magnetic} onChange={(v) => set({ magnetic: v })} />
-      </SettingRow>
-      <SettingRow title="Hide during screen sharing" desc="Auto-conceal while presenting or recording.">
-        <Toggle on={prefs.hideShare} onChange={(v) => set({ hideShare: v })} />
-      </SettingRow>
-      <SettingRow title="Pause when Mac is idle" desc="Stop the clock if you step away or lock the screen.">
-        <Toggle on={prefs.pauseIdle} onChange={(v) => set({ pauseIdle: v })} />
-      </SettingRow>
+// ---- Preferences tab ----
 
-      <SectionLabel style={{ margin: '20px 0 4px' }}>Shortcuts &amp; goal</SectionLabel>
-      <SettingRow title="Global shortcut" desc="Start / pause from anywhere.">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <kbd style={kbd}>&#8997;</kbd>
-          <kbd style={{ ...kbd, fontSize: 12 }}>Space</kbd>
+const THEME_OPTIONS: { k: ThemeChoice; tip: string; icon: ReactNode }[] = [
+  {
+    k: 'system',
+    tip: 'System',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <path d="M8 21h8M12 17v4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    k: 'light',
+    tip: 'Light',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    k: 'dark',
+    tip: 'Dark',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ transform: 'rotate(180deg)' }}>
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+]
+
+const SOUNDS: [Sound, string][] = [
+  ['chime', 'Chime'],
+  ['bell', 'Bell'],
+  ['marimba', 'Marimba'],
+  ['digital', 'Digital'],
+  ['custom', 'Custom…'],
+]
+const RIPPLES: [Ripple, string][] = [
+  ['burst', 'Burst'],
+  ['echo', 'Echo'],
+  ['heartbeat', 'Heartbeat'],
+  ['bloom', 'Bloom'],
+]
+
+const STYLE_OPTIONS: { k: TimerStyle; label: string; icon: ReactNode }[] = [
+  {
+    k: 'circular',
+    label: 'Circular',
+    icon: (
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <circle cx="15" cy="15" r="11" stroke="var(--sp-border)" strokeWidth="2.4" opacity="0.3" />
+        <path d="M15 4 a11 11 0 0 1 9.5 16.5" stroke="var(--sp-teal)" strokeWidth="2.4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    k: 'outline',
+    label: 'Notch-outline',
+    icon: (
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <path d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4" stroke="var(--sp-teal)" strokeWidth="2.4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    k: 'bar',
+    label: 'Progress bar',
+    icon: (
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <rect x="4" y="12.5" width="22" height="5" rx="2.5" stroke="var(--sp-border)" strokeWidth="2" opacity="0.3" />
+        <rect x="4" y="12.5" width="13" height="5" rx="2.5" fill="var(--sp-teal)" />
+      </svg>
+    ),
+  },
+]
+
+const LAYOUT_OPTIONS: { k: Layout; label: string; icon: ReactNode }[] = [
+  {
+    k: 'split',
+    label: 'Split',
+    icon: (
+      <svg width="42" height="22" viewBox="0 0 42 22" fill="none">
+        <rect x="14" y="0" width="14" height="7" rx="2" fill="var(--sp-border)" opacity="0.5" />
+        <circle cx="5" cy="14" r="3" fill="var(--sp-teal)" />
+        <rect x="28" y="11" width="10" height="4" rx="2" fill="var(--sp-teal)" />
+      </svg>
+    ),
+  },
+  {
+    k: 'minimal',
+    label: 'Minimal',
+    icon: (
+      <svg width="42" height="22" viewBox="0 0 42 22" fill="none">
+        <rect x="14" y="0" width="14" height="7" rx="2" fill="var(--sp-border)" opacity="0.5" />
+        <rect x="6" y="12" width="10" height="4" rx="2" fill="var(--sp-teal)" />
+      </svg>
+    ),
+  },
+  {
+    k: 'compact',
+    label: 'Compact',
+    icon: (
+      <svg width="42" height="22" viewBox="0 0 42 22" fill="none">
+        <rect x="14" y="0" width="14" height="7" rx="2" fill="var(--sp-border)" opacity="0.5" />
+        <circle cx="5" cy="14" r="3" fill="var(--sp-teal)" />
+        <circle cx="35" cy="14" r="3" fill="var(--sp-teal)" />
+      </svg>
+    ),
+  },
+]
+
+export function PreferencesTab({ prefs, set }: TabProps) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+      {/* Left: colors / dots / timer style / layout */}
+      <div>
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel>Colors</SectionLabel>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
+            <span style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Accent</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {(Object.keys(ACCENT_HEX) as AccentKey[]).map((k) => {
+                const on = prefs.accent === k
+                const c = ACCENT_HEX[k]
+                return (
+                  <button
+                    key={k}
+                    title={k}
+                    onClick={() => set({ accent: k })}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      background: c,
+                      cursor: 'pointer',
+                      border: 'none',
+                      padding: 0,
+                      boxShadow: on ? `0 0 0 2px var(--sp-surface), 0 0 0 3.5px ${c}` : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                      transition: 'box-shadow .15s',
+                    }}
+                  />
+                )
+              })}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 11, borderTop: '1px solid var(--sp-line)' }}>
+            <span style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Theme</span>
+            <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
+              {THEME_OPTIONS.map((t) => {
+                const on = prefs.theme === t.k
+                return (
+                  <button
+                    key={t.k}
+                    title={t.tip}
+                    onClick={() => set({ theme: t.k })}
+                    style={{
+                      width: 34,
+                      height: 30,
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: 8,
+                      background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                      display: 'grid',
+                      placeItems: 'center',
+                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                    }}
+                  >
+                    {t.icon}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
-      </SettingRow>
-      <SettingRow title="Daily goal" desc="Focus blocks to aim for each day.">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Stepper onDec={() => set({ dailyGoal: stepValue('dailyGoal', prefs.dailyGoal, -1) })} onInc={() => set({ dailyGoal: stepValue('dailyGoal', prefs.dailyGoal, 1) })} />
-          <span style={{ fontFamily: MONO, fontSize: 16, color: 'var(--s-text)', minWidth: 54, textAlign: 'center' }}>
-            {prefs.dailyGoal}
-            <span style={{ fontSize: 11, color: 'var(--s-faint)' }}> pom</span>
-          </span>
+
+        <div style={{ marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid var(--sp-line)' }}>
+          <ToggleRow
+            title="Show session dots"
+            desc="The little round-progress markers."
+            on={prefs.showDots}
+            onClick={() => set({ showDots: !prefs.showDots })}
+            border={false}
+          />
         </div>
-      </SettingRow>
+
+        <div style={{ marginBottom: 24 }}>
+          <SectionLabel>Timer style</SectionLabel>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {STYLE_OPTIONS.map((o) => (
+              <SelectCard key={o.k} selected={prefs.timerStyle === o.k} onClick={() => set({ timerStyle: o.k })} icon={o.icon} label={o.label} />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <SectionLabel>Notch layout</SectionLabel>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {LAYOUT_OPTIONS.map((o) => (
+              <SelectCard key={o.k} selected={prefs.layout === o.k} onClick={() => set({ layout: o.k })} icon={o.icon} label={o.label} padTop={20} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: alarm & sound / done animation */}
+      <div>
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel>Alarm &amp; sound</SectionLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 13 }}>
+            {SOUNDS.map(([k, label]) => (
+              <Chip key={k} label={label} on={prefs.sound === k} onClick={() => set({ sound: k })} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <svg width="17" height="15" viewBox="0 0 17 15" style={{ flex: '0 0 auto' }}>
+              <path d="M1 5 H4 L8 1.5 V13.5 L4 10 H1 Z" fill="var(--sp-muted)" />
+              <path d="M11 4 a4 4 0 0 1 0 7 M13 2 a7 7 0 0 1 0 11" fill="none" stroke="var(--sp-faint)" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={prefs.volume}
+              onChange={(e) => set({ volume: parseInt(e.target.value, 10) })}
+              className="sp-range"
+              style={{ flex: 1 }}
+            />
+            <span style={{ fontFamily: MONO, fontSize: 12, color: 'var(--sp-muted)', minWidth: 34, textAlign: 'right' }}>{prefs.volume}</span>
+          </div>
+          <div style={{ marginBottom: 11 }}>
+            <ToggleRow title="Ticking sound" desc="A soft tick each second while focusing" on={prefs.tick} onClick={() => set({ tick: !prefs.tick })} />
+          </div>
+          <ToggleRow
+            title="System notification on finish"
+            desc="Banner in Notification Center when a block ends."
+            on={prefs.notify}
+            onClick={() => set({ notify: !prefs.notify })}
+          />
+        </div>
+
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel>
+            Done&nbsp;<span style={{ color: 'var(--sp-faint)', letterSpacing: '0.14em' }}>ANIMATION</span>
+          </SectionLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 11 }}>
+            {RIPPLES.map(([k, label]) => (
+              <Chip key={k} label={label} on={prefs.ripple === k} onClick={() => set({ ripple: k })} />
+            ))}
+          </div>
+          <div style={{ height: 64, background: '#1E211C', borderRadius: 10, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+            <RipplePreview variant={prefs.ripple} accent={prefs.accent} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey }) {
+  const base = accentHex(accent)
+  const bright = lighten(base, 0.35)
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex', transform: 'scale(0.9)' }}>
+      <span
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 999,
+          boxShadow: `0 0 32px 6px ${hexToRgba(base, 0.5)}`,
+          animation: 'rcGlow 2.6s ease-in-out infinite',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+      {RIPPLE_DEFS[variant].map((r, i) => (
+        <span
+          key={i}
+          style={{
+            position: 'absolute',
+            inset: -1,
+            borderRadius: 999,
+            border: `${r.w}px solid ${r.bright ? bright : base}`,
+            pointerEvents: 'none',
+            zIndex: 3,
+            ...cssVar('--op', r.op),
+            ...cssVar('--sc', r.sc),
+            animation: `rcExpand ${r.dur}s cubic-bezier(.16,.6,.3,1) ${r.delay}s infinite`,
+          }}
+        />
+      ))}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 10,
+          background: '#17191D',
+          color: '#F2F1EC',
+          borderRadius: 999,
+          padding: '7px 17px 7px 8px',
+          boxShadow: '0 14px 36px rgba(0,0,0,.42)',
+          minHeight: 42,
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ position: 'relative', width: 28, height: 28, flex: '0 0 auto' }}>
+          <svg width="28" height="28" viewBox="0 0 28 28" style={{ transform: 'rotate(-90deg)' }}>
+            <circle cx="14" cy="14" r="10.5" fill="none" stroke="rgba(242,241,236,0.14)" strokeWidth="3" />
+            <circle cx="14" cy="14" r="10.5" fill="none" stroke={base} strokeWidth="3" strokeLinecap="round" strokeDasharray="66" strokeDashoffset="0" />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
+            <svg width="13" height="11" viewBox="0 0 13 11">
+              <path d="M1 5.5 L4.8 9.5 L12 1.5" fill="none" stroke={base} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, lineHeight: 1 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', color: base, fontWeight: 500, whiteSpace: 'nowrap' }}>FOCUS DONE</span>
+          <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: '#F2F1EC' }}>00:00</span>
+        </div>
+      </div>
     </div>
   )
 }

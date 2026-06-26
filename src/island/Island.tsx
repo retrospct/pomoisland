@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import type { CompletionAnim } from '@shared/types'
+import type { Ripple } from '@shared/types'
+import { RIPPLE_DEFS } from '@shared/ripple'
 import type { IslandView } from './derive'
 import { Ring } from './Ring'
 import { SessionDots } from './SessionDots'
@@ -36,7 +37,7 @@ interface IslandProps extends Handlers {
   present: Present
   view: IslandView
   notch: boolean
-  anim: CompletionAnim
+  ripple: Ripple
   messagesOn: boolean
 }
 
@@ -78,7 +79,7 @@ function NotchDot({ top }: { top: number }) {
   )
 }
 
-function Collapsed({ view, notch, anim, onToggleExpand, onMouseDown, onMouseEnter, onMouseLeave }: IslandProps) {
+function Collapsed({ view, notch, ripple, onToggleExpand, onMouseDown, onMouseEnter, onMouseLeave }: IslandProps) {
   const pill: CSSProperties = {
     position: 'relative',
     zIndex: 2,
@@ -98,7 +99,7 @@ function Collapsed({ view, notch, anim, onToggleExpand, onMouseDown, onMouseEnte
   }
   return (
     <div style={{ position: 'relative', display: 'inline-flex' }}>
-      {view.isComplete && <CompletionFx anim={anim} accent={view.accent} accentBright={view.accentBright} />}
+      {view.isComplete && <CompletionFx ripple={ripple} accent={view.accent} accentBright={view.accentBright} />}
       <div
         className="island-pill"
         data-island="1"
@@ -259,32 +260,8 @@ const outlineBtn: CSSProperties = {
 
 // ---- Completion effects ----
 
-interface RippleDef {
-  op: number
-  sc: number
-  dur: number
-  delay: number
-  w: number
-  bright: boolean
-}
-
-const RIPPLE_DEFS: Record<Exclude<CompletionAnim, 'confetti' | 'none'>, RippleDef[]> = {
-  ripple: [
-    { op: 0.92, sc: 2.0, dur: 2.6, delay: 0, w: 2.5, bright: true },
-    { op: 0.62, sc: 2.12, dur: 2.6, delay: 0.34, w: 2, bright: false },
-    { op: 0.4, sc: 2.22, dur: 2.6, delay: 0.68, w: 1.5, bright: false },
-  ],
-  bloom: [{ op: 0.85, sc: 2.45, dur: 2.8, delay: 0, w: 3, bright: true }],
-  heartbeat: [
-    { op: 0.98, sc: 1.95, dur: 3.0, delay: 0, w: 2.5, bright: true },
-    { op: 0.7, sc: 2.05, dur: 3.0, delay: 0.2, w: 2, bright: false },
-  ],
-}
-
-function CompletionFx({ anim, accent, accentBright }: { anim: CompletionAnim; accent: string; accentBright: string }) {
-  if (anim === 'none') return null
-  if (anim === 'confetti') return <Confetti accent={accent} accentBright={accentBright} />
-  const defs = RIPPLE_DEFS[anim]
+function CompletionFx({ ripple, accent, accentBright }: { ripple: Ripple; accent: string; accentBright: string }) {
+  const defs = RIPPLE_DEFS[ripple]
   return (
     <>
       <span
@@ -319,35 +296,3 @@ function CompletionFx({ anim, accent, accentBright }: { anim: CompletionAnim; ac
   )
 }
 
-function Confetti({ accent, accentBright }: { accent: string; accentBright: string }) {
-  const cols = ['#8FC8C0', '#E2A24A', '#F2F1EC', accent, accentBright]
-  const pieces = Array.from({ length: 14 }, (_, i) => {
-    const ang = (i / 14) * Math.PI * 2 + (i % 2 ? 0.3 : -0.2)
-    const dist = 44 + (i % 3) * 16
-    const dx = Math.cos(ang) * dist
-    const dy = Math.sin(ang) * dist - 12
-    return (
-      <span
-        key={i}
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '45%',
-          zIndex: 1,
-          width: i % 3 === 0 ? 5 : 4,
-          height: i % 4 === 0 ? 10 : 4,
-          background: cols[i % cols.length],
-          borderRadius: i % 2 ? 999 : 1,
-          ['--dx' as string]: `${dx}px`,
-          ['--dy' as string]: `${dy}px`,
-          transform: 'translate(-50%,-50%)',
-          animation: 'islandConfetti 1.15s cubic-bezier(.18,.7,.3,1) forwards',
-          animationDelay: `${i * 0.012}s`,
-          opacity: 0,
-          pointerEvents: 'none',
-        }}
-      />
-    )
-  })
-  return <>{pieces}</>
-}

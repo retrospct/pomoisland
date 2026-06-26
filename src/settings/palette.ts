@@ -1,68 +1,62 @@
-// Settings window palette, ported from Settings.dc.html palette()/lum().
-import type { ThemeChoice } from '@shared/types'
-import { luminance } from '@shared/accent'
+// Settings panel palette, ported from SettingsPanel.dc.html tokens(). The neutral
+// surfaces come from the theme; the user's chosen accent drives the panel's primary
+// (segmented fill, toggles, links, tint) — the pastel accent directly on dark, and a
+// darkened version on light so it stays legible.
 
-export interface SPalette {
-  bg: string
-  panel: string
-  elev: string
-  text: string
-  sub: string
-  faint: string
-  line: string
-  track: string
+import { accentHex, darken, hexToRgba, luminance } from '@shared/accent'
+import type { AccentKey, ThemeChoice } from '@shared/types'
+import type { CSSProperties } from 'react'
+
+type Tokens = Record<string, string>
+
+const DARK: Tokens = {
+  '--sp-bg': '#212429',
+  '--sp-surface': '#191B1F',
+  '--sp-field': '#2A2E34',
+  '--sp-text': '#F2F1EC',
+  '--sp-body': 'rgba(242,241,236,0.9)',
+  '--sp-muted': 'rgba(242,241,236,0.62)',
+  '--sp-faint': 'rgba(242,241,236,0.42)',
+  '--sp-line': 'rgba(242,241,236,0.08)',
+  '--sp-border': 'rgba(242,241,236,0.14)',
+  '--sp-teal': '#8FC8C0',
+  '--sp-tint': 'rgba(143,200,192,0.14)',
+  '--sp-seg-on-bg': '#8FC8C0',
+  '--sp-seg-on-text': '#17191D',
 }
 
-const LIGHT: SPalette = {
-  bg: '#FBFAF5',
-  panel: '#F1EFE7',
-  elev: '#FFFFFF',
-  text: '#1F2124',
-  sub: '#63635A',
-  faint: '#9A9A8E',
-  line: 'rgba(23,25,29,0.10)',
-  track: 'rgba(23,25,29,0.14)',
-}
-
-const DARK: SPalette = {
-  bg: '#191B1F',
-  panel: '#212429',
-  elev: '#2A2E34',
-  text: '#F2F1EC',
-  sub: 'rgba(242,241,236,0.62)',
-  faint: 'rgba(242,241,236,0.4)',
-  line: 'rgba(242,241,236,0.10)',
-  track: 'rgba(242,241,236,0.16)',
+const LIGHT: Tokens = {
+  '--sp-bg': '#F5F5F1',
+  '--sp-surface': '#FCFCFA',
+  '--sp-field': '#F5F5F1',
+  '--sp-text': '#17191D',
+  '--sp-body': '#23262B',
+  '--sp-muted': '#565C63',
+  '--sp-faint': '#878D93',
+  '--sp-line': '#E3E1D9',
+  '--sp-border': '#CFCDC4',
+  '--sp-teal': '#0F5E57',
+  '--sp-tint': '#E4EEEC',
+  '--sp-seg-on-bg': '#0F5E57',
+  '--sp-seg-on-text': '#F2F1EC',
 }
 
 export function resolveTheme(theme: ThemeChoice): 'light' | 'dark' {
-  if (theme === 'auto') {
-    return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  if (theme === 'system') {
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   }
   return theme
 }
 
-export function palette(theme: ThemeChoice): SPalette {
-  return resolveTheme(theme) === 'light' ? LIGHT : DARK
-}
-
-export function accentInk(accent: string): string {
-  return luminance(accent) > 0.6 ? '#17191D' : '#FFFFFF'
-}
-
 /** CSS custom properties applied to the Settings window root. */
-export function paletteVars(theme: ThemeChoice, accent: string): React.CSSProperties {
-  const p = palette(theme)
-  return {
-    ['--s-bg' as string]: p.bg,
-    ['--s-panel' as string]: p.panel,
-    ['--s-elev' as string]: p.elev,
-    ['--s-text' as string]: p.text,
-    ['--s-sub' as string]: p.sub,
-    ['--s-faint' as string]: p.faint,
-    ['--s-line' as string]: p.line,
-    ['--s-track' as string]: p.track,
-    ['--s-accent' as string]: accent,
-    ['--s-accent-ink' as string]: accentInk(accent),
-  }
+export function paletteVars(theme: ThemeChoice, accent: AccentKey): CSSProperties {
+  const resolved = resolveTheme(theme)
+  const tok = { ...(resolved === 'dark' ? DARK : LIGHT) }
+  const base = accentHex(accent)
+  const primary = resolved === 'dark' ? base : darken(base, 0.55)
+  tok['--sp-teal'] = primary
+  tok['--sp-seg-on-bg'] = primary
+  tok['--sp-seg-on-text'] = luminance(primary) > 0.55 ? '#17191D' : '#F2F1EC'
+  tok['--sp-tint'] = hexToRgba(primary, resolved === 'dark' ? 0.16 : 0.12)
+  return { ...tok } as CSSProperties
 }

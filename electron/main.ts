@@ -1,9 +1,9 @@
 import { app, BrowserWindow } from 'electron'
+import { registerIpc } from './ipc'
 import { getPrefs } from './store'
 import { Timer } from './timer'
-import { registerIpc } from './ipc'
-import { createIslandWindow } from './windows'
 import { createTray, destroyTray } from './tray'
+import { createIslandWindow } from './windows'
 
 let timer: Timer | null = null
 

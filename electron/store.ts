@@ -7,34 +7,35 @@ import { dirname, join } from 'node:path'
 import type { Prefs } from '../src/shared/types'
 
 export const DEFAULT_PREFS: Prefs = {
-  // Timer
+  // General · Timer
   preset: 'classic',
-  focusMin: 25,
-  shortMin: 5,
-  longMin: 15,
-  longEvery: 4,
+  cFocus: 25,
+  cShort: 5,
+  cLong: 15,
+  cSessions: 4,
   dailyGoal: 8,
-  autoBreak: true,
-  autoFocus: false,
-  // Sounds & alerts
-  alarm: 'chime',
-  volume: 70,
-  tickOn: false,
-  anim: 'ripple',
-  notify: true,
-  // Appearance
-  theme: 'dark',
-  accent: '#8FC8C0',
-  timerType: 'circular',
-  layout: 'split',
-  showDots: true,
-  showMessages: true,
-  // Behavior
-  launchLogin: true,
-  alwaysTop: true,
-  magnetic: true,
+  // General · Behavior
+  autoStart: true,
+  dnd: true,
+  launchLogin: false,
+  messages: true,
   hideShare: false,
   pauseIdle: true,
+  // Preferences · Alarm & sound
+  sound: 'chime',
+  volume: 70,
+  tick: false,
+  notify: true,
+  // Preferences · Appearance
+  accent: 'teal',
+  theme: 'dark',
+  timerStyle: 'circular',
+  layout: 'split',
+  showDots: true,
+  ripple: 'burst',
+  // Window behavior (not surfaced in SettingsPanel)
+  alwaysTop: true,
+  magnetic: true,
 }
 
 type Listener = (p: Prefs) => void

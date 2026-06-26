@@ -113,8 +113,8 @@ export function IslandApp() {
           present={present}
           view={view}
           notch={placement.snapped}
-          anim={prefs.anim}
-          messagesOn={prefs.showMessages}
+          ripple={prefs.ripple}
+          messagesOn={prefs.messages}
           onToggleExpand={toggleExpand}
           onPlayPause={() => window.api.timer.action({ type: 'playPause' })}
           onReset={() => window.api.timer.action({ type: 'reset' })}

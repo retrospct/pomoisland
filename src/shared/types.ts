@@ -5,11 +5,13 @@ export type Status = 'idle' | 'running' | 'paused' | 'complete'
 export type Mode = 'focus' | 'break'
 
 export type Preset = 'classic' | 'focus' | 'custom'
-export type ThemeChoice = 'light' | 'dark' | 'auto'
-export type TimerType = 'circular' | 'outline' | 'bar'
+export type ThemeChoice = 'light' | 'dark' | 'system'
+export type TimerStyle = 'circular' | 'outline' | 'bar'
 export type Layout = 'split' | 'minimal' | 'compact'
-export type AlarmSound = 'chime' | 'marimba' | 'bell' | 'pebble' | 'birdsong' | 'custom'
-export type CompletionAnim = 'ripple' | 'bloom' | 'heartbeat' | 'confetti' | 'none'
+export type AccentKey = 'teal' | 'clay' | 'blue' | 'violet' | 'rose' | 'green'
+export type Sound = 'chime' | 'bell' | 'marimba' | 'digital' | 'custom'
+/** Completion ("done") animation variants — see RippleConcept.dc.html. */
+export type Ripple = 'burst' | 'echo' | 'heartbeat' | 'bloom'
 
 /** Runtime timer state, owned by the main process and broadcast to renderers. */
 export interface TimerState {
@@ -21,43 +23,55 @@ export interface TimerState {
   remaining: number
   /** Zero-based index of the current focus session within the round. */
   sessionIndex: number
-  /** Sessions per round (drives the dots); mirrors prefs.longEvery. */
+  /** Sessions per round (drives the dots); mirrors prefs.cSessions. */
   sessionTotal: number
   /** Whether the current break is the long break. */
   isLongBreak: boolean
   task: string
 }
 
-/** Persisted user preferences, owned by the main process (electron-store). */
+/**
+ * Persisted user preferences, owned by the main process. The field set mirrors
+ * the SettingsPanel.dc.html design (General + Preferences tabs). `alwaysTop` and
+ * `magnetic` are not surfaced in that panel but the main process reads them to
+ * drive window behavior — see ADR-0004.
+ */
 export interface Prefs {
-  // Timer
+  // ---- General · Timer preset + durations (minutes) ----
   preset: Preset
-  focusMin: number
-  shortMin: number
-  longMin: number
-  longEvery: number
+  cFocus: number
+  cShort: number
+  cLong: number
+  /** Focus sessions until a long break (drives the dots). */
+  cSessions: number
   dailyGoal: number
-  autoBreak: boolean
-  autoFocus: boolean
-  // Sounds & alerts
-  alarm: AlarmSound
-  volume: number
-  tickOn: boolean
-  anim: CompletionAnim
-  notify: boolean
-  // Appearance
-  theme: ThemeChoice
-  accent: string
-  timerType: TimerType
-  layout: Layout
-  showDots: boolean
-  showMessages: boolean
-  // Behavior (some are persisted-only no-ops this pass — see ADR-0004)
+  // ---- General · Behavior ----
+  /** Auto-start the next focus/break block when one ends. */
+  autoStart: boolean
+  /** Do Not Disturb while focusing (persisted-only this pass — ADR-0004). */
+  dnd: boolean
   launchLogin: boolean
-  alwaysTop: boolean
-  magnetic: boolean
+  /** Motivational messages in the expanded panel. */
+  messages: boolean
   hideShare: boolean
   pauseIdle: boolean
+  // ---- Preferences · Alarm & sound ----
+  sound: Sound
+  volume: number
+  /** Ticking sound while focusing (persisted-only this pass — ADR-0004). */
+  tick: boolean
+  notify: boolean
+  // ---- Preferences · Appearance ----
+  accent: AccentKey
+  theme: ThemeChoice
+  timerStyle: TimerStyle
+  layout: Layout
+  showDots: boolean
+  /** Completion ("done") animation. */
+  ripple: Ripple
+  // ---- Window behavior (not in SettingsPanel UI; read by main) ----
+  alwaysTop: boolean
+  magnetic: boolean
 }
 
 export type TimerActionType =

@@ -2,7 +2,21 @@
 // Focus uses the user's chosen accent; break uses a warm clay; the final
 // minute of a running focus block shifts to urgent amber (see ADR / CONTEXT.md).
 
-import type { Mode, Status } from './types'
+import type { AccentKey, Mode, Status } from './types'
+
+/** Accent swatch keys → base hex. Mirrors the ACC map in SettingsPanel.dc.html. */
+export const ACCENT_HEX: Record<AccentKey, string> = {
+  teal: '#8FC8C0',
+  clay: '#E2A24A',
+  blue: '#6F9CEB',
+  violet: '#A88BE0',
+  rose: '#E08AA6',
+  green: '#84B26A',
+}
+
+export function accentHex(key: AccentKey): string {
+  return ACCENT_HEX[key] ?? ACCENT_HEX.teal
+}
 
 const BREAK = '#e2a24a'
 const URGENT = '#ecb24e'
@@ -31,6 +45,14 @@ export function hexToRgba(hex: string, alpha: number): string {
 export function lighten(hex: string, amount: number): string {
   const [r, g, b] = parseHex(hex)
   const mix = (c: number) => clampByte(c + (255 - c) * amount)
+  const toHex = (c: number) => mix(c).toString(16).padStart(2, '0')
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+}
+
+/** Mix a hex color toward black by `amount` in [0,1]. */
+export function darken(hex: string, amount: number): string {
+  const [r, g, b] = parseHex(hex)
+  const mix = (c: number) => clampByte(c * (1 - amount))
   const toHex = (c: number) => mix(c).toString(16).padStart(2, '0')
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }

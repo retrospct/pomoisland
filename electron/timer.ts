@@ -20,14 +20,14 @@ export class Timer {
   constructor(getPrefs: Getter) {
     this.getPrefs = getPrefs
     const p = getPrefs()
-    const total = p.focusMin * 60
+    const total = p.cFocus * 60
     this.state = {
       status: 'idle',
       mode: 'focus',
       total,
       remaining: total,
       sessionIndex: 0,
-      sessionTotal: p.longEvery,
+      sessionTotal: p.cSessions,
       isLongBreak: false,
       task: '',
     }
@@ -61,18 +61,18 @@ export class Timer {
   }
 
   private focusSeconds(): number {
-    return this.getPrefs().focusMin * 60
+    return this.getPrefs().cFocus * 60
   }
 
   /** Re-sync the dot count and (only when idle) the current block length to prefs. */
   syncPrefs(): void {
     const p = this.getPrefs()
-    const patch: Partial<TimerState> = { sessionTotal: p.longEvery }
+    const patch: Partial<TimerState> = { sessionTotal: p.cSessions }
     if (this.state.status === 'idle') {
       const total =
         this.state.mode === 'focus'
-          ? p.focusMin * 60
-          : (this.state.isLongBreak ? p.longMin : p.shortMin) * 60
+          ? p.cFocus * 60
+          : (this.state.isLongBreak ? p.cLong : p.cShort) * 60
       patch.total = total
       patch.remaining = total
     }
@@ -119,16 +119,16 @@ export class Timer {
     const p = this.getPrefs()
     if (this.state.mode === 'focus') {
       const idx = this.state.sessionIndex + 1
-      const isLong = idx % p.longEvery === 0
-      const total = (isLong ? p.longMin : p.shortMin) * 60
+      const isLong = idx % p.cSessions === 0
+      const total = (isLong ? p.cLong : p.cShort) * 60
       this.set({
         mode: 'break',
         isLongBreak: isLong,
         total,
         remaining: total,
-        status: p.autoBreak ? 'running' : 'idle',
+        status: p.autoStart ? 'running' : 'idle',
         sessionIndex: idx,
-        sessionTotal: p.longEvery,
+        sessionTotal: p.cSessions,
       })
     } else {
       const total = this.focusSeconds()
@@ -137,7 +137,7 @@ export class Timer {
         isLongBreak: false,
         total,
         remaining: total,
-        status: p.autoFocus ? 'running' : 'idle',
+        status: p.autoStart ? 'running' : 'idle',
       })
     }
   }
@@ -173,7 +173,7 @@ export class Timer {
     this.completeTimer = null
     const p = this.getPrefs()
     if (this.state.mode === 'focus') {
-      const total = p.shortMin * 60
+      const total = p.cShort * 60
       this.set({ mode: 'break', isLongBreak: false, total, remaining: total, status: 'idle' })
     } else {
       const total = this.focusSeconds()

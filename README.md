@@ -50,7 +50,7 @@ flowchart LR
     islandUI[collapsed / peek / expanded]
   end
   subgraph settingsWin [Settings window]
-    settingsUI[Timer / Sounds / Appearance / Behavior]
+    settingsUI[General / Preferences tabs]
   end
   timerSM -->|"timer:state"| preload
   store -->|"prefs:changed"| preload
@@ -67,7 +67,7 @@ flowchart LR
 electron/        Main process: main, windows, timer, store, ipc, tray, preload
 src/shared/      IPC contract types, design tokens, accent/format helpers
 src/island/      Island renderer (collapsed/peek/expanded, ring, dots, menu, drag, chime)
-src/settings/    Settings renderer (4 sections, live theming, persistence)
+src/settings/    Settings renderer (General + Preferences tabs, live theming, persistence)
 design-reference/ The original Claude Design handoff (.dc.html + Folio tokens)
 docs/adr/        Architecture decision records
 .scratch/        Local markdown issue tracker (see docs/agents/)
@@ -75,14 +75,17 @@ docs/adr/        Architecture decision records
 
 ## What's implemented vs deferred
 
-**Working now:** all three island presentations with the ported animations
-(breathe / ripple / bloom / heartbeat / confetti / urgent amber), the full timer state
+**Working now:** all three island presentations with the ported completion animations
+(burst / echo / heartbeat / bloom plus breathe + urgent amber), the full timer state
 machine driven by persisted durations, drag + magnetic notch snap, the complete Settings
-panel with live theme/accent re-skin and persistence across restart, tray lifecycle,
+panel (General + Preferences tabs from `SettingsPanel.dc.html`) with live theme/accent
+re-skin and a live "Done animation" preview, persistence across restart, tray lifecycle,
 always-on-top, and a synthesized completion chime.
 
 **Deferred to a follow-up** (persisted as preferences but not yet wired to the OS — see
-[ADR-0004](docs/adr/0004-defer-os-integrations.md)): launch-at-login, hide-during-screen-
-sharing, pause-when-idle, the global shortcut, native notifications, and real bundled alarm
-sound files. The collapsed island also currently snaps to the top of the work area rather
-than literally wrapping the hardware notch outline.
+[ADR-0004](docs/adr/0004-defer-os-integrations.md)): launch-at-login, do-not-disturb,
+hide-during-screen-sharing, pause-when-idle, the global shortcut, native notifications,
+the ticking sound, real bundled alarm sound files, and the alternate timer-style /
+notch-layout renderings (the island currently always draws the circular ring). The
+collapsed island also snaps to the top of the work area rather than literally wrapping the
+hardware notch outline.

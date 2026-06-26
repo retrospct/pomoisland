@@ -161,16 +161,15 @@ export function createSettingsWindow(): BrowserWindow {
     return settingsWin
   }
   settingsWin = new BrowserWindow({
-    width: 780,
-    height: 600,
+    width: 880,
+    height: 720,
     frame: false,
     resizable: true,
-    minWidth: 680,
-    minHeight: 520,
+    minWidth: 720,
+    minHeight: 540,
+    maxWidth: 1100,
     show: false,
-    title: 'Pomodoro · Settings',
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: -100, y: -100 }, // we draw our own controls
+    title: 'Settings',
     backgroundColor: '#191b1f',
     webPreferences: {
       preload: PRELOAD,
