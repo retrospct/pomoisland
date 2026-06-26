@@ -92,9 +92,9 @@ export function IslandApp() {
     [expanded],
   )
 
-  if (!state || !prefs) return null
-
-  const view = deriveIsland(state, prefs)
+  // The wrapper is always rendered so the ResizeObserver (attached on mount) can
+  // measure the island once state/prefs arrive and drive the window auto-resize.
+  const view = state && prefs ? deriveIsland(state, prefs) : null
 
   let present: Present = 'collapsed'
   if (expanded) present = 'expanded'
@@ -108,43 +108,45 @@ export function IslandApp() {
 
   return (
     <div ref={measureRef} style={{ display: 'inline-block' }}>
-      <Island
-        present={present}
-        view={view}
-        notch={placement.snapped}
-        anim={prefs.anim}
-        messagesOn={prefs.showMessages}
-        onToggleExpand={toggleExpand}
-        onPlayPause={() => window.api.timer.action({ type: 'playPause' })}
-        onReset={() => window.api.timer.action({ type: 'reset' })}
-        onSkip={() => window.api.timer.action({ type: 'skip' })}
-        onMouseDown={onMouseDown}
-        onMouseEnter={() => {
-          if (!expanded && !placement.dragging && placement.snapped) setPeek(true)
-        }}
-        onMouseLeave={() => setPeek(false)}
-        menuOpen={menuOpen}
-        onToggleMenu={(e) => {
-          e.stopPropagation()
-          setMenuOpen((v) => !v)
-        }}
-        switchLabel={view.isBreak ? 'Switch to focus' : 'Switch to break'}
-        onSwitch={(e) => {
-          e.stopPropagation()
-          setMenuOpen(false)
-          window.api.timer.action({ type: 'switchMode' })
-        }}
-        onSettings={(e) => {
-          e.stopPropagation()
-          setMenuOpen(false)
-          window.api.windows.openSettings()
-        }}
-        onQuit={(e) => {
-          e.stopPropagation()
-          setMenuOpen(false)
-          window.api.timer.action({ type: 'quit' })
-        }}
-      />
+      {view && state && prefs && (
+        <Island
+          present={present}
+          view={view}
+          notch={placement.snapped}
+          anim={prefs.anim}
+          messagesOn={prefs.showMessages}
+          onToggleExpand={toggleExpand}
+          onPlayPause={() => window.api.timer.action({ type: 'playPause' })}
+          onReset={() => window.api.timer.action({ type: 'reset' })}
+          onSkip={() => window.api.timer.action({ type: 'skip' })}
+          onMouseDown={onMouseDown}
+          onMouseEnter={() => {
+            if (!expanded && !placement.dragging && placement.snapped) setPeek(true)
+          }}
+          onMouseLeave={() => setPeek(false)}
+          menuOpen={menuOpen}
+          onToggleMenu={(e) => {
+            e.stopPropagation()
+            setMenuOpen((v) => !v)
+          }}
+          switchLabel={view.isBreak ? 'Switch to focus' : 'Switch to break'}
+          onSwitch={(e) => {
+            e.stopPropagation()
+            setMenuOpen(false)
+            window.api.timer.action({ type: 'switchMode' })
+          }}
+          onSettings={(e) => {
+            e.stopPropagation()
+            setMenuOpen(false)
+            window.api.windows.openSettings()
+          }}
+          onQuit={(e) => {
+            e.stopPropagation()
+            setMenuOpen(false)
+            window.api.timer.action({ type: 'quit' })
+          }}
+        />
+      )}
     </div>
   )
 }
