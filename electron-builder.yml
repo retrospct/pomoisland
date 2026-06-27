@@ -1,5 +1,5 @@
-appId: com.pomisland.app
-productName: Pomisland
+appId: com.pomoisland.app
+productName: Pomoisland
 directories:
   output: release
   buildResources: build

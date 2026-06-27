@@ -148,3 +148,23 @@ Real screen-share detection (`hideShare`), system-idle pause (`pauseIdle`), laun
 ## Verification
 
 `npm run dev` launches the island pinned to the notch + Settings; tick a focus block to completion (ripple), pause/reset/skip, drag away and snap back, switch focus/break, change accent+theme in Settings and confirm the island reskins live and prefs survive restart. Spot-check dimensions/colors against `design-reference`.
+
+## Post-plan deviations (kept current)
+
+This plan is a historical record; the build has since diverged in a few intentional ways. The
+canonical state lives in `src/shared/types.ts`, the ADRs, and `HANDOFF.md`.
+
+- **Settings was rebuilt** from `SettingsPanel.dc.html` (General + Preferences tabs, an **880×720**
+  frameless card with a single **Close** button), superseding this plan's `Settings.dc.html`
+  four-section sidebar at `780×600` with traffic-lights. See ADR-0003 (Update note).
+- **Prefs model reconciled**: durations `cFocus/cShort/cLong/cSessions`; `autoBreak`+`autoFocus`
+  → single `autoStart`; `theme` gained `'system'`; `accent` is a key resolved via `accentHex()`.
+- **Completion animation** is `ripple` (variants `burst/echo/heartbeat/bloom`, shared via
+  `src/shared/ripple.ts`); the prototype's `confetti`/`none` were dropped.
+- **Global show/hide shortcut** (`⌘⌥P`) is wired (`electron/shortcuts.ts`).
+- **Comet ring-sweep** from the prototype is intentionally not ported — it was computed in
+  `Island.dc.html` `renderVals` but never rendered (no element, no `ringComet` keyframe).
+- **`timerStyle` (outline/bar)** and the notch-outline rendering remain deferred (ADR-0004); the
+  island always draws the circular ring.
+- **Sound engine**: the single synthesized chime is being replaced by a small hand-rolled
+  Web-Audio engine with a roster of distinct tones — see ADR-0005.

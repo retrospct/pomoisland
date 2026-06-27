@@ -1,4 +1,4 @@
-# Pomisland
+# Pomoisland
 
 A macOS notch-aware Pomodoro timer that lives in a "dynamic island" hugging the camera
 notch. It glances small, expands on tap, and can be dragged free to float anywhere.

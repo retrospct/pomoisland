@@ -8,7 +8,7 @@ export function createTray(): Tray {
   // No bundled icon asset this pass; use a text title in the menu bar (macOS).
   tray = new Tray(nativeImage.createEmpty())
   tray.setTitle(' ◷ ')
-  tray.setToolTip('Pomisland — Dynamic Island Pomodoro')
+  tray.setToolTip('Pomoisland — Dynamic Island Pomodoro')
 
   const menu = Menu.buildFromTemplate([
     {
@@ -18,7 +18,7 @@ export function createTray(): Tray {
     },
     { label: 'Settings…', click: () => createSettingsWindow() },
     { type: 'separator' },
-    { label: 'Quit Pomisland', role: 'quit' },
+    { label: 'Quit Pomoisland', role: 'quit' },
   ])
   tray.setContextMenu(menu)
   return tray
