@@ -1,4 +1,4 @@
-# Context: Pomisland
+# Context: Pomoisland
 
 A macOS notch-aware Pomodoro timer. The UI lives as a "dynamic island" that hugs the
 MacBook camera notch (or floats freely on external displays), glances small, and expands
@@ -34,8 +34,15 @@ Use these terms exactly; avoid the synonyms in parentheses.
 - **Timer style** — how progress is drawn: `circular` (ring), `outline` (notch outline), `bar`.
 - **Layout** — collapsed density: `split`, `minimal`, `compact`.
 - **Micro-message / encouraging message** — the small serif nudge in the expanded panel.
-- **Completion animation** — the burst on finishing a block: `ripple`, `bloom`, `heartbeat`,
-  `confetti`, `none`.
+- **Completion animation / "Done animation"** — the ripple that fires on finishing a block.
+  Variants: `burst`, `echo`, `heartbeat`, `bloom` (the prototype's `confetti`/`none` were dropped).
+- **Sound / voice** — the synthesized completion cue (`Sound` in `types.ts`): the clean built-ins
+  `chime` / `bell` / `marimba` / `digital`, and the cinematic/pocket-synth set
+  `halcyon` (Blade Runner pad) / `spice` (Dune sub+brass) / `pocket` (arcade arp) /
+  `koto` (ASMR pluck) / `aurora` (sampled ambient clip from a Microcosm demo, synth fallback).
+  Hand-rolled in Web Audio, with a
+  master safety limiter and a silent offline validator (`npm run audio:check`) — see
+  `docs/adr/0005-synthesized-sound-engine.md`.
 
 ## Architecture in one breath
 

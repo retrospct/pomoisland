@@ -3,10 +3,19 @@
 //   Preferences  → Colors / dots / timer style / notch layout + Alarm & sound / Done animation
 // Every control writes straight through to prefs (optimistic in SettingsApp).
 
-import type { CSSProperties, ReactNode } from 'react'
-import type { AccentKey, Prefs, Ripple, Sound, ThemeChoice, TimerStyle, Layout } from '@shared/types'
 import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
 import { RIPPLE_DEFS } from '@shared/ripple'
+import { SOUND_LABELS, playSound } from '@shared/sound'
+import type {
+  AccentKey,
+  Layout,
+  Prefs,
+  Ripple,
+  Sound,
+  ThemeChoice,
+  TimerStyle,
+} from '@shared/types'
+import type { CSSProperties, ReactNode } from 'react'
 
 const MONO = "'IBM Plex Mono', monospace"
 const SANS = "'Inter', sans-serif"
@@ -54,7 +63,15 @@ function ToggleSwitch({ on, onClick }: { on: boolean; onClick: () => void }) {
         flex: '0 0 auto',
       }}
     >
-      <span style={{ position: 'absolute', inset: 0, borderRadius: 999, background: on ? 'var(--sp-teal)' : 'var(--sp-border)', transition: 'background .18s' }}>
+      <span
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 999,
+          background: on ? 'var(--sp-teal)' : 'var(--sp-border)',
+          transition: 'background .18s',
+        }}
+      >
         <span
           style={{
             position: 'absolute',
@@ -101,14 +118,32 @@ function ToggleRow({
     >
       <div>
         <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>{title}</div>
-        <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2, lineHeight: 1.35 }}>{desc}</div>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontSize: 11.5,
+            color: 'var(--sp-faint)',
+            marginTop: 2,
+            lineHeight: 1.35,
+          }}
+        >
+          {desc}
+        </div>
       </div>
       <ToggleSwitch on={on} onClick={onClick} />
     </div>
   )
 }
 
-function StepButton({ children, onClick, size = 26 }: { children: ReactNode; onClick: () => void; size?: number }) {
+function StepButton({
+  children,
+  onClick,
+  size = 26,
+}: {
+  children: ReactNode
+  onClick: () => void
+  size?: number
+}) {
   return (
     <button
       onClick={onClick}
@@ -186,10 +221,32 @@ function SelectCard({
       }}
     >
       {selected && (
-        <span style={{ position: 'absolute', inset: -1.5, border: '1.5px solid var(--sp-teal)', borderRadius: 12, background: 'var(--sp-tint)', zIndex: 0 }} />
+        <span
+          style={{
+            position: 'absolute',
+            inset: -1.5,
+            border: '1.5px solid var(--sp-teal)',
+            borderRadius: 12,
+            background: 'var(--sp-tint)',
+            zIndex: 0,
+          }}
+        />
       )}
-      <span style={{ position: 'relative', zIndex: 1, display: 'grid', placeItems: 'center' }}>{icon}</span>
-      <span style={{ position: 'relative', zIndex: 1, fontFamily: SANS, fontSize: 12, fontWeight: 500, color: 'var(--sp-body)' }}>{label}</span>
+      <span style={{ position: 'relative', zIndex: 1, display: 'grid', placeItems: 'center' }}>
+        {icon}
+      </span>
+      <span
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          fontFamily: SANS,
+          fontSize: 12,
+          fontWeight: 500,
+          color: 'var(--sp-body)',
+        }}
+      >
+        {label}
+      </span>
     </button>
   )
 }
@@ -216,7 +273,8 @@ const BEHAVIORS: [keyof Prefs, string, string][] = [
 ]
 
 export function GeneralTab({ prefs, set }: TabProps) {
-  const onPreset = (k: Prefs['preset']) => set(PRESET_VALS[k] ? { preset: k, ...PRESET_VALS[k] } : { preset: k })
+  const onPreset = (k: Prefs['preset']) =>
+    set(PRESET_VALS[k] ? { preset: k, ...PRESET_VALS[k] } : { preset: k })
 
   const steppers: { label: string; value: string; dec: () => void; inc: () => void }[] = [
     {
@@ -251,7 +309,15 @@ export function GeneralTab({ prefs, set }: TabProps) {
       <div>
         <div style={{ marginBottom: 24 }}>
           <SectionLabel>Timer preset</SectionLabel>
-          <div style={{ display: 'flex', border: '1px solid var(--sp-border)', borderRadius: 11, overflow: 'hidden', marginBottom: 12 }}>
+          <div
+            style={{
+              display: 'flex',
+              border: '1px solid var(--sp-border)',
+              borderRadius: 11,
+              overflow: 'hidden',
+              marginBottom: 12,
+            }}
+          >
             {PRESETS.map(([k, label], i) => {
               const on = prefs.preset === k
               return (
@@ -279,13 +345,37 @@ export function GeneralTab({ prefs, set }: TabProps) {
             })}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 11, border: '1px solid var(--sp-line)', borderRadius: 11, padding: '14px 15px' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 11,
+              border: '1px solid var(--sp-line)',
+              borderRadius: 11,
+              padding: '14px 15px',
+            }}
+          >
             {steppers.map((st) => (
-              <div key={st.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>{st.label}</span>
+              <div
+                key={st.label}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>
+                  {st.label}
+                </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                   <StepButton onClick={st.dec}>&minus;</StepButton>
-                  <span style={{ fontFamily: MONO, fontSize: 14, color: 'var(--sp-teal)', minWidth: 54, textAlign: 'center' }}>{st.value}</span>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 14,
+                      color: 'var(--sp-teal)',
+                      minWidth: 54,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {st.value}
+                  </span>
                   <StepButton onClick={st.inc}>+</StepButton>
                 </div>
               </div>
@@ -294,30 +384,84 @@ export function GeneralTab({ prefs, set }: TabProps) {
 
           <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <SectionLabel>Shortcuts &amp; goal</SectionLabel>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingTop: 11, borderTop: '1px solid var(--sp-line)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                paddingTop: 11,
+                borderTop: '1px solid var(--sp-line)',
+              }}
+            >
               <div>
-                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Global shortcut</div>
-                <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>Start / pause from anywhere.</div>
+                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+                  Global shortcut
+                </div>
+                <div
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 11.5,
+                    color: 'var(--sp-faint)',
+                    marginTop: 2,
+                  }}
+                >
+                  Start / pause from anywhere.
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: '0 0 auto' }}>
                 <Kbd>⌥</Kbd>
                 <Kbd>Space</Kbd>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingTop: 11, borderTop: '1px solid var(--sp-line)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                paddingTop: 11,
+                borderTop: '1px solid var(--sp-line)',
+              }}
+            >
               <div>
-                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Daily goal</div>
-                <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>Focus blocks to aim for each day.</div>
+                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+                  Daily goal
+                </div>
+                <div
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 11.5,
+                    color: 'var(--sp-faint)',
+                    marginTop: 2,
+                  }}
+                >
+                  Focus blocks to aim for each day.
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, flex: '0 0 auto' }}>
-                <StepButton size={28} onClick={() => set({ dailyGoal: clamp(prefs.dailyGoal - 1, 1, 20) })}>
+                <StepButton
+                  size={28}
+                  onClick={() => set({ dailyGoal: clamp(prefs.dailyGoal - 1, 1, 20) })}
+                >
                   &minus;
                 </StepButton>
-                <span style={{ fontFamily: MONO, fontSize: 15, color: 'var(--sp-teal)', minWidth: 52, textAlign: 'center' }}>
+                <span
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 15,
+                    color: 'var(--sp-teal)',
+                    minWidth: 52,
+                    textAlign: 'center',
+                  }}
+                >
                   {prefs.dailyGoal}
                   <span style={{ fontSize: 10, color: 'var(--sp-faint)', marginLeft: 3 }}>pom</span>
                 </span>
-                <StepButton size={28} onClick={() => set({ dailyGoal: clamp(prefs.dailyGoal + 1, 1, 20) })}>
+                <StepButton
+                  size={28}
+                  onClick={() => set({ dailyGoal: clamp(prefs.dailyGoal + 1, 1, 20) })}
+                >
                   +
                 </StepButton>
               </div>
@@ -331,7 +475,13 @@ export function GeneralTab({ prefs, set }: TabProps) {
         <SectionLabel>Behavior</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
           {BEHAVIORS.map(([k, label, desc]) => (
-            <ToggleRow key={k} title={label} desc={desc} on={Boolean(prefs[k])} onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)} />
+            <ToggleRow
+              key={k}
+              title={label}
+              desc={desc}
+              on={Boolean(prefs[k])}
+              onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)}
+            />
           ))}
         </div>
       </div>
@@ -364,7 +514,14 @@ const THEME_OPTIONS: { k: ThemeChoice; tip: string; icon: ReactNode }[] = [
     k: 'system',
     tip: 'System',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
         <rect x="2" y="3" width="20" height="14" rx="2" />
         <path d="M8 21h8M12 17v4" strokeLinecap="round" />
       </svg>
@@ -374,7 +531,14 @@ const THEME_OPTIONS: { k: ThemeChoice; tip: string; icon: ReactNode }[] = [
     k: 'light',
     tip: 'Light',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
         <circle cx="12" cy="12" r="4" />
         <path
           d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
@@ -387,19 +551,35 @@ const THEME_OPTIONS: { k: ThemeChoice; tip: string; icon: ReactNode }[] = [
     k: 'dark',
     tip: 'Dark',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ transform: 'rotate(180deg)' }}>
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        style={{ transform: 'rotate(180deg)' }}
+      >
+        <path
+          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     ),
   },
 ]
 
-const SOUNDS: [Sound, string][] = [
-  ['chime', 'Chime'],
-  ['bell', 'Bell'],
-  ['marimba', 'Marimba'],
-  ['digital', 'Digital'],
-  ['custom', 'Custom…'],
+const SOUNDS: Sound[] = [
+  'chime',
+  'bell',
+  'marimba',
+  'digital',
+  'halcyon',
+  'spice',
+  'pocket',
+  'koto',
+  'aurora',
 ]
 const RIPPLES: [Ripple, string][] = [
   ['burst', 'Burst'],
@@ -415,7 +595,12 @@ const STYLE_OPTIONS: { k: TimerStyle; label: string; icon: ReactNode }[] = [
     icon: (
       <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
         <circle cx="15" cy="15" r="11" stroke="var(--sp-border)" strokeWidth="2.4" opacity="0.3" />
-        <path d="M15 4 a11 11 0 0 1 9.5 16.5" stroke="var(--sp-teal)" strokeWidth="2.4" strokeLinecap="round" />
+        <path
+          d="M15 4 a11 11 0 0 1 9.5 16.5"
+          stroke="var(--sp-teal)"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -424,7 +609,12 @@ const STYLE_OPTIONS: { k: TimerStyle; label: string; icon: ReactNode }[] = [
     label: 'Notch-outline',
     icon: (
       <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-        <path d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4" stroke="var(--sp-teal)" strokeWidth="2.4" strokeLinecap="round" />
+        <path
+          d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4"
+          stroke="var(--sp-teal)"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -433,7 +623,16 @@ const STYLE_OPTIONS: { k: TimerStyle; label: string; icon: ReactNode }[] = [
     label: 'Progress bar',
     icon: (
       <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-        <rect x="4" y="12.5" width="22" height="5" rx="2.5" stroke="var(--sp-border)" strokeWidth="2" opacity="0.3" />
+        <rect
+          x="4"
+          y="12.5"
+          width="22"
+          height="5"
+          rx="2.5"
+          stroke="var(--sp-border)"
+          strokeWidth="2"
+          opacity="0.3"
+        />
         <rect x="4" y="12.5" width="13" height="5" rx="2.5" fill="var(--sp-teal)" />
       </svg>
     ),
@@ -482,8 +681,17 @@ export function PreferencesTab({ prefs, set }: TabProps) {
       <div>
         <div style={{ marginBottom: 22 }}>
           <SectionLabel>Colors</SectionLabel>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
-            <span style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Accent</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 13,
+            }}
+          >
+            <span style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+              Accent
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {(Object.keys(ACCENT_HEX) as AccentKey[]).map((k) => {
                 const on = prefs.accent === k
@@ -501,7 +709,9 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                       cursor: 'pointer',
                       border: 'none',
                       padding: 0,
-                      boxShadow: on ? `0 0 0 2px var(--sp-surface), 0 0 0 3.5px ${c}` : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                      boxShadow: on
+                        ? `0 0 0 2px var(--sp-surface), 0 0 0 3.5px ${c}`
+                        : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
                       transition: 'box-shadow .15s',
                     }}
                   />
@@ -509,9 +719,26 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               })}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 11, borderTop: '1px solid var(--sp-line)' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: 11,
+              borderTop: '1px solid var(--sp-line)',
+            }}
+          >
             <span style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Theme</span>
-            <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 3,
+                background: 'var(--sp-field)',
+                border: '1px solid var(--sp-border)',
+                borderRadius: 11,
+                padding: 3,
+              }}
+            >
               {THEME_OPTIONS.map((t) => {
                 const on = prefs.theme === t.k
                 return (
@@ -539,7 +766,9 @@ export function PreferencesTab({ prefs, set }: TabProps) {
           </div>
         </div>
 
-        <div style={{ marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid var(--sp-line)' }}>
+        <div
+          style={{ marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid var(--sp-line)' }}
+        >
           <ToggleRow
             title="Show session dots"
             desc="The little round-progress markers."
@@ -553,7 +782,13 @@ export function PreferencesTab({ prefs, set }: TabProps) {
           <SectionLabel>Timer style</SectionLabel>
           <div style={{ display: 'flex', gap: 10 }}>
             {STYLE_OPTIONS.map((o) => (
-              <SelectCard key={o.k} selected={prefs.timerStyle === o.k} onClick={() => set({ timerStyle: o.k })} icon={o.icon} label={o.label} />
+              <SelectCard
+                key={o.k}
+                selected={prefs.timerStyle === o.k}
+                onClick={() => set({ timerStyle: o.k })}
+                icon={o.icon}
+                label={o.label}
+              />
             ))}
           </div>
         </div>
@@ -562,7 +797,14 @@ export function PreferencesTab({ prefs, set }: TabProps) {
           <SectionLabel>Notch layout</SectionLabel>
           <div style={{ display: 'flex', gap: 10 }}>
             {LAYOUT_OPTIONS.map((o) => (
-              <SelectCard key={o.k} selected={prefs.layout === o.k} onClick={() => set({ layout: o.k })} icon={o.icon} label={o.label} padTop={20} />
+              <SelectCard
+                key={o.k}
+                selected={prefs.layout === o.k}
+                onClick={() => set({ layout: o.k })}
+                icon={o.icon}
+                label={o.label}
+                padTop={20}
+              />
             ))}
           </div>
         </div>
@@ -573,14 +815,29 @@ export function PreferencesTab({ prefs, set }: TabProps) {
         <div style={{ marginBottom: 22 }}>
           <SectionLabel>Alarm &amp; sound</SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 13 }}>
-            {SOUNDS.map(([k, label]) => (
-              <Chip key={k} label={label} on={prefs.sound === k} onClick={() => set({ sound: k })} />
+            {SOUNDS.map((k) => (
+              <Chip
+                key={k}
+                label={SOUND_LABELS[k]}
+                on={prefs.sound === k}
+                onClick={() => {
+                  set({ sound: k })
+                  // Audition on select; fall back to an audible level if muted.
+                  playSound(k, prefs.volume > 0 ? prefs.volume : 60)
+                }}
+              />
             ))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <svg width="17" height="15" viewBox="0 0 17 15" style={{ flex: '0 0 auto' }}>
               <path d="M1 5 H4 L8 1.5 V13.5 L4 10 H1 Z" fill="var(--sp-muted)" />
-              <path d="M11 4 a4 4 0 0 1 0 7 M13 2 a7 7 0 0 1 0 11" fill="none" stroke="var(--sp-faint)" strokeWidth="1.3" strokeLinecap="round" />
+              <path
+                d="M11 4 a4 4 0 0 1 0 7 M13 2 a7 7 0 0 1 0 11"
+                fill="none"
+                stroke="var(--sp-faint)"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+              />
             </svg>
             <input
               type="range"
@@ -591,10 +848,25 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               className="sp-range"
               style={{ flex: 1 }}
             />
-            <span style={{ fontFamily: MONO, fontSize: 12, color: 'var(--sp-muted)', minWidth: 34, textAlign: 'right' }}>{prefs.volume}</span>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--sp-muted)',
+                minWidth: 34,
+                textAlign: 'right',
+              }}
+            >
+              {prefs.volume}
+            </span>
           </div>
           <div style={{ marginBottom: 11 }}>
-            <ToggleRow title="Ticking sound" desc="A soft tick each second while focusing" on={prefs.tick} onClick={() => set({ tick: !prefs.tick })} />
+            <ToggleRow
+              title="Ticking sound"
+              desc="A soft tick each second while focusing"
+              on={prefs.tick}
+              onClick={() => set({ tick: !prefs.tick })}
+            />
           </div>
           <ToggleRow
             title="System notification on finish"
@@ -606,14 +878,29 @@ export function PreferencesTab({ prefs, set }: TabProps) {
 
         <div style={{ marginBottom: 22 }}>
           <SectionLabel>
-            Done&nbsp;<span style={{ color: 'var(--sp-faint)', letterSpacing: '0.14em' }}>ANIMATION</span>
+            Done&nbsp;
+            <span style={{ color: 'var(--sp-faint)', letterSpacing: '0.14em' }}>ANIMATION</span>
           </SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 11 }}>
             {RIPPLES.map(([k, label]) => (
-              <Chip key={k} label={label} on={prefs.ripple === k} onClick={() => set({ ripple: k })} />
+              <Chip
+                key={k}
+                label={label}
+                on={prefs.ripple === k}
+                onClick={() => set({ ripple: k })}
+              />
             ))}
           </div>
-          <div style={{ height: 64, background: '#1E211C', borderRadius: 10, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+          <div
+            style={{
+              height: 64,
+              background: '#1E211C',
+              borderRadius: 10,
+              display: 'grid',
+              placeItems: 'center',
+              overflow: 'hidden',
+            }}
+          >
             <RipplePreview variant={prefs.ripple} accent={prefs.accent} />
           </div>
         </div>
@@ -672,18 +959,55 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
       >
         <div style={{ position: 'relative', width: 28, height: 28, flex: '0 0 auto' }}>
           <svg width="28" height="28" viewBox="0 0 28 28" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="14" cy="14" r="10.5" fill="none" stroke="rgba(242,241,236,0.14)" strokeWidth="3" />
-            <circle cx="14" cy="14" r="10.5" fill="none" stroke={base} strokeWidth="3" strokeLinecap="round" strokeDasharray="66" strokeDashoffset="0" />
+            <circle
+              cx="14"
+              cy="14"
+              r="10.5"
+              fill="none"
+              stroke="rgba(242,241,236,0.14)"
+              strokeWidth="3"
+            />
+            <circle
+              cx="14"
+              cy="14"
+              r="10.5"
+              fill="none"
+              stroke={base}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="66"
+              strokeDashoffset="0"
+            />
           </svg>
           <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
             <svg width="13" height="11" viewBox="0 0 13 11">
-              <path d="M1 5.5 L4.8 9.5 L12 1.5" fill="none" stroke={base} strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M1 5.5 L4.8 9.5 L12 1.5"
+                fill="none"
+                stroke={base}
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, lineHeight: 1 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', color: base, fontWeight: 500, whiteSpace: 'nowrap' }}>FOCUS DONE</span>
-          <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: '#F2F1EC' }}>00:00</span>
+          <span
+            style={{
+              fontFamily: MONO,
+              fontSize: 9,
+              letterSpacing: '0.16em',
+              color: base,
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            FOCUS DONE
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: '#F2F1EC' }}>
+            00:00
+          </span>
         </div>
       </div>
     </div>

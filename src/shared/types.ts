@@ -9,7 +9,22 @@ export type ThemeChoice = 'light' | 'dark' | 'system'
 export type TimerStyle = 'circular' | 'outline' | 'bar'
 export type Layout = 'split' | 'minimal' | 'compact'
 export type AccentKey = 'teal' | 'clay' | 'blue' | 'violet' | 'rose' | 'green'
-export type Sound = 'chime' | 'bell' | 'marimba' | 'digital' | 'custom'
+/**
+ * Completion alarm voices — synthesized in the renderer via Web Audio (see
+ * src/shared/sound.ts and ADR-0005). `chime/bell/marimba/digital` are the clean
+ * built-ins; `halcyon/spice/pocket/koto` are the cinematic/pocket-synth set;
+ * `aurora` is a granular ambient bloom (Hologram Microcosm-inspired).
+ */
+export type Sound =
+  | 'chime'
+  | 'bell'
+  | 'marimba'
+  | 'digital'
+  | 'halcyon'
+  | 'spice'
+  | 'pocket'
+  | 'koto'
+  | 'aurora'
 /** Completion ("done") animation variants — see RippleConcept.dc.html. */
 export type Ripple = 'burst' | 'echo' | 'heartbeat' | 'bloom'
 
@@ -74,12 +89,7 @@ export interface Prefs {
   magnetic: boolean
 }
 
-export type TimerActionType =
-  | 'playPause'
-  | 'reset'
-  | 'skip'
-  | 'switchMode'
-  | 'quit'
+export type TimerActionType = 'playPause' | 'reset' | 'skip' | 'switchMode' | 'quit'
 
 export interface SetTaskAction {
   type: 'setTask'

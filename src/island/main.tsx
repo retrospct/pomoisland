@@ -9,9 +9,12 @@ import '@shared/tokens.css'
 import './animations.css'
 import './island.css'
 
+import { loadAuroraSample } from '@shared/sound'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { IslandApp } from './IslandApp'
+
+void loadAuroraSample(new URL('../shared/assets/aurora.wav', import.meta.url).href)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

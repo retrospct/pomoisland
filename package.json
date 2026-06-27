@@ -1,5 +1,5 @@
 {
-  "name": "pomisland",
+  "name": "pomoisland",
   "version": "0.1.0",
   "description": "Dynamic Island Pomodoro — a macOS notch-aware focus timer",
   "author": "",
@@ -12,14 +12,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",
+    "audio:check": "node scripts/audio-check.ts",
     "package": "electron-vite build && electron-builder --mac --dir"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@fontsource/fraunces": "^5.0.0",
     "@fontsource/ibm-plex-mono": "^5.0.0",
     "@fontsource/inter": "^5.0.0",
-    "@eslint/js": "^9.0.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -31,6 +31,7 @@
     "electron-vite": "^2.3.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "node-web-audio-api": "^2.0.0",
     "prettier": "^3.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

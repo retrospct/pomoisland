@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { playSound } from '@shared/sound'
 import type { Placement, Prefs, TimerState } from '@shared/types'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
 import { Island, type Present } from './Island'
-import { playChime } from './chime'
 
 export function IslandApp() {
   const [state, setState] = useState<TimerState | null>(null)
   const [prefs, setPrefs] = useState<Prefs | null>(null)
-  const [placement, setPlacement] = useState<Placement>({ snapped: true, dragging: false, nearSnap: false })
+  const [placement, setPlacement] = useState<Placement>({
+    snapped: true,
+    dragging: false,
+    nearSnap: false,
+  })
   const [expanded, setExpanded] = useState(false)
   const [peek, setPeek] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -38,7 +42,7 @@ export function IslandApp() {
   useEffect(() => {
     if (!state || !prefs) return
     if (prevStatus.current !== 'complete' && state.status === 'complete') {
-      playChime(prefs.volume)
+      playSound(prefs.sound, prefs.volume)
     }
     prevStatus.current = state.status
   }, [state, prefs])
