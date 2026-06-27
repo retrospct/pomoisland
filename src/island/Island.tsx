@@ -1,10 +1,7 @@
-import type { CSSProperties } from 'react'
-import type { Ripple } from '@shared/types'
 import { RIPPLE_DEFS } from '@shared/ripple'
+import type { Ripple } from '@shared/types'
+import type { CSSProperties } from 'react'
 import type { IslandView } from './derive'
-import { Ring } from './Ring'
-import { SessionDots } from './SessionDots'
-import { Menu } from './Menu'
 import {
   PlayPauseLarge,
   PlayPausePeek,
@@ -14,6 +11,9 @@ import {
   SkipLarge,
   SkipPeek,
 } from './Glyphs'
+import { Menu } from './Menu'
+import { Ring } from './Ring'
+import { SessionDots } from './SessionDots'
 
 export type Present = 'collapsed' | 'peek' | 'expanded'
 
@@ -60,7 +60,7 @@ export function Island(props: IslandProps) {
   }
 }
 
-function NotchDot({ top }: { top: number }) {
+function NotchDot({ top, size = 7 }: { top: number; size?: number }) {
   return (
     <span
       style={{
@@ -68,8 +68,8 @@ function NotchDot({ top }: { top: number }) {
         top,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 7,
-        height: 7,
+        width: size,
+        height: size,
         borderRadius: '50%',
         background: '#08090A',
         boxShadow: 'inset 0 0 0 1.5px #2A2E33',
@@ -79,7 +79,15 @@ function NotchDot({ top }: { top: number }) {
   )
 }
 
-function Collapsed({ view, notch, ripple, onToggleExpand, onMouseDown, onMouseEnter, onMouseLeave }: IslandProps) {
+function Collapsed({
+  view,
+  notch,
+  ripple,
+  onToggleExpand,
+  onMouseDown,
+  onMouseEnter,
+  onMouseLeave,
+}: IslandProps) {
   const pill: CSSProperties = {
     position: 'relative',
     zIndex: 2,
@@ -99,7 +107,9 @@ function Collapsed({ view, notch, ripple, onToggleExpand, onMouseDown, onMouseEn
   }
   return (
     <div style={{ position: 'relative', display: 'inline-flex' }}>
-      {view.isComplete && <CompletionFx ripple={ripple} accent={view.accent} accentBright={view.accentBright} />}
+      {view.isComplete && (
+        <CompletionFx ripple={ripple} accent={view.accent} accentBright={view.accentBright} />
+      )}
       <div
         className="island-pill"
         data-island="1"
@@ -111,16 +121,51 @@ function Collapsed({ view, notch, ripple, onToggleExpand, onMouseDown, onMouseEn
       >
         {notch && <NotchDot top={5} />}
         {view.showRing && (
-          <Ring size={30} radius={11} strokeWidth={3} trackColor="rgba(242,241,236,0.15)" accent={view.accent} frac={view.frac} running={view.isRunning}>
+          <Ring
+            size={30}
+            radius={11}
+            strokeWidth={3}
+            trackColor="rgba(242,241,236,0.15)"
+            accent={view.accent}
+            frac={view.frac}
+            running={view.isRunning}
+          >
             <RingGlyphSmall glyph={view.glyph} accent={view.accent} />
           </Ring>
         )}
         {view.showTimeText && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, lineHeight: 1, flex: '0 0 auto' }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', color: view.accent, fontWeight: 500, whiteSpace: 'nowrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+              lineHeight: 1,
+              flex: '0 0 auto',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 9,
+                letterSpacing: '0.16em',
+                color: view.accent,
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+              }}
+            >
               {view.statusLabel}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums', color: '#F2F1EC', whiteSpace: 'nowrap' }}>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 15,
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+                fontVariantNumeric: 'tabular-nums',
+                color: '#F2F1EC',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {view.timeStr}
             </span>
           </div>
@@ -148,33 +193,125 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
       }}
       onClick={onToggleExpand}
     >
-      {notch && <NotchDot top={8} />}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 11 }}>
-        <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: view.accent, fontWeight: 500 }}>{view.statusLabel}</span>
+      {notch && <NotchDot top={8} size={8} />}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          marginBottom: 11,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 9.5,
+            letterSpacing: '0.16em',
+            color: view.accent,
+            fontWeight: 500,
+          }}
+        >
+          {view.statusLabel}
+        </span>
         <SessionDots dots={view.dots} />
       </div>
-      <div style={{ fontSize: 12.5, color: view.taskColor, fontStyle: view.taskItalic ? 'italic' : 'normal', letterSpacing: '-0.005em', marginBottom: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <div
+        style={{
+          fontSize: 12.5,
+          color: view.taskColor,
+          fontStyle: view.taskItalic ? 'italic' : 'normal',
+          letterSpacing: '-0.005em',
+          marginBottom: 11,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {view.displayTask}
       </div>
-      <div style={{ height: 4, borderRadius: 999, background: 'rgba(242,241,236,0.13)', overflow: 'hidden', marginBottom: 13 }}>
-        <div style={{ height: '100%', width: `${Math.round(view.frac * 100)}%`, background: view.accent, borderRadius: 999, transition: 'width .35s' }} />
+      <div
+        style={{
+          height: 4,
+          borderRadius: 999,
+          background: 'rgba(242,241,236,0.13)',
+          overflow: 'hidden',
+          marginBottom: 13,
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${Math.round(view.frac * 100)}%`,
+            background: view.accent,
+            borderRadius: 999,
+            transition: 'width .35s',
+          }}
+        />
       </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, lineHeight: 0.92, letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums', color: '#F2F1EC' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 28,
+            fontWeight: 500,
+            lineHeight: 0.92,
+            letterSpacing: '0.01em',
+            fontVariantNumeric: 'tabular-nums',
+            color: '#F2F1EC',
+          }}
+        >
           {view.timeStr}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '0 0 auto' }}>
           <button
             aria-label="Play / pause"
-            onClick={(e) => { stop(e); onPlayPause() }}
-            style={{ width: 32, height: 32, borderRadius: '50%', border: 'none', background: view.accent, color: '#17191D', display: 'grid', placeItems: 'center', cursor: 'pointer', flex: '0 0 auto', padding: 0 }}
+            onClick={(e) => {
+              stop(e)
+              onPlayPause()
+            }}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: 'none',
+              background: view.accent,
+              color: '#17191D',
+              display: 'grid',
+              placeItems: 'center',
+              cursor: 'pointer',
+              flex: '0 0 auto',
+              padding: 0,
+            }}
           >
             <PlayPausePeek isPause={view.isRunning} />
           </button>
           <button
             aria-label="Next"
-            onClick={(e) => { stop(e); onSkip() }}
-            style={{ width: 28, height: 32, borderRadius: '50%', border: 'none', background: 'transparent', color: 'rgba(242,241,236,0.85)', display: 'grid', placeItems: 'center', cursor: 'pointer', flex: '0 0 auto', padding: 0 }}
+            onClick={(e) => {
+              stop(e)
+              onSkip()
+            }}
+            style={{
+              width: 28,
+              height: 32,
+              borderRadius: '50%',
+              border: 'none',
+              background: 'transparent',
+              color: 'rgba(242,241,236,0.85)',
+              display: 'grid',
+              placeItems: 'center',
+              cursor: 'pointer',
+              flex: '0 0 auto',
+              padding: 0,
+            }}
           >
             <SkipPeek />
           </button>
@@ -202,33 +339,124 @@ function Expanded(props: IslandProps) {
       }}
       onClick={onToggleExpand}
     >
-      {notch && <NotchDot top={9} />}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: view.accent, fontWeight: 500, whiteSpace: 'nowrap' }}>{view.statusLabel}</span>
+      {notch && <NotchDot top={9} size={8} />}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 13,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: MONO,
+            fontSize: 10,
+            letterSpacing: '0.16em',
+            color: view.accent,
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {view.statusLabel}
+        </span>
         <SessionDots dots={view.dots} gap={6} />
       </div>
-      <div style={{ fontSize: 13.5, color: view.taskColor, fontStyle: view.taskItalic ? 'italic' : 'normal', marginBottom: 15, letterSpacing: '-0.005em' }}>
+      <div
+        style={{
+          fontSize: 13.5,
+          color: view.taskColor,
+          fontStyle: view.taskItalic ? 'italic' : 'normal',
+          marginBottom: 15,
+          letterSpacing: '-0.005em',
+        }}
+      >
         {view.displayTask}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 18 }}>
-        <Ring size={64} radius={27} strokeWidth={4} trackColor="rgba(242,241,236,0.13)" accent={view.accent} frac={view.frac} running={view.isRunning}>
+        <Ring
+          size={64}
+          radius={27}
+          strokeWidth={4}
+          trackColor="rgba(242,241,236,0.13)"
+          accent={view.accent}
+          frac={view.frac}
+          running={view.isRunning}
+        >
           <RingGlyphLarge glyph={view.glyph} accent={view.accent} />
         </Ring>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <span style={{ fontFamily: MONO, fontSize: 38, fontWeight: 500, lineHeight: 0.95, letterSpacing: '0.005em', fontVariantNumeric: 'tabular-nums' }}>{view.timeStr}</span>
+          <span
+            style={{
+              fontFamily: MONO,
+              fontSize: 38,
+              fontWeight: 500,
+              lineHeight: 0.95,
+              letterSpacing: '0.005em',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {view.timeStr}
+          </span>
           {messagesOn && (
-            <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, lineHeight: 1.25, color: view.accent, letterSpacing: '-0.01em' }}>{view.micro}</span>
+            <span
+              style={{
+                fontFamily: SERIF,
+                fontStyle: 'italic',
+                fontSize: 14,
+                lineHeight: 1.25,
+                color: view.accent,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {view.micro}
+            </span>
           )}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        <button className="island-icon-btn" onClick={(e) => { stop(e); onReset() }} aria-label="Reset" style={outlineBtn}>
+        <button
+          className="island-icon-btn"
+          onClick={(e) => {
+            stop(e)
+            onReset()
+          }}
+          aria-label="Reset"
+          style={outlineBtn}
+        >
           <ResetLarge />
         </button>
-        <button className="island-primary-btn" onClick={(e) => { stop(e); onPlayPause() }} aria-label="Play / pause" style={{ width: 54, height: 54, borderRadius: '50%', border: 'none', background: view.accent, color: '#17191D', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: `0 6px 18px ${view.accentSoft}` }}>
+        <button
+          className="island-primary-btn"
+          onClick={(e) => {
+            stop(e)
+            onPlayPause()
+          }}
+          aria-label="Play / pause"
+          style={{
+            width: 54,
+            height: 54,
+            borderRadius: '50%',
+            border: 'none',
+            background: view.accent,
+            color: '#17191D',
+            display: 'grid',
+            placeItems: 'center',
+            cursor: 'pointer',
+            boxShadow: `0 6px 18px ${view.accentSoft}`,
+          }}
+        >
           <PlayPauseLarge isPause={view.isRunning} />
         </button>
-        <button className="island-icon-btn" onClick={(e) => { stop(e); onSkip() }} aria-label="Skip" style={outlineBtn}>
+        <button
+          className="island-icon-btn"
+          onClick={(e) => {
+            stop(e)
+            onSkip()
+          }}
+          aria-label="Skip"
+          style={outlineBtn}
+        >
           <SkipLarge />
         </button>
         <div style={{ flex: 1 }} />
@@ -260,7 +488,15 @@ const outlineBtn: CSSProperties = {
 
 // ---- Completion effects ----
 
-function CompletionFx({ ripple, accent, accentBright }: { ripple: Ripple; accent: string; accentBright: string }) {
+function CompletionFx({
+  ripple,
+  accent,
+  accentBright,
+}: {
+  ripple: Ripple
+  accent: string
+  accentBright: string
+}) {
   const defs = RIPPLE_DEFS[ripple]
   return (
     <>
@@ -295,4 +531,3 @@ function CompletionFx({ ripple, accent, accentBright }: { ripple: Ripple; accent
     </>
   )
 }
-
