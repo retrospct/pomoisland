@@ -43,6 +43,13 @@ Use these terms exactly; avoid the synonyms in parentheses.
   Hand-rolled in Web Audio, with a
   master safety limiter and a silent offline validator (`npm run audio:check`) — see
   `docs/adr/0005-synthesized-sound-engine.md`.
+- **Tick / ticking sound** — the per-second focus cue (`TickSound` in `types.ts`): `off`,
+  `soft` (low woodblock), or `crisp` (brighter click). Synthesized by the same engine (routed
+  fully dry — no reverb tail) and played once per second by the island while focusing+running
+  (`playTick`).
+- **Transition ticks** (`transitionTick`) — when on, ticks also fire through the first & last
+  15s of every cycle (any mode), cueing an upcoming mode change. Requires a tick style selected;
+  forced off when ticks turn off.
 
 ## Architecture in one breath
 

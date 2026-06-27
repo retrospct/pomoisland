@@ -1,4 +1,4 @@
-import { playSound } from '@shared/sound'
+import { playSound, playTick } from '@shared/sound'
 import type { Placement, Prefs, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
@@ -20,6 +20,7 @@ export function IslandApp() {
   const justDragged = useRef(false)
   const moved = useRef(false)
   const prevStatus = useRef<string | null>(null)
+  const lastTickSecond = useRef<number | null>(null)
 
   // --- Subscriptions ---
   useEffect(() => {
@@ -45,6 +46,32 @@ export function IslandApp() {
       playSound(prefs.sound, prefs.volume)
     }
     prevStatus.current = state.status
+  }, [state, prefs])
+
+  // --- Per-second tick (ADR-0005) ---
+  // The main-process timer fires every 250ms, so detect each whole-second decrease in
+  // `remaining` and play at most one tick per second. Whole-second detection runs for any
+  // running block (so it stays armed), but a tick only sounds during a focus block OR — when
+  // `transitionTick` is on — the first/last 15s of any block, to cue an upcoming mode change.
+  useEffect(() => {
+    if (!state || !prefs) return
+    if (prefs.tick === 'off' || state.status !== 'running') {
+      lastTickSecond.current = null
+      return
+    }
+    const sec = Math.ceil(state.remaining)
+    if (lastTickSecond.current === null) {
+      lastTickSecond.current = sec // arm without firing on the first running frame
+      return
+    }
+    if (sec >= lastTickSecond.current) return
+    lastTickSecond.current = sec
+    const elapsed = state.total - state.remaining
+    const inTransitionWindow =
+      prefs.transitionTick && (state.remaining <= 15 || elapsed <= 15)
+    if (state.mode === 'focus' || inTransitionWindow) {
+      playTick(prefs.tick, prefs.volume)
+    }
   }, [state, prefs])
 
   // --- Auto-resize the window to fit the island content (ADR-0003) ---

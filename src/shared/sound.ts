@@ -9,7 +9,7 @@
 // `buildEngine`, which runs on any BaseAudioContext — including an OfflineAudioContext, so
 // `scripts/audio-check.ts` can render + measure every voice silently before you ever hear it.
 
-import type { Sound } from './types'
+import type { Sound, TickSound } from './types'
 
 export const SOUND_LABELS: Record<Sound, string> = {
   chime: 'Chime',
@@ -160,7 +160,7 @@ function note(
 
 // ---- voices ----
 
-type Voice = (eng: Engine, t0: number) => void
+export type Voice = (eng: Engine, t0: number) => void
 
 /** Glassy FM bell — a rising fifth of two bells whose modulation index decays. */
 const vChime: Voice = (eng, t0) => {
@@ -533,5 +533,101 @@ export function playSound(key: Sound, volume: number): void {
     voice(eng, ctx.currentTime + 0.03)
   } catch {
     // Audio is best-effort (e.g. before any user gesture); ignore failures.
+  }
+}
+
+// ---- tick voices ----
+//
+// Per-second focus ticks (ADR-0005). Deliberately QUIET and very short so a click
+// every second is felt, not fatiguing — peaks sit well under the roster's loudness
+// band and route through the same master → limiter as every other voice.
+
+type TickStyle = Exclude<TickSound, 'off'>
+
+// Ticks route FULLY DRY (wet = 0). They fire ~1s apart (live) / 600ms (preview), but the
+// shared reverb impulse is ~1.8s — any wet send rings into the *next* tick and is heard as a
+// smeared "double/triple" tick. Keeping them dry makes each tick a single clean transient.
+/** Soft tick — a low woodblock "tock": a short sine thunk plus a faint band-passed click. */
+const vTickSoft: Voice = (eng, t0) => {
+  const { ctx } = eng
+  route(eng, note(ctx, t0, 'sine', 200, 0.07, 0.001, 0.16), 0.9, 0)
+  route(eng, note(ctx, t0, 'sine', 400, 0.03, 0.0008, 0.05), 0.7, 0)
+  const src = ctx.createBufferSource()
+  src.buffer = makeNoise(ctx, 0.01)
+  const bp = ctx.createBiquadFilter()
+  bp.type = 'bandpass'
+  bp.frequency.value = 1200
+  bp.Q.value = 1.5
+  const ng = envGain(ctx, t0, { attack: 0.0005, dur: 0.02, peak: 0.05 })
+  src.connect(bp)
+  bp.connect(ng)
+  src.start(t0)
+  src.stop(t0 + 0.02)
+  route(eng, ng, 0.6, 0)
+}
+
+/** Crisp tick — a brighter, sharper click: a brief high triangle blip + a high-passed transient. */
+const vTickCrisp: Voice = (eng, t0) => {
+  const { ctx } = eng
+  route(eng, note(ctx, t0, 'triangle', 1000, 0.025, 0.0004, 0.14), 0.9, 0)
+  const src = ctx.createBufferSource()
+  src.buffer = makeNoise(ctx, 0.008)
+  const hp = ctx.createBiquadFilter()
+  hp.type = 'highpass'
+  hp.frequency.value = 2500
+  const ng = envGain(ctx, t0, { attack: 0.0003, dur: 0.012, peak: 0.08 })
+  src.connect(hp)
+  hp.connect(ng)
+  src.start(t0)
+  src.stop(t0 + 0.012)
+  route(eng, ng, 0.7, 0)
+}
+
+export const TICK_VOICES: Record<TickStyle, Voice> = {
+  soft: vTickSoft,
+  crisp: vTickCrisp,
+}
+
+export const TICK_LABELS: Record<TickSound, string> = {
+  off: 'Off',
+  soft: 'Soft',
+  crisp: 'Crisp',
+}
+
+/** Play one focus tick. `style` `'off'` (or `volume <= 0`) is silent. Best-effort. */
+export function playTick(style: TickSound, volume: number): void {
+  if (style === 'off' || volume <= 0) return
+  try {
+    const eng = ensureEngine()
+    if (!eng) return
+    const ctx = eng.ctx as AudioContext
+    if (ctx.state === 'suspended') void ctx.resume()
+    eng.master.gain.setValueAtTime((Math.min(100, Math.max(0, volume)) / 100) * 0.9, ctx.currentTime)
+    TICK_VOICES[style](eng, ctx.currentTime + 0.01)
+  } catch {
+    // Audio is best-effort (e.g. before any user gesture); ignore failures.
+  }
+}
+
+// A tick preview is a short repeating burst (Settings auditions the style on select). Each
+// tick is only ~20–70ms, so the overlap hazard is the *queued* future ticks — cancel those
+// before starting a new burst so rapid toggling never stacks two styles on top of each other.
+let tickPreviewTimers: ReturnType<typeof setTimeout>[] = []
+
+/** Cancel any in-progress tick preview burst. */
+export function stopTickPreview(): void {
+  for (const t of tickPreviewTimers) clearTimeout(t)
+  tickPreviewTimers = []
+}
+
+/**
+ * Preview a tick style by playing it `count` times at `gapMs` spacing. Always stops any
+ * prior preview first, so toggling between styles never overlaps. `'off'` just stops.
+ */
+export function previewTick(style: TickSound, volume: number, count = 5, gapMs = 600): void {
+  stopTickPreview()
+  if (style === 'off' || volume <= 0) return
+  for (let i = 0; i < count; i++) {
+    tickPreviewTimers.push(setTimeout(() => playTick(style, volume), i * gapMs))
   }
 }

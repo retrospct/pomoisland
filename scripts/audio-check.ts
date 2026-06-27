@@ -13,7 +13,8 @@
 
 import { readFileSync } from 'node:fs'
 import { OfflineAudioContext } from 'node-web-audio-api'
-import { buildEngine, VOICES, SOUND_LABELS } from '../src/shared/sound.ts'
+import type { Voice } from '../src/shared/sound.ts'
+import { buildEngine, VOICES, TICK_VOICES, SOUND_LABELS, TICK_LABELS } from '../src/shared/sound.ts'
 
 const SAMPLE_RATE = 48000
 const RENDER_SECONDS = 5
@@ -34,14 +35,14 @@ function dbfs(x: number): string {
   return (20 * Math.log10(x)).toFixed(1)
 }
 
-async function renderVoice(key: keyof typeof VOICES): Promise<Stats> {
+async function renderVoice(voice: Voice): Promise<Stats> {
   const length = Math.ceil(RENDER_SECONDS * SAMPLE_RATE)
   const oac = new OfflineAudioContext({ numberOfChannels: 2, length, sampleRate: SAMPLE_RATE })
 
   // Build the exact runtime graph (master → limiter → destination, plus reverb).
   const eng = buildEngine(oac as unknown as BaseAudioContext)
   eng.master.gain.value = (VOLUME / 100) * 0.9
-  VOICES[key](eng, 0.05)
+  voice(eng, 0.05)
 
   const buf = await oac.startRendering()
   let peak = 0
@@ -97,16 +98,26 @@ async function checkAuroraSample(): Promise<{ peak: number; played: number; pass
 }
 
 async function main(): Promise<void> {
-  const keys = Object.keys(VOICES) as (keyof typeof VOICES)[]
-  console.log(`\nAudio safety check — ${keys.length} voices @ volume ${VOLUME}, ceiling ${PEAK_CEILING_DBFS.toFixed(1)} dBFS\n`)
+  // Completion voices plus the per-second focus ticks — both run through the same graph.
+  const entries: { label: string; voice: Voice }[] = [
+    ...Object.keys(VOICES).map((k) => ({
+      label: SOUND_LABELS[k as keyof typeof VOICES],
+      voice: VOICES[k as keyof typeof VOICES],
+    })),
+    ...Object.keys(TICK_VOICES).map((k) => ({
+      label: `Tick ${TICK_LABELS[k as keyof typeof TICK_VOICES]}`,
+      voice: TICK_VOICES[k as keyof typeof TICK_VOICES],
+    })),
+  ]
+  console.log(`\nAudio safety check — ${entries.length} voices @ volume ${VOLUME}, ceiling ${PEAK_CEILING_DBFS.toFixed(1)} dBFS\n`)
   console.log('  voice      peak dBFS   rms dBFS   clipped   NaN/inf   result')
   console.log('  ' + '-'.repeat(64))
 
   let allPass = true
-  for (const key of keys) {
-    const s = await renderVoice(key)
+  for (const { label: name, voice } of entries) {
+    const s = await renderVoice(voice)
     if (!s.pass) allPass = false
-    const label = SOUND_LABELS[key].padEnd(10)
+    const label = name.padEnd(10)
     const peakStr = dbfs(s.peak).padStart(9)
     const rmsStr = dbfs(s.rms).padStart(9)
     const clipStr = String(s.clipped).padStart(7)

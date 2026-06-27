@@ -4,7 +4,7 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Prefs } from '../src/shared/types'
+import type { Prefs, TickSound } from '../src/shared/types'
 
 export const DEFAULT_PREFS: Prefs = {
   // General · Timer
@@ -24,7 +24,8 @@ export const DEFAULT_PREFS: Prefs = {
   // Preferences · Alarm & sound
   sound: 'chime',
   volume: 70,
-  tick: false,
+  tick: 'off',
+  transitionTick: false,
   notify: true,
   // Preferences · Appearance
   accent: 'teal',
@@ -47,11 +48,24 @@ function filePath(): string {
   return join(app.getPath('userData'), 'prefs.json')
 }
 
+/**
+ * `tick` used to be a boolean (ADR-0004 era). A persisted `true` maps to `'soft'`;
+ * `false`/missing/anything unrecognized falls back to `'off'`. The rename also changed
+ * the appId, so the store may instead be fresh — both paths land on a valid `TickSound`.
+ */
+function migrateTick(raw: unknown): TickSound {
+  if (raw === true || raw === 'soft') return 'soft'
+  if (raw === 'crisp') return 'crisp'
+  return 'off'
+}
+
 function load(): Prefs {
   try {
     const raw = readFileSync(filePath(), 'utf8')
     const parsed = JSON.parse(raw) as Partial<Prefs>
-    return { ...DEFAULT_PREFS, ...parsed }
+    const merged = { ...DEFAULT_PREFS, ...parsed }
+    merged.tick = migrateTick((parsed as { tick?: unknown }).tick)
+    return merged
   } catch {
     return { ...DEFAULT_PREFS }
   }

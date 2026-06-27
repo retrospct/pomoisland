@@ -28,6 +28,13 @@ export type Sound =
 /** Completion ("done") animation variants — see RippleConcept.dc.html. */
 export type Ripple = 'burst' | 'echo' | 'heartbeat' | 'bloom'
 
+/**
+ * Per-second ticking sound while focusing — synthesized in the renderer (see
+ * src/shared/sound.ts and ADR-0005). `off` is silent; `soft` is a low woodblock
+ * thunk; `crisp` is a brighter click.
+ */
+export type TickSound = 'off' | 'soft' | 'crisp'
+
 /** Runtime timer state, owned by the main process and broadcast to renderers. */
 export interface TimerState {
   status: Status
@@ -73,8 +80,14 @@ export interface Prefs {
   // ---- Preferences · Alarm & sound ----
   sound: Sound
   volume: number
-  /** Ticking sound while focusing (persisted-only this pass — ADR-0004). */
-  tick: boolean
+  /** Per-second ticking sound while focusing — see ADR-0005. */
+  tick: TickSound
+  /**
+   * Also tick through the first & last 15s of *every* cycle (any mode) to cue an upcoming
+   * mode change. Only meaningful when `tick !== 'off'`; forced off when ticks turn off,
+   * and turning it on while ticks are off promotes them to `'soft'` — see ADR-0005.
+   */
+  transitionTick: boolean
   notify: boolean
   // ---- Preferences · Appearance ----
   accent: AccentKey

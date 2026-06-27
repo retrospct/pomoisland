@@ -22,9 +22,12 @@ For this pass:
   **global show/hide shortcut** (`CommandOrControl+Alt+P`, see `electron/shortcuts.ts`).
 - **Persisted as prefs, no OS behavior yet (no-ops):** launch-at-login, do-not-disturb,
   hide-during-screen-sharing, pause-when-idle, the start/pause global shortcut (the "⌥ Space"
-  shown in Settings), native notifications, the ticking sound, real alarm sound files, and the
-  alternate timer-style / notch-layout renderings (the island always draws the circular ring
-  this pass).
+  shown in Settings), native notifications, real alarm sound files, and the alternate
+  timer-style / notch-layout renderings (the island always draws the circular ring this pass).
+
+Update (2026-06-26): the **ticking sound** is no longer deferred. It became a real
+`off` / `soft` / `crisp` per-second audio feature wired through the synthesized sound
+engine — see ADR-0005.
 
 Note: the show/hide accelerator is currently hard-coded. Making it user-configurable (key
 capture + persistence) is a follow-up.

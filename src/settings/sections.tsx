@@ -5,7 +5,7 @@
 
 import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
 import { RIPPLE_DEFS } from '@shared/ripple'
-import { SOUND_LABELS, playSound } from '@shared/sound'
+import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
 import type {
   AccentKey,
   Layout,
@@ -13,6 +13,7 @@ import type {
   Ripple,
   Sound,
   ThemeChoice,
+  TickSound,
   TimerStyle,
 } from '@shared/types'
 import type { CSSProperties, ReactNode } from 'react'
@@ -587,6 +588,11 @@ const RIPPLES: [Ripple, string][] = [
   ['heartbeat', 'Heartbeat'],
   ['bloom', 'Bloom'],
 ]
+const TICK_OPTIONS: { k: TickSound; label: string }[] = [
+  { k: 'off', label: TICK_LABELS.off },
+  { k: 'soft', label: TICK_LABELS.soft },
+  { k: 'crisp', label: TICK_LABELS.crisp },
+]
 
 const STYLE_OPTIONS: { k: TimerStyle; label: string; icon: ReactNode }[] = [
   {
@@ -860,12 +866,90 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               {prefs.volume}
             </span>
           </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+              marginBottom: 11,
+              paddingTop: 11,
+              borderTop: '1px solid var(--sp-line)',
+            }}
+          >
+            <div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+                Ticking sound
+              </div>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 11.5,
+                  color: 'var(--sp-faint)',
+                  marginTop: 2,
+                  lineHeight: 1.35,
+                }}
+              >
+                A tick each second while focusing.
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 3,
+                background: 'var(--sp-field)',
+                border: '1px solid var(--sp-border)',
+                borderRadius: 11,
+                padding: 3,
+                flex: '0 0 auto',
+              }}
+            >
+              {TICK_OPTIONS.map((t) => {
+                const on = prefs.tick === t.k
+                return (
+                  <button
+                    key={t.k}
+                    onClick={() => {
+                      // Off also clears the dependent transition-tick toggle (see below).
+                      set(t.k === 'off' ? { tick: 'off', transitionTick: false } : { tick: t.k })
+                      // Audition a short burst on select (stops any prior burst first); fall
+                      // back to an audible level if muted. Selecting "Off" just stops it.
+                      previewTick(t.k, prefs.volume > 0 ? prefs.volume : 60)
+                    }}
+                    style={{
+                      height: 30,
+                      minWidth: 34,
+                      padding: '0 11px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: 8,
+                      background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                      fontFamily: SANS,
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div style={{ marginBottom: 11 }}>
             <ToggleRow
-              title="Ticking sound"
-              desc="A soft tick each second while focusing"
-              on={prefs.tick}
-              onClick={() => set({ tick: !prefs.tick })}
+              title="Transition sound ticks"
+              desc="Tick through the first & last 15s of every cycle to cue mode changes. Turning this on while ticks are off switches them to Soft."
+              on={prefs.transitionTick}
+              onClick={() => {
+                if (prefs.tick === 'off') {
+                  // Both off → bootstrap soft ticks and enable the transition cue.
+                  set({ tick: 'soft', transitionTick: true })
+                  previewTick('soft', prefs.volume > 0 ? prefs.volume : 60)
+                } else {
+                  set({ transitionTick: !prefs.transitionTick })
+                }
+              }}
             />
           </div>
           <ToggleRow

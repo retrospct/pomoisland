@@ -44,6 +44,22 @@ later if we want effects we can't comfortably hand-roll.
   follow-up can reintroduce it.
 - Settings **previews on select** (clicking a sound plays it), so the picker is honest and
   auditionable; the island plays `prefs.sound` on completion.
+- **Ticking sound** is part of the same engine. `TickSound` (`off` / `soft` / `crisp`, in
+  `types.ts`) drives two extra short, deliberately quiet voices (`vTickSoft` low woodblock,
+  `vTickCrisp` brighter click) registered in `TICK_VOICES` and played via `playTick(style, volume)`
+  through master → limiter. **Ticks route fully dry (no reverb send):** the shared reverb impulse
+  is ~1.8s, so at ~1s (live) / 600ms (preview) spacing a wet send rings into the next tick and is
+  heard as smeared "double/triple" ticks — keeping them dry makes each a single clean transient.
+  The island detects each whole-second decrease in `remaining` while `status === 'running'` and
+  plays one tick per second (`src/island/IslandApp.tsx`); Settings auditions the style on select
+  via `previewTick` (a short cancelable burst — selecting another style stops the prior burst).
+- **Transition ticks** (`transitionTick` pref) extend ticking to the **first & last 15s of every
+  cycle, in any mode**, so breaks also get an audible cue that a mode change is coming. The
+  whole-second detector stays armed across the whole block but only *sounds* during a focus block
+  or a transition window. The toggle depends on ticks being on: it is forced off when `tick` goes
+  to `'off'`, and turning it on while ticks are off promotes `tick` to `'soft'`.
+- `audio:check` measures the tick voices alongside the completion voices. The above supersedes the
+  "ticking sound deferred" note in ADR-0004.
 
 ## Safety and validation
 
