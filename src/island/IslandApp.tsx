@@ -48,14 +48,13 @@ export function IslandApp() {
     prevStatus.current = state.status
   }, [state, prefs])
 
-  // --- Per-second tick (ADR-0005) ---
+  // --- Per-second focus tick (ADR-0005) ---
   // The main-process timer fires every 250ms, so detect each whole-second decrease in
-  // `remaining` and play at most one tick per second. Whole-second detection runs for any
-  // running block (so it stays armed), but a tick only sounds during a focus block OR — when
-  // `transitionTick` is on — the first/last 15s of any block, to cue an upcoming mode change.
+  // `remaining` and play at most one tick per second — only while a focus block runs.
+  // KNOWN BUG: cadence is unreliable (see .scratch/ticking-sound/issues/01-*).
   useEffect(() => {
     if (!state || !prefs) return
-    if (prefs.tick === 'off' || state.status !== 'running') {
+    if (prefs.tick === 'off' || state.mode !== 'focus' || state.status !== 'running') {
       lastTickSecond.current = null
       return
     }
@@ -64,12 +63,8 @@ export function IslandApp() {
       lastTickSecond.current = sec // arm without firing on the first running frame
       return
     }
-    if (sec >= lastTickSecond.current) return
-    lastTickSecond.current = sec
-    const elapsed = state.total - state.remaining
-    const inTransitionWindow =
-      prefs.transitionTick && (state.remaining <= 15 || elapsed <= 15)
-    if (state.mode === 'focus' || inTransitionWindow) {
+    if (sec < lastTickSecond.current) {
+      lastTickSecond.current = sec
       playTick(prefs.tick, prefs.volume)
     }
   }, [state, prefs])

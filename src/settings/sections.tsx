@@ -910,8 +910,7 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                   <button
                     key={t.k}
                     onClick={() => {
-                      // Off also clears the dependent transition-tick toggle (see below).
-                      set(t.k === 'off' ? { tick: 'off', transitionTick: false } : { tick: t.k })
+                      set({ tick: t.k })
                       // Audition a short burst on select (stops any prior burst first); fall
                       // back to an audible level if muted. Selecting "Off" just stops it.
                       previewTick(t.k, prefs.volume > 0 ? prefs.volume : 60)
@@ -935,22 +934,6 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                 )
               })}
             </div>
-          </div>
-          <div style={{ marginBottom: 11 }}>
-            <ToggleRow
-              title="Transition sound ticks"
-              desc="Tick through the first & last 15s of every cycle to cue mode changes. Turning this on while ticks are off switches them to Soft."
-              on={prefs.transitionTick}
-              onClick={() => {
-                if (prefs.tick === 'off') {
-                  // Both off → bootstrap soft ticks and enable the transition cue.
-                  set({ tick: 'soft', transitionTick: true })
-                  previewTick('soft', prefs.volume > 0 ? prefs.volume : 60)
-                } else {
-                  set({ transitionTick: !prefs.transitionTick })
-                }
-              }}
-            />
           </div>
           <ToggleRow
             title="System notification on finish"

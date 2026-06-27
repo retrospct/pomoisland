@@ -25,7 +25,6 @@ export const DEFAULT_PREFS: Prefs = {
   sound: 'chime',
   volume: 70,
   tick: 'off',
-  transitionTick: false,
   notify: true,
   // Preferences · Appearance
   accent: 'teal',

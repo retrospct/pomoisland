@@ -47,9 +47,9 @@ Use these terms exactly; avoid the synonyms in parentheses.
   `soft` (low woodblock), or `crisp` (brighter click). Synthesized by the same engine (routed
   fully dry — no reverb tail) and played once per second by the island while focusing+running
   (`playTick`).
-- **Transition ticks** (`transitionTick`) — when on, ticks also fire through the first & last
-  15s of every cycle (any mode), cueing an upcoming mode change. Requires a tick style selected;
-  forced off when ticks turn off.
+  Note: a "transition-cue" mode (silent focus + last-30s fade-in + start woosh) was attempted
+  and **pulled** due to an unreliable tick cadence — see
+  `.scratch/ticking-sound/issues/01-ticking-cadence-unreliable.md`.
 
 ## Architecture in one breath
 

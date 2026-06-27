@@ -82,12 +82,6 @@ export interface Prefs {
   volume: number
   /** Per-second ticking sound while focusing — see ADR-0005. */
   tick: TickSound
-  /**
-   * Also tick through the first & last 15s of *every* cycle (any mode) to cue an upcoming
-   * mode change. Only meaningful when `tick !== 'off'`; forced off when ticks turn off,
-   * and turning it on while ticks are off promotes them to `'soft'` — see ADR-0005.
-   */
-  transitionTick: boolean
   notify: boolean
   // ---- Preferences · Appearance ----
   accent: AccentKey
