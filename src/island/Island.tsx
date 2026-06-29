@@ -1,6 +1,7 @@
 import { RIPPLE_DEFS } from '@shared/ripple'
 import type { Ripple, TasksState } from '@shared/types'
 import type { CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { IslandView } from './derive'
 import {
   PlayPauseLarge,
@@ -11,7 +12,7 @@ import {
   SkipLarge,
   SkipPeek,
 } from './Glyphs'
-import { Menu } from './Menu'
+import { Menu, MenuDropdown } from './Menu'
 import { Ring } from './Ring'
 import { SessionDots } from './SessionDots'
 import { TaskList } from './TaskList'
@@ -88,6 +89,7 @@ function NotchDot({ top, size = 7 }: { top: number; size?: number }) {
   )
 }
 
+// MO-20: completion fx tracks enter/exit phase to animate in and out.
 function Collapsed({
   view,
   notch,
@@ -97,27 +99,53 @@ function Collapsed({
   onMouseEnter,
   onMouseLeave,
 }: IslandProps) {
+  const pillRadius: CSSProperties['borderRadius'] = notch ? '0 0 20px 20px' : 999
+
+  const [fxPhase, setFxPhase] = useState<'enter' | 'exit' | 'none'>('none')
+  const fxActiveRef = useRef(false)
+
+  useEffect(() => {
+    if (view.isComplete) {
+      fxActiveRef.current = true
+      setFxPhase('enter')
+      return
+    }
+    if (fxActiveRef.current) {
+      fxActiveRef.current = false
+      setFxPhase('exit')
+      const t = setTimeout(() => setFxPhase('none'), 550)
+      return () => clearTimeout(t)
+    }
+  }, [view.isComplete])
+
   const pill: CSSProperties = {
     position: 'relative',
     zIndex: 2,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 11,
+    gap: 13,
     background: 'var(--il-bg)',
     color: 'var(--il-text)',
-    borderRadius: notch ? '0 0 20px 20px' : 999,
-    padding: `${notch ? 11 : 7}px 18px 7px 8px`,
-    minWidth: notch ? 208 : 0,
+    borderRadius: pillRadius,
+    padding: `${notch ? 13 : 8}px 20px 9px 10px`,
+    minWidth: notch ? 210 : 0,
     justifyContent: notch ? 'space-between' : 'flex-start',
     boxShadow: '0 14px 38px rgba(0,0,0,.42),0 3px 9px rgba(0,0,0,.3)',
     cursor: 'pointer',
     minHeight: 44,
     boxSizing: 'border-box',
   }
+
   return (
     <div style={{ position: 'relative', display: 'inline-flex' }}>
-      {view.isComplete && (
-        <CompletionFx ripple={ripple} accent={view.accent} accentBright={view.accentBright} />
+      {fxPhase !== 'none' && (
+        <CompletionFx
+          ripple={ripple}
+          accent={view.accent}
+          accentBright={view.accentBright}
+          borderRadius={pillRadius}
+          exiting={fxPhase === 'exit'}
+        />
       )}
       <div
         className="island-pill"
@@ -155,7 +183,7 @@ function Collapsed({
             <span
               style={{
                 fontFamily: MONO,
-                fontSize: 9,
+                fontSize: 10,
                 letterSpacing: '0.16em',
                 color: view.accent,
                 fontWeight: 500,
@@ -188,12 +216,12 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
   return (
     <div
       style={{
-        width: 266,
+        width: 272,
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
         borderRadius: notch ? '0 0 22px 22px' : 22,
-        padding: `${notch ? 21 : 15}px 18px 15px`,
+        padding: `${notch ? 22 : 16}px 20px 17px`,
         boxShadow: '0 22px 56px rgba(0,0,0,.46),0 4px 12px rgba(0,0,0,.3)',
         fontFamily: SANS,
         position: 'relative',
@@ -208,13 +236,13 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 10,
-          marginBottom: 11,
+          marginBottom: 13,
         }}
       >
         <span
           style={{
             fontFamily: MONO,
-            fontSize: 9.5,
+            fontSize: 10.5,
             letterSpacing: '0.16em',
             color: view.accent,
             fontWeight: 500,
@@ -228,9 +256,9 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
         style={{
           fontSize: 12.5,
           color: view.taskColor,
-          fontStyle: view.taskItalic ? 'italic' : 'normal',
+          fontStyle: 'normal',
           letterSpacing: '-0.005em',
-          marginBottom: 11,
+          marginBottom: 13,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -244,7 +272,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
           borderRadius: 999,
           background: 'var(--il-track)',
           overflow: 'hidden',
-          marginBottom: 13,
+          marginBottom: 14,
         }}
       >
         <div
@@ -341,7 +369,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
         borderRadius: `${notch ? '0 0' : '26px 26px'} ${br}px ${br}px`,
-        padding: `${notch ? 24 : 20}px 22px 18px`,
+        padding: `${notch ? 26 : 22}px 24px 20px`,
         boxShadow: '0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32)',
         fontFamily: SANS,
         position: 'relative',
@@ -355,13 +383,13 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 13,
+          marginBottom: 15,
         }}
       >
         <span
           style={{
             fontFamily: MONO,
-            fontSize: 10,
+            fontSize: 11,
             letterSpacing: '0.16em',
             color: view.accent,
             fontWeight: 500,
@@ -385,8 +413,8 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         style={{
           fontSize: 13.5,
           color: view.taskColor,
-          fontStyle: view.taskItalic ? 'italic' : 'normal',
-          marginBottom: 15,
+          fontStyle: 'normal',
+          marginBottom: 17,
           letterSpacing: '-0.005em',
           cursor: 'pointer',
           userSelect: 'none',
@@ -395,7 +423,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         {view.displayTask}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
         <Ring
           size={64}
           radius={27}
@@ -436,12 +464,12 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           )}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
         <button
           className="island-icon-btn"
           onClick={(e) => { stop(e); onReset() }}
           aria-label="Reset"
-          style={outlineBtn}
+          style={iconBtn}
         >
           <ResetLarge />
         </button>
@@ -468,19 +496,21 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           className="island-icon-btn"
           onClick={(e) => { stop(e); onSkip() }}
           aria-label="Skip"
-          style={outlineBtn}
+          style={iconBtn}
         >
           <SkipLarge />
         </button>
         <div style={{ flex: 1 }} />
-        <Menu
-          open={props.menuOpen}
-          onToggleMenu={props.onToggleMenu}
-          onTasks={props.onOpenTasks}
-          onSettings={props.onSettings}
-          onQuit={props.onQuit}
-        />
+        <Menu onToggleMenu={props.onToggleMenu} />
       </div>
+      {props.menuOpen && (
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}
+          onClick={stop}
+        >
+          <MenuDropdown onTasks={props.onOpenTasks} onSettings={props.onSettings} onQuit={props.onQuit} />
+        </div>
+      )}
     </div>
   )
 }
@@ -501,11 +531,11 @@ function ExpandedWithTasks(props: IslandProps) {
   )
 }
 
-const outlineBtn: CSSProperties = {
+const iconBtn: CSSProperties = {
   width: 42,
   height: 42,
   borderRadius: '50%',
-  border: '1px solid var(--il-border-btn)',
+  border: 'none',
   background: 'transparent',
   color: 'var(--il-muted)',
   display: 'grid',
@@ -520,21 +550,32 @@ function CompletionFx({
   ripple,
   accent,
   accentBright,
+  borderRadius,
+  exiting,
 }: {
   ripple: Ripple
   accent: string
   accentBright: string
+  borderRadius: CSSProperties['borderRadius']
+  exiting: boolean
 }) {
   const defs = RIPPLE_DEFS[ripple]
   return (
-    <>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        animation: exiting ? 'islandFxExit 0.55s ease-out forwards' : undefined,
+      }}
+    >
       <span
         style={{
           position: 'absolute',
           inset: 0,
-          borderRadius: 999,
+          borderRadius,
           boxShadow: `0 0 34px 6px ${accentBright}`,
-          animation: 'islandGlow 2.6s ease-in-out infinite',
+          animation: exiting ? undefined : 'islandGlow 2.6s ease-in-out infinite',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -545,16 +586,18 @@ function CompletionFx({
           style={{
             position: 'absolute',
             inset: -1,
-            borderRadius: 999,
+            borderRadius,
             border: `${d.w}px solid ${d.bright ? accentBright : accent}`,
             pointerEvents: 'none',
             zIndex: 3,
             ['--op' as string]: d.op,
             ['--sc' as string]: d.sc,
-            animation: `islandRipple ${d.dur}s cubic-bezier(.16,.6,.3,1) ${d.delay}s infinite`,
+            animation: exiting
+              ? undefined
+              : `islandRipple ${d.dur}s cubic-bezier(.16,.6,.3,1) ${d.delay}s infinite`,
           }}
         />
       ))}
-    </>
+    </div>
   )
 }

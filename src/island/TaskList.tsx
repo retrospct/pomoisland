@@ -61,7 +61,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
         fontFamily: SANS,
         borderTop: '1px solid var(--il-border)',
         borderRadius: '0 0 26px 26px',
-        paddingBottom: 12,
+        paddingBottom: 16,
       }}
       onClick={stopProp}
       onMouseDown={stopProp}
@@ -72,7 +72,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 20px 8px',
+          padding: '13px 24px 9px',
         }}
       >
         <span
@@ -146,7 +146,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
 
         {done.length > 0 && (
           <>
-            <div style={{ height: 1, background: 'var(--il-border)', margin: '4px 16px' }} />
+            <div style={{ height: 1, background: 'var(--il-border)', margin: '4px 20px' }} />
             {done.map((task) => (
               <TaskRow
                 key={task.id}
@@ -182,7 +182,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
       {/* Add task */}
       <form
         onSubmit={handleAdd}
-        style={{ display: 'flex', gap: 8, padding: '8px 14px 0', alignItems: 'center' }}
+        style={{ display: 'flex', gap: 8, padding: '9px 20px 0', alignItems: 'center' }}
       >
         <input
           ref={inputRef}

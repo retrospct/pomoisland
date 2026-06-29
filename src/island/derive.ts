@@ -17,7 +17,6 @@ export interface IslandView {
   micro: string
   displayTask: string
   taskColor: string
-  taskItalic: boolean
   isRunning: boolean
   isComplete: boolean
   isBreak: boolean
@@ -100,7 +99,7 @@ export function deriveIsland(
     const done = i < sessionIndex || (i === sessionIndex && isComplete)
     const current = i === sessionIndex && !isComplete
     dots.push({
-      size: current ? 7 : 6,
+      size: current ? 8 : 7,
       background: done || current ? accent : n.dotInactive,
       boxShadow: current ? `0 0 0 3px ${hexToRgba(accent, 0.18)}` : 'none',
     })
@@ -117,7 +116,6 @@ export function deriveIsland(
     micro,
     displayTask,
     taskColor,
-    taskItalic: !hasTask,
     isRunning,
     isComplete,
     isBreak,

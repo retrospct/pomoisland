@@ -49,6 +49,16 @@
   }
 }
 
+/* Completion flourish exit — used when advancing out of `complete` state. */
+@keyframes islandFxExit {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 @keyframes islandConfetti {
   0% {
     transform: translate(-50%, -50%) translate(0, 0) scale(1);
