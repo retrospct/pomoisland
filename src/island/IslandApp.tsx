@@ -1,5 +1,5 @@
 import { playSound, playTick } from '@shared/sound'
-import type { Placement, Prefs, TimerState } from '@shared/types'
+import type { Placement, Prefs, TasksState, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
 import { Island, type Present } from './Island'
@@ -8,12 +8,14 @@ import { islandPaletteVars, resolveTheme } from './palette'
 export function IslandApp() {
   const [state, setState] = useState<TimerState | null>(null)
   const [prefs, setPrefs] = useState<Prefs | null>(null)
+  const [tasks, setTasks] = useState<TasksState | null>(null)
   const [placement, setPlacement] = useState<Placement>({
     snapped: true,
     dragging: false,
     nearSnap: false,
   })
   const [expanded, setExpanded] = useState(false)
+  const [tasksOpen, setTasksOpen] = useState(false)
   const [peek, setPeek] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -38,14 +40,17 @@ export function IslandApp() {
     let alive = true
     void window.api.timer.get().then((s) => alive && setState(s))
     void window.api.prefs.get().then((p) => alive && setPrefs(p))
+    void window.api.tasks.get().then((t) => alive && setTasks(t))
     void window.api.island.getPlacement().then((p) => alive && setPlacement(p))
     const offState = window.api.timer.onState(setState)
     const offPrefs = window.api.prefs.onChange(setPrefs)
+    const offTasks = window.api.tasks.onChange(setTasks)
     const offPlace = window.api.island.onPlacement(setPlacement)
     return () => {
       alive = false
       offState()
       offPrefs()
+      offTasks()
       offPlace()
     }
   }, [])
@@ -132,17 +137,34 @@ export function IslandApp() {
   // The wrapper is always rendered so the ResizeObserver (attached on mount) can
   // measure the island once state/prefs arrive and drive the window auto-resize.
   const resolvedTheme = prefs ? resolveTheme(prefs.theme) : 'dark'
-  const view = state && prefs ? deriveIsland(state, prefs, resolvedTheme) : null
+  const view = state && prefs ? deriveIsland(state, prefs, resolvedTheme, tasks?.completedToday ?? 0) : null
 
+  // Determine presentation
   let present: Present = 'collapsed'
-  if (expanded) present = 'expanded'
+  if (tasksOpen && expanded) present = 'tasks'
+  else if (expanded) present = 'expanded'
   else if (peek && placement.snapped && !placement.dragging) present = 'peek'
 
   const toggleExpand = () => {
     if (justDragged.current) return
     setMenuOpen(false)
-    setExpanded((v) => !v)
+    if (expanded) {
+      // Collapsing: also close tasks panel
+      setTasksOpen(false)
+      setExpanded(false)
+    } else {
+      setExpanded(true)
+    }
   }
+
+  const openTasks = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    setExpanded(true)
+    setTasksOpen(true)
+  }
+
+  const closeTasks = () => setTasksOpen(false)
 
   return (
     <div ref={measureRef} style={{ display: 'inline-block', ...(prefs ? islandPaletteVars(prefs.theme) : {}) }}>
@@ -153,6 +175,7 @@ export function IslandApp() {
           notch={placement.snapped}
           ripple={prefs.ripple}
           messagesOn={prefs.messages}
+          tasks={tasks}
           onToggleExpand={toggleExpand}
           onPlayPause={() => window.api.timer.action({ type: 'playPause' })}
           onReset={() => window.api.timer.action({ type: 'reset' })}
@@ -167,6 +190,8 @@ export function IslandApp() {
             e.stopPropagation()
             setMenuOpen((v) => !v)
           }}
+          onOpenTasks={openTasks}
+          onCloseTasks={closeTasks}
           onSettings={(e) => {
             e.stopPropagation()
             setMenuOpen(false)

@@ -9,11 +9,13 @@ const COMPLETE_HOLD_MS = 2600 // time for the completion flourish before advanci
 
 type Getter = () => Prefs
 type Listener = (s: TimerState) => void
+type FocusCompleteHook = () => void
 
 export class Timer {
   private state: TimerState
   private readonly getPrefs: Getter
   private readonly listeners = new Set<Listener>()
+  private readonly focusCompleteHooks = new Set<FocusCompleteHook>()
   private interval: ReturnType<typeof setInterval> | null = null
   private completeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -52,6 +54,12 @@ export class Timer {
   subscribe(cb: Listener): () => void {
     this.listeners.add(cb)
     return () => this.listeners.delete(cb)
+  }
+
+  /** Register a hook fired when a focus block completes (breaks don't count). */
+  onFocusComplete(cb: FocusCompleteHook): () => void {
+    this.focusCompleteHooks.add(cb)
+    return () => this.focusCompleteHooks.delete(cb)
   }
 
   private set(patch: Partial<TimerState>): void {
@@ -109,7 +117,11 @@ export class Timer {
 
   private complete(): void {
     if (this.completeTimer) clearTimeout(this.completeTimer)
+    const wasFocus = this.state.mode === 'focus'
     this.set({ remaining: 0, status: 'complete' })
+    if (wasFocus) {
+      for (const hook of this.focusCompleteHooks) hook()
+    }
     this.completeTimer = setTimeout(() => this.advance(), COMPLETE_HOLD_MS)
   }
 

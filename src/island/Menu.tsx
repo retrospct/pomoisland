@@ -1,13 +1,14 @@
 // The ⋯ menu from the expanded panel.
-// Menu       — trigger button only (rendered inline in the controls row).
+// Menu         — trigger button only (rendered inline in the controls row).
 // MenuDropdown — item list, rendered in normal flow by Expanded so the window
-//               auto-grows to fit it (no absolute-position clipping).
+//               auto-grows to fit it (no absolute-position clipping). MO-6 adds Tasks.
 
 interface TriggerProps {
   onToggleMenu: (e: React.MouseEvent) => void
 }
 
 interface DropdownProps {
+  onTasks: (e: React.MouseEvent) => void
   onSettings: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
 }
@@ -24,23 +25,32 @@ export function Menu({ onToggleMenu }: TriggerProps) {
   )
 }
 
-export function MenuDropdown({ onSettings, onQuit }: DropdownProps) {
+export function MenuDropdown({ onTasks, onSettings, onQuit }: DropdownProps) {
   return (
     <div style={popover}>
+      <button className="island-menu-item" onClick={onTasks} style={menuItem}>
+        <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+          <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="var(--il-teal)" strokeWidth="1.3" />
+          <path d="M2.5 4l1.2 1.2 2-2.4" stroke="var(--il-teal)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4" stroke="var(--il-teal)" strokeWidth="1.3" strokeLinecap="round" />
+          <rect x="1.5" y="8.5" width="5" height="4" rx="1" stroke="var(--il-muted)" strokeWidth="1.3" />
+        </svg>
+        Tasks
+      </button>
       <button className="island-menu-item" onClick={onSettings} style={menuItem}>
         <svg width="15" height="15" viewBox="0 0 14 14">
-          <circle cx="7" cy="7" r="2.4" fill="none" stroke="#B8BDC2" strokeWidth="1.3" />
+          <circle cx="7" cy="7" r="2.4" fill="none" stroke="var(--il-icon)" strokeWidth="1.3" />
           <path
             d="M7 1.4 v1.6 M7 11 v1.6 M1.4 7 h1.6 M11 7 h1.6 M3 3 l1.1 1.1 M9.9 9.9 l1.1 1.1 M11 3 l-1.1 1.1 M4.1 9.9 l-1.1 1.1"
             fill="none"
-            stroke="#B8BDC2"
+            stroke="var(--il-icon)"
             strokeWidth="1.3"
             strokeLinecap="round"
           />
         </svg>
         Settings
       </button>
-      <div style={{ height: 1, background: 'rgba(242,241,236,0.09)', margin: '5px 9px' }} />
+      <div style={{ height: 1, background: 'var(--il-line)', margin: '5px 9px' }} />
       <button
         className="island-menu-item island-menu-item--danger"
         onClick={onQuit}
