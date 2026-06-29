@@ -52,6 +52,10 @@ function stop(e: React.MouseEvent) {
   e.stopPropagation()
 }
 
+// Height allowance added below the panel when the menu is open, so the
+// Electron window auto-grows to reveal the absolutely-positioned dropdown.
+const MENU_ALLOWANCE = 156
+
 export function Island(props: IslandProps) {
   let panel: React.ReactNode
   switch (props.present) {
@@ -72,15 +76,23 @@ export function Island(props: IslandProps) {
       panel = _exhaustive
     }
   }
+
+  const showMenu = (props.present === 'expanded' || props.present === 'tasks') && props.menuOpen
+
   return (
-    <>
+    <div style={{ position: 'relative', display: 'inline-block' }}>
       {panel}
-      {(props.present === 'expanded' || props.present === 'tasks') && props.menuOpen && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 6 }} onClick={stop}>
-          <MenuDropdown onTasks={props.onOpenTasks} onSettings={props.onSettings} onQuit={props.onQuit} />
-        </div>
+      {showMenu && (
+        <>
+          {/* Invisible spacer keeps the Electron window tall enough for the floating menu */}
+          <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
+          {/* Absolutely-positioned menu — floats over task list and any other content */}
+          <div style={{ position: 'absolute', right: 0, bottom: 0, zIndex: 100 }} onClick={stop}>
+            <MenuDropdown onTasks={props.onOpenTasks} onSettings={props.onSettings} onQuit={props.onQuit} />
+          </div>
+        </>
       )}
-    </>
+    </div>
   )
 }
 
