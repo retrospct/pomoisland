@@ -49,14 +49,35 @@ function stop(e: React.MouseEvent) {
 }
 
 export function Island(props: IslandProps) {
+  let panel: React.ReactNode
   switch (props.present) {
     case 'collapsed':
-      return <Collapsed {...props} />
+      panel = <Collapsed {...props} />
+      break
     case 'peek':
-      return <Peek {...props} />
+      panel = <Peek {...props} />
+      break
     case 'expanded':
-      return <Expanded {...props} />
+      panel = <Expanded {...props} />
+      break
+    default: {
+      const _exhaustive: never = props.present
+      panel = _exhaustive
+    }
   }
+  return (
+    <>
+      {panel}
+      {props.present === 'expanded' && props.menuOpen && (
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 6 }}
+          onClick={stop}
+        >
+          <MenuDropdown onSettings={props.onSettings} onQuit={props.onQuit} />
+        </div>
+      )}
+    </>
+  )
 }
 
 // Simulates the physical notch camera — always black regardless of theme.
@@ -487,14 +508,6 @@ function Expanded(props: IslandProps) {
         <div style={{ flex: 1 }} />
         <Menu onToggleMenu={props.onToggleMenu} />
       </div>
-      {props.menuOpen && (
-        <div
-          style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}
-          onClick={stop}
-        >
-          <MenuDropdown onSettings={props.onSettings} onQuit={props.onQuit} />
-        </div>
-      )}
     </div>
   )
 }
