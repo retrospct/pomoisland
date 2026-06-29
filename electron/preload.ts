@@ -22,6 +22,7 @@ const api: PomApi = {
   timer: {
     get: () => ipcRenderer.invoke(IPC.timerGet) as Promise<TimerState>,
     onState: (cb) => on<TimerState>(IPC.timerState, cb),
+    onTick: (cb) => on<null>(IPC.timerTick, cb),
     action: (action: TimerAction) => ipcRenderer.send(IPC.timerAction, action),
   },
   prefs: {

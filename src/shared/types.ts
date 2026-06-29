@@ -163,6 +163,8 @@ export interface PomApi {
   timer: {
     get(): Promise<TimerState>
     onState(cb: (s: TimerState) => void): () => void
+    /** Fired by the main process once per second when a focus block is running. */
+    onTick(cb: () => void): () => void
     action(action: TimerAction): void
   }
   prefs: {
@@ -194,6 +196,7 @@ export type SettingsControl = 'close' | 'minimize' | 'zoom'
 export const IPC = {
   timerGet: 'timer:get',
   timerState: 'timer:state',
+  timerTick: 'timer:tick',
   timerAction: 'timer:action',
   prefsGet: 'prefs:get',
   prefsSet: 'prefs:set',

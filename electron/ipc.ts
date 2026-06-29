@@ -21,6 +21,7 @@ export function registerIpc(timer: Timer): void {
   ipcMain.handle(IPC.timerGet, () => timer.getState())
   ipcMain.on(IPC.timerAction, (_e, action: TimerAction) => timer.action(action))
   timer.subscribe((s) => broadcastToAll(IPC.timerState, s))
+  timer.onTick(() => broadcastToAll(IPC.timerTick, null))
 
   // Prefs
   ipcMain.handle(IPC.prefsGet, () => getPrefs())
