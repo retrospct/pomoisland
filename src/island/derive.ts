@@ -1,7 +1,7 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
-import type { Prefs, TimerState } from '@shared/types'
-import { fmtTime, frac as fracOf } from '@shared/format'
 import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
+import { fmtTime, frac as fracOf } from '@shared/format'
+import type { Prefs, TimerState } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
 
 export type Glyph = 'play' | 'pause' | 'check' | 'cup' | 'none'
@@ -83,7 +83,8 @@ export function deriveIsland(
   let micro: string
   if (isIdle) micro = isBreak ? 'Step away for a bit.' : 'Ready when you are.'
   else if (isPaused) micro = 'Paused \u2014 pick it back up.'
-  else if (isComplete) micro = isBreak ? 'Break\u2019s over. Back to it?' : 'Nice work. Take a breather.'
+  else if (isComplete)
+    micro = isBreak ? 'Break\u2019s over. Back to it?' : 'Nice work. Take a breather.'
   else if (isBreak) micro = 'Breathe. Look away from the screen.'
   else if (frac < 0.45) micro = 'Settle in.'
   else if (frac < 0.85) micro = 'Nice, past the halfway mark.'

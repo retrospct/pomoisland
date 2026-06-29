@@ -58,7 +58,15 @@ export function SettingsApp() {
             style={{ ...closeBtn, ...noDrag }}
             aria-label="Close"
           >
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 11 11"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            >
               <line x1="1" y1="1" x2="10" y2="10" />
               <line x1="10" y1="1" x2="1" y2="10" />
             </svg>

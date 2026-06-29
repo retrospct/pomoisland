@@ -57,10 +57,7 @@ export function SessionDots({ dots, gap = 5, completedToday, dailyGoal }: Sessio
   }
 
   return (
-    <div
-      style={{ display: 'flex', alignItems: 'center', gap, flex: '0 0 auto' }}
-      {...handlers}
-    >
+    <div style={{ display: 'flex', alignItems: 'center', gap, flex: '0 0 auto' }} {...handlers}>
       {dots.map((d, i) => (
         <span
           key={i}

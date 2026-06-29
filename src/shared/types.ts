@@ -149,7 +149,11 @@ export interface TasksState {
 
 export type TaskMutation =
   | { type: 'add'; title: string }
-  | { type: 'update'; id: string; patch: Partial<Pick<Task, 'title' | 'estimatePomodoros' | 'done'>> }
+  | {
+      type: 'update'
+      id: string
+      patch: Partial<Pick<Task, 'title' | 'estimatePomodoros' | 'done'>>
+    }
   | { type: 'delete'; id: string }
   | { type: 'setActive'; id: string | null }
 

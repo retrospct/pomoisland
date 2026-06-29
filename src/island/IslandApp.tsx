@@ -150,7 +150,8 @@ export function IslandApp() {
   // The wrapper is always rendered so the ResizeObserver (attached on mount) can
   // measure the island once state/prefs arrive and drive the window auto-resize.
   const resolvedTheme = prefs ? resolveTheme(prefs.theme) : 'dark'
-  const view = state && prefs ? deriveIsland(state, prefs, resolvedTheme, tasks?.completedToday ?? 0) : null
+  const view =
+    state && prefs ? deriveIsland(state, prefs, resolvedTheme, tasks?.completedToday ?? 0) : null
 
   // Determine presentation
   let present: Present = 'collapsed'

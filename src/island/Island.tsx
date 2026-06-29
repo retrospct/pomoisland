@@ -395,7 +395,12 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         >
           {view.statusLabel}
         </span>
-        <SessionDots dots={view.dots} gap={6} completedToday={view.completedToday} dailyGoal={view.dailyGoal} />
+        <SessionDots
+          dots={view.dots}
+          gap={6}
+          completedToday={view.completedToday}
+          dailyGoal={view.dailyGoal}
+        />
       </div>
 
       {/* Task text — clicking opens the task list (non-drag hotspot per MO-6) */}
