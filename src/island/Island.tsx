@@ -175,7 +175,7 @@ function Collapsed({
   )
 }
 
-function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip, onMouseDown, onMouseEnter, onMouseLeave }: IslandProps) {
   return (
     <div
       style={{
@@ -191,6 +191,9 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
         cursor: 'pointer',
       }}
       onClick={onToggleExpand}
+      onMouseDown={onMouseDown}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {notch && <NotchDot top={8} size={8} />}
       <div
@@ -320,7 +323,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
 }
 
 function Expanded(props: IslandProps) {
-  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip } = props
+  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, onMouseDown, onMouseEnter, onMouseLeave } = props
   return (
     <div
       style={{
@@ -336,6 +339,9 @@ function Expanded(props: IslandProps) {
         cursor: 'pointer',
       }}
       onClick={onToggleExpand}
+      onMouseDown={onMouseDown}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {notch && <NotchDot top={9} size={8} />}
       <div
