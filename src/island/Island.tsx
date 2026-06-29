@@ -57,25 +57,6 @@ export function Island(props: IslandProps) {
   }
 }
 
-// Simulates the physical notch camera — always black regardless of theme.
-function NotchDot({ top, size = 7 }: { top: number; size?: number }) {
-  return (
-    <span
-      style={{
-        position: 'absolute',
-        top,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: '#08090A',
-        boxShadow: 'inset 0 0 0 1.5px #2A2E33',
-        zIndex: 4,
-      }}
-    />
-  )
-}
 
 function Collapsed({
   view,
@@ -111,7 +92,6 @@ function Collapsed({
         style={pill}
         onClick={onToggleExpand}
       >
-        {notch && <NotchDot top={5} />}
         {view.showRing && (
           <Ring
             size={30}
@@ -184,7 +164,6 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
       }}
       onClick={onToggleExpand}
     >
-      {notch && <NotchDot top={8} size={8} />}
       <div
         style={{
           display: 'flex',
@@ -329,7 +308,6 @@ function Expanded(props: IslandProps) {
       }}
       onClick={onToggleExpand}
     >
-      {notch && <NotchDot top={9} size={8} />}
       <div
         style={{
           display: 'flex',
