@@ -3,6 +3,7 @@ import type { Placement, Prefs, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
 import { Island, type Present } from './Island'
+import { islandPaletteVars, resolveTheme } from './palette'
 
 export function IslandApp() {
   const [state, setState] = useState<TimerState | null>(null)
@@ -21,6 +22,16 @@ export function IslandApp() {
   const moved = useRef(false)
   const prevStatus = useRef<string | null>(null)
   const lastTickSecond = useRef<number | null>(null)
+
+  // Forces a re-render when the OS appearance changes, so `resolveTheme('system')` re-reads
+  // the media query and the palette vars update live.
+  const [, forceThemeUpdate] = useState(0)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => forceThemeUpdate((v) => v + 1)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   // --- Subscriptions ---
   useEffect(() => {
@@ -120,7 +131,8 @@ export function IslandApp() {
 
   // The wrapper is always rendered so the ResizeObserver (attached on mount) can
   // measure the island once state/prefs arrive and drive the window auto-resize.
-  const view = state && prefs ? deriveIsland(state, prefs) : null
+  const resolvedTheme = prefs ? resolveTheme(prefs.theme) : 'dark'
+  const view = state && prefs ? deriveIsland(state, prefs, resolvedTheme) : null
 
   let present: Present = 'collapsed'
   if (expanded) present = 'expanded'
@@ -133,7 +145,7 @@ export function IslandApp() {
   }
 
   return (
-    <div ref={measureRef} style={{ display: 'inline-block' }}>
+    <div ref={measureRef} style={{ display: 'inline-block', ...(prefs ? islandPaletteVars(prefs.theme) : {}) }}>
       {view && state && prefs && (
         <Island
           present={present}
