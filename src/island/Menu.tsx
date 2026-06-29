@@ -24,32 +24,28 @@ export function Menu({ open, onToggleMenu, onTasks, onSettings, onQuit }: MenuPr
         <div style={popover}>
           <button className="island-menu-item" onClick={onTasks} style={menuItem}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="#8FC8C0" strokeWidth="1.3" />
-              <path d="M2.5 4l1.2 1.2 2-2.4" stroke="#8FC8C0" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4" stroke="#8FC8C0" strokeWidth="1.3" strokeLinecap="round" />
-              <rect x="1.5" y="8.5" width="5" height="4" rx="1" stroke="rgba(242,241,236,0.3)" strokeWidth="1.3" />
+              <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="var(--il-teal)" strokeWidth="1.3" />
+              <path d="M2.5 4l1.2 1.2 2-2.4" stroke="var(--il-teal)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4" stroke="var(--il-teal)" strokeWidth="1.3" strokeLinecap="round" />
+              <rect x="1.5" y="8.5" width="5" height="4" rx="1" stroke="var(--il-muted)" strokeWidth="1.3" />
             </svg>
             Tasks
           </button>
           <button className="island-menu-item" onClick={onSettings} style={menuItem}>
             <svg width="14" height="14" viewBox="0 0 14 14">
-              <circle cx="7" cy="7" r="2.4" fill="none" stroke="#B8BDC2" strokeWidth="1.3" />
+              <circle cx="7" cy="7" r="2.4" fill="none" stroke="var(--il-icon)" strokeWidth="1.3" />
               <path
                 d="M7 1.4v1.6M7 11v1.6M1.4 7h1.6M11 7h1.6M3 3l1.1 1.1M9.9 9.9l1.1 1.1M11 3l-1.1 1.1M4.1 9.9l-1.1 1.1"
                 fill="none"
-                stroke="#B8BDC2"
+                stroke="var(--il-icon)"
                 strokeWidth="1.3"
                 strokeLinecap="round"
               />
             </svg>
             Settings
           </button>
-          <div style={{ height: 1, background: 'rgba(242,241,236,0.09)', margin: '5px 9px' }} />
-          <button
-            className="island-menu-item island-menu-item--danger"
-            onClick={onQuit}
-            style={{ ...menuItem, color: '#E2A24A' }}
-          >
+          <div style={{ height: 1, background: 'var(--il-line)', margin: '5px 9px' }} />
+          <button className="island-menu-item island-menu-item--danger" onClick={onQuit} style={{ ...menuItem, color: '#E2A24A' }}>
             <svg width="14" height="14" viewBox="0 0 14 14">
               <path
                 d="M5.4 2H2.4a.6.6 0 0 0-.6.6v8.8a.6.6 0 0 0 .6.6H5.4M8.4 4.4L11.6 7 8.4 9.6M11.6 7H5"
@@ -74,7 +70,7 @@ const iconBtn: React.CSSProperties = {
   borderRadius: '50%',
   border: 'none',
   background: 'transparent',
-  color: 'rgba(242,241,236,0.7)',
+  color: 'var(--il-muted)',
   display: 'grid',
   placeItems: 'center',
   cursor: 'pointer',
@@ -87,8 +83,8 @@ const popover: React.CSSProperties = {
   bottom: 50,
   right: 0,
   width: 178,
-  background: '#23262B',
-  border: '1px solid rgba(242,241,236,0.1)',
+  background: 'var(--il-bg-menu)',
+  border: '1px solid var(--il-border)',
   borderRadius: 13,
   padding: 6,
   boxShadow: '0 18px 44px rgba(0,0,0,.55)',
@@ -103,7 +99,7 @@ const menuItem: React.CSSProperties = {
   textAlign: 'left',
   background: 'transparent',
   border: 'none',
-  color: '#F2F1EC',
+  color: 'var(--il-text)',
   fontFamily: "'Inter', sans-serif",
   fontSize: 13,
   padding: '9px 10px',

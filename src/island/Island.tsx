@@ -68,6 +68,7 @@ export function Island(props: IslandProps) {
   }
 }
 
+// Simulates the physical notch camera — always black regardless of theme.
 function NotchDot({ top, size = 7 }: { top: number; size?: number }) {
   return (
     <span
@@ -102,8 +103,8 @@ function Collapsed({
     display: 'inline-flex',
     alignItems: 'center',
     gap: 11,
-    background: '#17191D',
-    color: '#F2F1EC',
+    background: 'var(--il-bg)',
+    color: 'var(--il-text)',
     borderRadius: notch ? '0 0 20px 20px' : 999,
     padding: `${notch ? 11 : 7}px 18px 7px 8px`,
     minWidth: notch ? 208 : 0,
@@ -133,7 +134,7 @@ function Collapsed({
             size={30}
             radius={11}
             strokeWidth={3}
-            trackColor="rgba(242,241,236,0.15)"
+            trackColor="var(--il-track)"
             accent={view.accent}
             frac={view.frac}
             running={view.isRunning}
@@ -170,7 +171,6 @@ function Collapsed({
                 fontWeight: 500,
                 letterSpacing: '0.01em',
                 fontVariantNumeric: 'tabular-nums',
-                color: '#F2F1EC',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -190,8 +190,8 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
       style={{
         width: 266,
         boxSizing: 'border-box',
-        background: '#17191D',
-        color: '#F2F1EC',
+        background: 'var(--il-bg)',
+        color: 'var(--il-text)',
         borderRadius: notch ? '0 0 22px 22px' : 22,
         padding: `${notch ? 21 : 15}px 18px 15px`,
         boxShadow: '0 22px 56px rgba(0,0,0,.46),0 4px 12px rgba(0,0,0,.3)',
@@ -242,7 +242,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
         style={{
           height: 4,
           borderRadius: 999,
-          background: 'rgba(242,241,236,0.13)',
+          background: 'var(--il-track)',
           overflow: 'hidden',
           marginBottom: 13,
         }}
@@ -273,7 +273,6 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
             lineHeight: 0.92,
             letterSpacing: '0.01em',
             fontVariantNumeric: 'tabular-nums',
-            color: '#F2F1EC',
           }}
         >
           {view.timeStr}
@@ -291,7 +290,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
               borderRadius: '50%',
               border: 'none',
               background: view.accent,
-              color: '#17191D',
+              color: 'var(--il-bg)',
               display: 'grid',
               placeItems: 'center',
               cursor: 'pointer',
@@ -313,7 +312,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
               borderRadius: '50%',
               border: 'none',
               background: 'transparent',
-              color: 'rgba(242,241,236,0.85)',
+              color: 'var(--il-body)',
               display: 'grid',
               placeItems: 'center',
               cursor: 'pointer',
@@ -339,8 +338,8 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
       style={{
         width: 320,
         boxSizing: 'border-box',
-        background: '#17191D',
-        color: '#F2F1EC',
+        background: 'var(--il-bg)',
+        color: 'var(--il-text)',
         borderRadius: `${notch ? '0 0' : '26px 26px'} ${br} ${br}`,
         padding: `${notch ? 24 : 20}px 22px 18px`,
         boxShadow: '0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32)',
@@ -401,7 +400,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           size={64}
           radius={27}
           strokeWidth={4}
-          trackColor="rgba(242,241,236,0.13)"
+          trackColor="var(--il-track)"
           accent={view.accent}
           frac={view.frac}
           running={view.isRunning}
@@ -456,7 +455,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
             borderRadius: '50%',
             border: 'none',
             background: view.accent,
-            color: '#17191D',
+            color: 'var(--il-bg)',
             display: 'grid',
             placeItems: 'center',
             cursor: 'pointer',
@@ -506,9 +505,9 @@ const outlineBtn: CSSProperties = {
   width: 42,
   height: 42,
   borderRadius: '50%',
-  border: '1px solid rgba(242,241,236,0.18)',
+  border: '1px solid var(--il-border-btn)',
   background: 'transparent',
-  color: 'rgba(242,241,236,0.78)',
+  color: 'var(--il-muted)',
   display: 'grid',
   placeItems: 'center',
   cursor: 'pointer',

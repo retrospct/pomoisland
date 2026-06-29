@@ -2,6 +2,7 @@
 import type { Prefs, TimerState } from '@shared/types'
 import { fmtTime, frac as fracOf } from '@shared/format'
 import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
+import { ISLAND_NEUTRAL } from './palette'
 
 export type Glyph = 'play' | 'pause' | 'check' | 'cup' | 'none'
 
@@ -33,7 +34,12 @@ export interface DotStyle {
   boxShadow: string
 }
 
-export function deriveIsland(state: TimerState, prefs: Prefs, completedToday = 0): IslandView {
+export function deriveIsland(
+  state: TimerState,
+  prefs: Prefs,
+  resolvedTheme: 'light' | 'dark' = 'dark',
+  completedToday = 0,
+): IslandView {
   const { status, mode, total, remaining, sessionIndex, sessionTotal } = state
   const isBreak = mode === 'break'
   const isRunning = status === 'running'
@@ -85,7 +91,8 @@ export function deriveIsland(state: TimerState, prefs: Prefs, completedToday = 0
   const rawTask = (state.task ?? '').trim()
   const hasTask = rawTask.length > 0
   const displayTask = hasTask ? rawTask : isBreak ? 'Break time' : 'No task set'
-  const taskColor = hasTask ? 'rgba(242,241,236,0.62)' : 'rgba(242,241,236,0.4)'
+  const n = ISLAND_NEUTRAL[resolvedTheme]
+  const taskColor = hasTask ? n.taskColor : n.taskDim
 
   const dots: DotStyle[] = []
   const count = prefs.showDots ? sessionTotal : 0
@@ -94,7 +101,7 @@ export function deriveIsland(state: TimerState, prefs: Prefs, completedToday = 0
     const current = i === sessionIndex && !isComplete
     dots.push({
       size: current ? 7 : 6,
-      background: done || current ? accent : 'rgba(242,241,236,0.22)',
+      background: done || current ? accent : n.dotInactive,
       boxShadow: current ? `0 0 0 3px ${hexToRgba(accent, 0.18)}` : 'none',
     })
   }
