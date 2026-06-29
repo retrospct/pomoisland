@@ -961,7 +961,7 @@ export function PreferencesTab({ prefs, set }: TabProps) {
           <div
             style={{
               height: 64,
-              background: '#1E211C',
+              background: 'var(--sp-field)',
               borderRadius: 10,
               display: 'grid',
               placeItems: 'center',
@@ -1015,8 +1015,8 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
           display: 'inline-flex',
           alignItems: 'center',
           gap: 10,
-          background: '#17191D',
-          color: '#F2F1EC',
+          background: 'var(--sp-surface)',
+          color: 'var(--sp-text)',
           borderRadius: 999,
           padding: '7px 17px 7px 8px',
           boxShadow: '0 14px 36px rgba(0,0,0,.42)',
@@ -1031,7 +1031,7 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
               cy="14"
               r="10.5"
               fill="none"
-              stroke="rgba(242,241,236,0.14)"
+              stroke="var(--sp-border)"
               strokeWidth="3"
             />
             <circle
@@ -1072,7 +1072,7 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
           >
             FOCUS DONE
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: '#F2F1EC' }}>
+          <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, color: 'var(--sp-text)' }}>
             00:00
           </span>
         </div>

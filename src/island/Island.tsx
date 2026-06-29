@@ -60,6 +60,7 @@ export function Island(props: IslandProps) {
   }
 }
 
+// Simulates the physical notch camera — always black regardless of theme.
 function NotchDot({ top, size = 7 }: { top: number; size?: number }) {
   return (
     <span
