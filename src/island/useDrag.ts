@@ -5,6 +5,10 @@ import { useCallback, useRef } from 'react'
  * Owns mousedown→IPC binding and interactive-element exclusion so that
  * swapping to native app-region later is a one-file change.
  *
+ * dragStart is deferred until the first mousemove so that a plain click
+ * never sets placement.dragging = true — which would collapse peek before
+ * the click event reaches onToggleExpand.
+ *
  * Excluded targets: <button> elements and anything with [data-drag-exclude]
  * (the latter is reserved for the task-text hotspot added by MO-6).
  */
@@ -17,16 +21,22 @@ export function useDrag() {
     if (target.closest('button') || target.closest('[data-drag-exclude]')) return
 
     moved.current = false
-    window.api.island.dragStart(e.screenX, e.screenY)
+    const startX = e.screenX
+    const startY = e.screenY
+    let started = false
 
     const onMove = (ev: MouseEvent) => {
+      if (!started) {
+        started = true
+        window.api.island.dragStart(startX, startY)
+      }
       moved.current = true
       window.api.island.dragMove(ev.screenX, ev.screenY)
     }
     const onUp = () => {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
-      window.api.island.dragEnd()
+      if (started) window.api.island.dragEnd()
       if (moved.current) {
         justDragged.current = true
         setTimeout(() => (justDragged.current = false), 60)
