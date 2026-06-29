@@ -1,5 +1,5 @@
 import { RIPPLE_DEFS } from '@shared/ripple'
-import type { Ripple } from '@shared/types'
+import type { Ripple, TasksState } from '@shared/types'
 import type { CSSProperties } from 'react'
 import type { IslandView } from './derive'
 import {
@@ -14,8 +14,9 @@ import {
 import { Menu } from './Menu'
 import { Ring } from './Ring'
 import { SessionDots } from './SessionDots'
+import { TaskList } from './TaskList'
 
-export type Present = 'collapsed' | 'peek' | 'expanded'
+export type Present = 'collapsed' | 'peek' | 'expanded' | 'tasks'
 
 interface Handlers {
   onToggleExpand: () => void
@@ -27,8 +28,8 @@ interface Handlers {
   onMouseLeave?: () => void
   menuOpen: boolean
   onToggleMenu: (e: React.MouseEvent) => void
-  switchLabel: string
-  onSwitch: (e: React.MouseEvent) => void
+  onOpenTasks: (e: React.MouseEvent) => void
+  onCloseTasks: () => void
   onSettings: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
 }
@@ -39,6 +40,7 @@ interface IslandProps extends Handlers {
   notch: boolean
   ripple: Ripple
   messagesOn: boolean
+  tasks: TasksState | null
 }
 
 const MONO = "'IBM Plex Mono', monospace"
@@ -57,6 +59,12 @@ export function Island(props: IslandProps) {
       return <Peek {...props} />
     case 'expanded':
       return <Expanded {...props} />
+    case 'tasks':
+      return <ExpandedWithTasks {...props} />
+    default: {
+      const _exhaustive: never = props.present
+      return _exhaustive
+    }
   }
 }
 
@@ -321,8 +329,11 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
   )
 }
 
-function Expanded(props: IslandProps) {
-  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip } = props
+/** Shared body used by both Expanded and ExpandedWithTasks. */
+function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
+  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
+    props
+  const br = bottomRadius ?? (notch ? '0 0 26px 26px' : 26)
   return (
     <div
       style={{
@@ -330,7 +341,7 @@ function Expanded(props: IslandProps) {
         boxSizing: 'border-box',
         background: '#17191D',
         color: '#F2F1EC',
-        borderRadius: notch ? '0 0 26px 26px' : 26,
+        borderRadius: `${notch ? '0 0' : '26px 26px'} ${br} ${br}`,
         padding: `${notch ? 24 : 20}px 22px 18px`,
         boxShadow: '0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32)',
         fontFamily: SANS,
@@ -360,19 +371,31 @@ function Expanded(props: IslandProps) {
         >
           {view.statusLabel}
         </span>
-        <SessionDots dots={view.dots} gap={6} />
+        <SessionDots dots={view.dots} gap={6} completedToday={view.completedToday} />
       </div>
+
+      {/* Task text — clicking opens the task list (non-drag hotspot per MO-6) */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Open task list"
+        onClick={(e) => { stop(e); props.onOpenTasks(e) }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') props.onOpenTasks(e as unknown as React.MouseEvent)
+        }}
         style={{
           fontSize: 13.5,
           color: view.taskColor,
           fontStyle: view.taskItalic ? 'italic' : 'normal',
           marginBottom: 15,
           letterSpacing: '-0.005em',
+          cursor: 'pointer',
+          userSelect: 'none',
         }}
       >
         {view.displayTask}
       </div>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 18 }}>
         <Ring
           size={64}
@@ -417,10 +440,7 @@ function Expanded(props: IslandProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
         <button
           className="island-icon-btn"
-          onClick={(e) => {
-            stop(e)
-            onReset()
-          }}
+          onClick={(e) => { stop(e); onReset() }}
           aria-label="Reset"
           style={outlineBtn}
         >
@@ -428,10 +448,7 @@ function Expanded(props: IslandProps) {
         </button>
         <button
           className="island-primary-btn"
-          onClick={(e) => {
-            stop(e)
-            onPlayPause()
-          }}
+          onClick={(e) => { stop(e); onPlayPause() }}
           aria-label="Play / pause"
           style={{
             width: 54,
@@ -450,10 +467,7 @@ function Expanded(props: IslandProps) {
         </button>
         <button
           className="island-icon-btn"
-          onClick={(e) => {
-            stop(e)
-            onSkip()
-          }}
+          onClick={(e) => { stop(e); onSkip() }}
           aria-label="Skip"
           style={outlineBtn}
         >
@@ -463,12 +477,27 @@ function Expanded(props: IslandProps) {
         <Menu
           open={props.menuOpen}
           onToggleMenu={props.onToggleMenu}
-          switchLabel={props.switchLabel}
-          onSwitch={props.onSwitch}
+          onTasks={props.onOpenTasks}
           onSettings={props.onSettings}
           onQuit={props.onQuit}
         />
       </div>
+    </div>
+  )
+}
+
+function Expanded(props: IslandProps) {
+  return <ExpandedBody {...props} />
+}
+
+/** Expanded panel with the task list appended below. */
+function ExpandedWithTasks(props: IslandProps) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <ExpandedBody {...props} bottomRadius={0} />
+      {props.tasks && (
+        <TaskList tasks={props.tasks} accent={props.view.accent} onClose={props.onCloseTasks} />
+      )}
     </div>
   )
 }
@@ -521,7 +550,6 @@ function CompletionFx({
             border: `${d.w}px solid ${d.bright ? accentBright : accent}`,
             pointerEvents: 'none',
             zIndex: 3,
-            // CSS custom props consumed by the islandRipple keyframe.
             ['--op' as string]: d.op,
             ['--sc' as string]: d.sc,
             animation: `islandRipple ${d.dur}s cubic-bezier(.16,.6,.3,1) ${d.delay}s infinite`,

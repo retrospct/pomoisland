@@ -1,16 +1,16 @@
-// The ⋯ menu from the expanded panel (Island.dc.html). The prototype's inline
-// "Settings" popover is replaced by opening the real Settings window.
+// The ⋯ menu from the expanded panel. Replaced inline Settings with the real
+// Settings window; removed the testing-only break-mode switch (MO-18);
+// added Tasks entry (MO-6).
 
 interface MenuProps {
   open: boolean
   onToggleMenu: (e: React.MouseEvent) => void
-  switchLabel: string
-  onSwitch: (e: React.MouseEvent) => void
+  onTasks: (e: React.MouseEvent) => void
   onSettings: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
 }
 
-export function Menu({ open, onToggleMenu, switchLabel, onSwitch, onSettings, onQuit }: MenuProps) {
+export function Menu({ open, onToggleMenu, onTasks, onSettings, onQuit }: MenuProps) {
   return (
     <div style={{ position: 'relative' }}>
       <button className="island-icon-btn" onClick={onToggleMenu} aria-label="More" style={iconBtn}>
@@ -22,24 +22,20 @@ export function Menu({ open, onToggleMenu, switchLabel, onSwitch, onSettings, on
       </button>
       {open && (
         <div style={popover}>
-          <button className="island-menu-item" onClick={onSwitch} style={menuItem}>
-            <svg width="14" height="14" viewBox="0 0 14 14">
-              <path
-                d="M2 4 h7 M2 4 l2.4 -2.2 M2 4 l2.4 2.2 M12 10 h-7 M12 10 l-2.4 -2.2 M12 10 l-2.4 2.2"
-                fill="none"
-                stroke="#8FC8C0"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+          <button className="island-menu-item" onClick={onTasks} style={menuItem}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="#8FC8C0" strokeWidth="1.3" />
+              <path d="M2.5 4l1.2 1.2 2-2.4" stroke="#8FC8C0" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4" stroke="#8FC8C0" strokeWidth="1.3" strokeLinecap="round" />
+              <rect x="1.5" y="8.5" width="5" height="4" rx="1" stroke="rgba(242,241,236,0.3)" strokeWidth="1.3" />
             </svg>
-            {switchLabel}
+            Tasks
           </button>
           <button className="island-menu-item" onClick={onSettings} style={menuItem}>
             <svg width="14" height="14" viewBox="0 0 14 14">
               <circle cx="7" cy="7" r="2.4" fill="none" stroke="#B8BDC2" strokeWidth="1.3" />
               <path
-                d="M7 1.4 v1.6 M7 11 v1.6 M1.4 7 h1.6 M11 7 h1.6 M3 3 l1.1 1.1 M9.9 9.9 l1.1 1.1 M11 3 l-1.1 1.1 M4.1 9.9 l-1.1 1.1"
+                d="M7 1.4v1.6M7 11v1.6M1.4 7h1.6M11 7h1.6M3 3l1.1 1.1M9.9 9.9l1.1 1.1M11 3l-1.1 1.1M4.1 9.9l-1.1 1.1"
                 fill="none"
                 stroke="#B8BDC2"
                 strokeWidth="1.3"
@@ -49,10 +45,14 @@ export function Menu({ open, onToggleMenu, switchLabel, onSwitch, onSettings, on
             Settings
           </button>
           <div style={{ height: 1, background: 'rgba(242,241,236,0.09)', margin: '5px 9px' }} />
-          <button className="island-menu-item island-menu-item--danger" onClick={onQuit} style={{ ...menuItem, color: '#E2A24A' }}>
+          <button
+            className="island-menu-item island-menu-item--danger"
+            onClick={onQuit}
+            style={{ ...menuItem, color: '#E2A24A' }}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14">
               <path
-                d="M5.4 2 H2.4 a0.6 0.6 0 0 0 -0.6 0.6 v8.8 a0.6 0.6 0 0 0 0.6 0.6 H5.4 M8.4 4.4 L11.6 7 L8.4 9.6 M11.6 7 H5"
+                d="M5.4 2H2.4a.6.6 0 0 0-.6.6v8.8a.6.6 0 0 0 .6.6H5.4M8.4 4.4L11.6 7 8.4 9.6M11.6 7H5"
                 fill="none"
                 stroke="#E2A24A"
                 strokeWidth="1.4"

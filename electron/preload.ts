@@ -5,6 +5,8 @@ import type {
   Placement,
   Prefs,
   PomApi,
+  TaskMutation,
+  TasksState,
   TimerAction,
   TimerState,
 } from '../src/shared/types'
@@ -26,6 +28,11 @@ const api: PomApi = {
     get: () => ipcRenderer.invoke(IPC.prefsGet) as Promise<Prefs>,
     set: (patch: Partial<Prefs>) => ipcRenderer.send(IPC.prefsSet, patch),
     onChange: (cb) => on<Prefs>(IPC.prefsChanged, cb),
+  },
+  tasks: {
+    get: () => ipcRenderer.invoke(IPC.tasksGet) as Promise<TasksState>,
+    mutate: (m: TaskMutation) => ipcRenderer.send(IPC.tasksMutate, m),
+    onChange: (cb) => on<TasksState>(IPC.tasksChanged, cb),
   },
   island: {
     resize: (size: IslandSize) => ipcRenderer.send(IPC.islandResize, size),

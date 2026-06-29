@@ -23,6 +23,8 @@ export interface IslandView {
   dots: DotStyle[]
   showRing: boolean
   showTimeText: boolean
+  /** Focus sessions completed today — drives the SessionDots hover reveal (MO-7). */
+  completedToday: number
 }
 
 export interface DotStyle {
@@ -31,7 +33,7 @@ export interface DotStyle {
   boxShadow: string
 }
 
-export function deriveIsland(state: TimerState, prefs: Prefs): IslandView {
+export function deriveIsland(state: TimerState, prefs: Prefs, completedToday = 0): IslandView {
   const { status, mode, total, remaining, sessionIndex, sessionTotal } = state
   const isBreak = mode === 'break'
   const isRunning = status === 'running'
@@ -115,5 +117,6 @@ export function deriveIsland(state: TimerState, prefs: Prefs): IslandView {
     dots,
     showRing: prefs.layout !== 'minimal',
     showTimeText: prefs.layout !== 'compact',
+    completedToday,
   }
 }
