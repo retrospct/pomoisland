@@ -155,7 +155,7 @@ export function IslandApp() {
 
   let present: Present = 'collapsed'
   if (expanded) present = 'expanded'
-  else if (peek && placement.snapped && !placement.dragging) present = 'peek'
+  else if (peek && !placement.dragging) present = 'peek'
 
   const toggleExpand = () => {
     if (justDragged.current) return
@@ -175,7 +175,7 @@ export function IslandApp() {
       onMouseDown={onMouseDown}
       onMouseEnter={() => {
         clearRetract()
-        if (!expanded && !placement.dragging && placement.snapped) setPeek(true)
+        if (!expanded && !placement.dragging) setPeek(true)
       }}
       onMouseLeave={() => {
         const delays = RETRACT_MS[prefs?.retractSpeed ?? 'normal']
