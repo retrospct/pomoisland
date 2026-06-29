@@ -10,12 +10,14 @@ const COMPLETE_HOLD_MS = 2600 // time for the completion flourish before advanci
 type Getter = () => Prefs
 type Listener = (s: TimerState) => void
 type FocusCompleteHook = () => void
+type TickHook = () => void
 
 export class Timer {
   private state: TimerState
   private readonly getPrefs: Getter
   private readonly listeners = new Set<Listener>()
   private readonly focusCompleteHooks = new Set<FocusCompleteHook>()
+  private readonly tickHooks = new Set<TickHook>()
   private interval: ReturnType<typeof setInterval> | null = null
   private completeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -60,6 +62,21 @@ export class Timer {
   onFocusComplete(cb: FocusCompleteHook): () => void {
     this.focusCompleteHooks.add(cb)
     return () => this.focusCompleteHooks.delete(cb)
+  }
+
+  /**
+   * Register a hook fired once per second while a focus block is running.
+   * The main-process timer emits this when `remaining` crosses a whole-second
+   * boundary, giving the renderer a precise, renderer-throttling-immune cadence.
+   */
+  onTick(cb: TickHook): () => void {
+    this.tickHooks.add(cb)
+    return () => this.tickHooks.delete(cb)
+  }
+
+  /** Test-only: advance one TICK_MS step synchronously without the real interval. */
+  tickOnce(): void {
+    this.tick()
   }
 
   private set(patch: Partial<TimerState>): void {
@@ -110,9 +127,20 @@ export class Timer {
 
   private tick(): void {
     if (this.state.status !== 'running') return
-    const rem = this.state.remaining - TICK_MS / 1000
-    if (rem <= 0) this.complete()
-    else this.set({ remaining: rem })
+    const prev = this.state.remaining
+    const rem = prev - TICK_MS / 1000
+    if (rem <= 0) {
+      this.complete()
+      return
+    }
+    // Emit once per second when `remaining` lands on a whole-second value
+    // (i.e. X.25 → X.0).  Using Math.ceil matches the countdown display: both
+    // update at the same moment.  0.25 s steps from an integer start are exact
+    // in IEEE 754 (0.25 = 1/4), so this comparison is reliable.
+    if (this.state.mode === 'focus' && Math.ceil(rem) < Math.ceil(prev)) {
+      for (const hook of this.tickHooks) hook()
+    }
+    this.set({ remaining: rem })
   }
 
   private complete(): void {

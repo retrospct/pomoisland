@@ -22,7 +22,7 @@ export function IslandApp() {
 
   const measureRef = useRef<HTMLDivElement>(null)
   const prevStatus = useRef<string | null>(null)
-  const lastTickSecond = useRef<number | null>(null)
+  const prefsRef = useRef<Prefs | null>(null)
   const retractTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Ref so the blur handler never has a stale dragging value.
   const draggingRef = useRef(false)
@@ -64,6 +64,11 @@ export function IslandApp() {
     }
   }, [])
 
+  // Keep prefsRef current so the tick callback (registered once) always sees latest prefs.
+  useEffect(() => {
+    prefsRef.current = prefs
+  }, [prefs])
+
   // --- Completion chime on transition into `complete` ---
   useEffect(() => {
     if (!state || !prefs) return
@@ -74,25 +79,16 @@ export function IslandApp() {
   }, [state, prefs])
 
   // --- Per-second focus tick (ADR-0005) ---
-  // The main-process timer fires every 250ms, so detect each whole-second decrease in
-  // `remaining` and play at most one tick per second — only while a focus block runs.
-  // KNOWN BUG: cadence is unreliable (see .scratch/ticking-sound/issues/01-*).
+  // The main process emits `timer:tick` once per second when a focus block is running
+  // (whole-second boundary in electron/timer.ts). This replaces the fragile renderer-side
+  // detection that was prone to React batching / renderer-throttling jitter.
   useEffect(() => {
-    if (!state || !prefs) return
-    if (prefs.tick === 'off' || state.mode !== 'focus' || state.status !== 'running') {
-      lastTickSecond.current = null
-      return
-    }
-    const sec = Math.ceil(state.remaining)
-    if (lastTickSecond.current === null) {
-      lastTickSecond.current = sec // arm without firing on the first running frame
-      return
-    }
-    if (sec < lastTickSecond.current) {
-      lastTickSecond.current = sec
-      playTick(prefs.tick, prefs.volume)
-    }
-  }, [state, prefs])
+    return window.api.timer.onTick(() => {
+      const p = prefsRef.current
+      if (!p || p.tick === 'off') return
+      playTick(p.tick, p.volume)
+    })
+  }, [])
 
   // --- Auto-resize the window to fit the island content (ADR-0003) ---
   useLayoutEffect(() => {

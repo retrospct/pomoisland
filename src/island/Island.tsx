@@ -105,7 +105,18 @@ export function Island(props: IslandProps) {
   )
 }
 
+// Transparent bleed room (px) added beside and below the pill when completion FX is
+// active. This forces the ResizeObserver / Electron auto-resize to grow the window so
+// the expanding ripple rings are not clipped. No top bleed: the pill stays flush with
+// the notch (snapped) or the existing window top edge (floating).
+//
+// Sizing: the worst-case ring (bloom, sc=2.45) on a 210px pill expands ~155 px past
+// each edge. 180 gives that full extent plus a comfortable margin for any accent glow.
+const FX_PAD = 180
+
 // MO-20: completion fx tracks enter/exit phase to animate in and out.
+// MO-30: outer wrapper grows by FX_PAD when FX fires so the window is large enough to
+//        show the full ring expansion without clipping.
 function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
   const pillRadius: CSSProperties['borderRadius'] = notch ? '0 0 20px 20px' : 999
 
@@ -144,16 +155,42 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
     boxSizing: 'border-box',
   }
 
+  const fxActive = fxPhase !== 'none'
+
   return (
-    <div style={{ position: 'relative', display: 'inline-flex' }}>
-      {fxPhase !== 'none' && (
-        <CompletionFx
-          ripple={ripple}
-          accent={view.accent}
-          accentBright={view.accentBright}
-          borderRadius={pillRadius}
-          exiting={fxPhase === 'exit'}
-        />
+    <div
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        // When FX fires, pad the container so the ResizeObserver sees a larger element and
+        // the Electron window grows to give the ripple rings room to expand unclipped.
+        // Sides and bottom only — no top pad so the pill stays flush with the notch/top edge.
+        paddingLeft: fxActive ? FX_PAD : undefined,
+        paddingRight: fxActive ? FX_PAD : undefined,
+        paddingBottom: fxActive ? FX_PAD : undefined,
+      }}
+    >
+      {fxActive && (
+        // Positioned to cover exactly the pill area within the padded wrapper, so
+        // CompletionFx ring transforms overflow into the bleed zone rather than being clipped.
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: FX_PAD,
+            right: FX_PAD,
+            bottom: FX_PAD,
+            pointerEvents: 'none',
+          }}
+        >
+          <CompletionFx
+            ripple={ripple}
+            accent={view.accent}
+            accentBright={view.accentBright}
+            borderRadius={pillRadius}
+            exiting={fxPhase === 'exit'}
+          />
+        </div>
       )}
       <div className="island-pill" data-island="1" style={pill} onClick={onToggleExpand}>
         {view.showRing && (

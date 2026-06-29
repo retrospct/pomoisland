@@ -36,7 +36,8 @@ Single-context repo: one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agent
 - All animations are intentionally un-tuned; tuning their feel (durations/easing/choreography + `prefers-reduced-motion`) is a deliberate later-stage pass, not part of normal feature work.
 - Global show/hide shortcut is wired to ⌘⌥P.
 - pnpm v9+ blocks dependency postinstall scripts by default; approve builds for `electron` and `esbuild` (electron's postinstall downloads its binary `dist`, and skipping it breaks `dev`).
-- The repo uses multiple linked git worktrees for parallel `cursor/` branches; push the branch to origin first, then use `move_agent_to_root` so file edits land in the correct tree.
+- The repo uses multiple linked git worktrees for parallel `cursor/` branches; push the branch to origin first, then use `move_agent_to_root` so file edits land in the correct tree. If `move_agent_to_root` fails (e.g. because `main` is already locked by the primary worktree), skip the root switch and work directly at the worktree path — point all Shell commands and file edits at the absolute worktree path.
+- Use `pnpm run <script>` (not `npm run`) inside worktrees; `npm run` may report "tsc: command not found" because the shell PATH doesn't include pnpm's local `.bin` without pnpm invoking the script.
 - Electron UA stylesheet bleeds through `<button>` elements on hover: keep `background: transparent` as an inline style AND use `!important` on CSS hover rules, or the browser UA background shows through.
 - Product name is "Pomoisland" (double "o"); the git repo/remote stays `pomisland` (single "o") — the rename is product-name-only and in-repo.
 - Multi-option settings use a three-button segmented control matching the Theme/color-picker pattern (e.g. Ticking sound Off/Soft/Crisp), not a binary toggle.
