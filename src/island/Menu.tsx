@@ -68,7 +68,7 @@ const iconBtn: React.CSSProperties = {
   borderRadius: '50%',
   border: 'none',
   background: 'transparent',
-  color: 'rgba(242,241,236,0.7)',
+  color: 'var(--il-muted)',
   display: 'grid',
   placeItems: 'center',
   cursor: 'pointer',
@@ -78,8 +78,8 @@ const iconBtn: React.CSSProperties = {
 
 const popover: React.CSSProperties = {
   width: 178,
-  background: '#23262B',
-  border: '1px solid rgba(242,241,236,0.1)',
+  background: 'var(--il-bg-menu)',
+  border: '1px solid var(--il-border)',
   borderRadius: 13,
   padding: 6,
   boxShadow: '0 18px 44px rgba(0,0,0,.55)',
@@ -93,7 +93,7 @@ const menuItem: React.CSSProperties = {
   textAlign: 'left',
   background: 'transparent',
   border: 'none',
-  color: '#F2F1EC',
+  color: 'var(--il-text)',
   fontFamily: "'Inter', sans-serif",
   fontSize: 13,
   padding: '10px 12px',
