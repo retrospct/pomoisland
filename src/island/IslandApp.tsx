@@ -172,9 +172,7 @@ export function IslandApp() {
         if (!expanded && !placement.dragging) setPeek(true)
       }}
       onMouseLeave={() => {
-        const delay = expanded
-          ? (prefs?.expandRetractMs ?? 1000)
-          : (prefs?.hoverRetractMs ?? 200)
+        const delay = expanded ? (prefs?.expandRetractMs ?? 1000) : (prefs?.hoverRetractMs ?? 200)
         retractTimer.current = setTimeout(() => {
           retractTimer.current = null
           setExpanded(false)

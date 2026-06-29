@@ -25,6 +25,8 @@ Single-context repo: one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agent
 - Drives work through the Matt Pocock skill flow (`/grill-with-docs`, `/handoff`, `/to-prd`, `/to-issues`, `/implement`).
 - When changing/toggling a sound setting, play a short audible preview (~5 beats/ticks) and ALWAYS stop any currently-playing audio before starting the next.
 - Ticking should not run continuously during focus; the desired feel is a subtle transition cue — ticks fading in over the last ~30s of a cycle plus a distinct start sound (woosh/crisp click) — rather than ticks the whole cycle.
+- Clicking outside the island in any expanded or peek state should retract it to the minimized notch view.
+- For new `/implement` sessions, always switch to a feature worktree off `main` first before starting file edits.
 
 ## Learned Workspace Facts
 
@@ -35,7 +37,7 @@ Single-context repo: one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agent
 - Global show/hide shortcut is wired to ⌘⌥P.
 - Git remote: `git@github.com:retrospct/pomisland.git`.
 - pnpm v9+ blocks dependency postinstall scripts by default; approve builds for `electron` and `esbuild` (electron's postinstall downloads its binary `dist`, and skipping it breaks `dev`).
-- "chip" is shorthand for splitting work into small, independently-shippable tasks/chunks.
+- The repo uses multiple linked git worktrees for parallel `cursor/` branches; after switching to a feature worktree use `move_agent_to_root` so file edits land in the correct tree.
 - Product name is "Pomoisland" (double "o"); the git repo/remote stays `pomisland` (single "o") — the rename is product-name-only and in-repo.
 - Multi-option settings use a three-button segmented control matching the Theme/color-picker pattern (e.g. Ticking sound Off/Soft/Crisp), not a binary toggle.
 - New work goes on a `cursor/`-prefixed branch; never commit or push directly to the default branch (`main`).
