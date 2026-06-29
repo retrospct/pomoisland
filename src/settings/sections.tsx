@@ -19,6 +19,29 @@ import type {
 import type { CSSProperties, ReactNode } from 'react'
 import { useState } from 'react'
 
+function RabbitIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor">
+      <rect x="2.5" y="0" width="3" height="7.5" rx="1.5" />
+      <rect x="9.5" y="0" width="3" height="7.5" rx="1.5" />
+      <ellipse cx="7.5" cy="11.5" rx="5.5" ry="3.5" />
+    </svg>
+  )
+}
+
+function TurtleIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor">
+      <circle cx="7.5" cy="1.8" r="1.8" />
+      <ellipse cx="7.5" cy="9" rx="4.8" ry="4.2" />
+      <circle cx="2" cy="6" r="1.6" />
+      <circle cx="13" cy="6" r="1.6" />
+      <circle cx="2" cy="12" r="1.6" />
+      <circle cx="13" cy="12" r="1.6" />
+    </svg>
+  )
+}
+
 const MONO = "'IBM Plex Mono', monospace"
 const SANS = "'Inter', sans-serif"
 
@@ -259,7 +282,7 @@ function TooltipButton({
   active,
   onClick,
 }: {
-  icon: string
+  icon: ReactNode
   label: string
   active: boolean
   onClick: () => void
@@ -277,13 +300,12 @@ function TooltipButton({
           borderRadius: 10,
           border: `1px solid ${active ? 'var(--sp-teal)' : 'var(--sp-border)'}`,
           background: active ? 'var(--sp-tint)' : 'transparent',
+          color: active ? 'var(--sp-teal)' : 'var(--sp-muted)',
           cursor: 'pointer',
-          fontSize: 17,
           display: 'grid',
           placeItems: 'center',
           transition: 'all .15s',
           padding: 0,
-          filter: active ? 'none' : 'grayscale(0.4) opacity(0.7)',
         }}
       >
         {icon}
@@ -327,7 +349,7 @@ function RetractControl({
   label: string
   desc: string
   value: number
-  presets: [number, string, string][]
+  presets: [number, ReactNode, string][]
   min: number
   max: number
   onChange: (v: number) => void
@@ -944,8 +966,8 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               desc="Collapse delay when cursor leaves the peek view"
               value={prefs.hoverRetractMs}
               presets={[
-                [200, '🐇', 'Snappy — 0.2s'],
-                [500, '🐢', 'Gentle — 0.5s'],
+                [200, <RabbitIcon />, 'Snappy — 0.2s'],
+                [500, <TurtleIcon />, 'Gentle — 0.5s'],
               ]}
               min={100}
               max={2000}
@@ -956,8 +978,8 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               desc="Collapse delay when cursor leaves the expanded view"
               value={prefs.expandRetractMs}
               presets={[
-                [800, '🐇', 'Quick — 0.8s'],
-                [1200, '🐢', 'Relaxed — 1.2s'],
+                [800, <RabbitIcon />, 'Quick — 0.8s'],
+                [1200, <TurtleIcon />, 'Relaxed — 1.2s'],
               ]}
               min={300}
               max={5000}
