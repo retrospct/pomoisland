@@ -193,7 +193,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
           placeholder="Add task…"
           style={{
             flex: 1,
-            background: 'var(--il-line)',
+            background: 'transparent',
             border: '1px solid var(--il-border)',
             borderRadius: 8,
             color: 'var(--il-text)',
@@ -275,7 +275,7 @@ function TaskRow({
         padding: '5px 12px',
         margin: '1px 4px',
         borderRadius: 8,
-        background: isActive || hovered ? 'var(--il-line)' : 'transparent',
+        background: hovered ? 'var(--il-line)' : 'transparent',
         transition: 'background .12s',
         cursor: 'pointer',
       }}
@@ -347,6 +347,7 @@ function TaskRow({
               display: 'block',
               fontSize: 12.5,
               color: task.done ? 'var(--il-muted)' : isActive ? accent : 'var(--il-text)',
+              fontWeight: isActive && !task.done ? 500 : 'normal',
               textDecoration: task.done ? 'line-through' : 'none',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
