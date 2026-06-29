@@ -456,13 +456,15 @@ export function GeneralTab({ prefs, set }: TabProps) {
           <div
             style={{
               display: 'flex',
+              gap: 3,
+              background: 'var(--sp-field)',
               border: '1px solid var(--sp-border)',
               borderRadius: 11,
-              overflow: 'hidden',
+              padding: 3,
               marginBottom: 12,
             }}
           >
-            {PRESETS.map(([k, label], i) => {
+            {PRESETS.map(([k, label]) => {
               const on = prefs.preset === k
               return (
                 <button
@@ -470,16 +472,15 @@ export function GeneralTab({ prefs, set }: TabProps) {
                   onClick={() => onPreset(k)}
                   style={{
                     flex: 1,
-                    textAlign: 'center',
+                    height: 30,
                     border: 'none',
-                    borderLeft: i ? '1px solid var(--sp-border)' : 'none',
+                    borderRadius: 8,
                     cursor: 'pointer',
-                    padding: '9px 8px',
                     fontFamily: MONO,
                     fontSize: 11.5,
                     letterSpacing: '0.03em',
                     background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
-                    color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-muted)',
+                    color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
                     transition: 'all .15s',
                   }}
                 >
