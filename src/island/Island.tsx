@@ -332,7 +332,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
     props
-  const br = bottomRadius ?? (notch ? '0 0 26px 26px' : 26)
+  const br = bottomRadius ?? 26
   return (
     <div
       style={{
@@ -340,7 +340,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
-        borderRadius: `${notch ? '0 0' : '26px 26px'} ${br} ${br}`,
+        borderRadius: `${notch ? '0 0' : '26px 26px'} ${br}px ${br}px`,
         padding: `${notch ? 24 : 20}px 22px 18px`,
         boxShadow: '0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32)',
         fontFamily: SANS,
