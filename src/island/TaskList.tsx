@@ -359,7 +359,7 @@ function TaskRow({
         )}
       </div>
 
-      {/* Session controls: − + pips — not shown for done tasks or while editing */}
+      {/* Session controls: − + only for incomplete tasks */}
       {!isEditing && !task.done && (
         <>
           <button
@@ -376,12 +376,16 @@ function TaskRow({
           >
             +
           </button>
-          <Pips
-            completed={task.completedPomodoros}
-            estimate={task.estimatePomodoros}
-            accent={accent}
-          />
         </>
+      )}
+
+      {/* Session pips — always visible unless editing */}
+      {!isEditing && (
+        <Pips
+          completed={task.completedPomodoros}
+          estimate={task.estimatePomodoros}
+          accent={accent}
+        />
       )}
 
       {/* Edit — not shown while editing */}
