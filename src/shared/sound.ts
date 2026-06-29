@@ -106,6 +106,11 @@ function makeNoise(ctx: BaseAudioContext, seconds: number): AudioBuffer {
 
 // ---- primitives ----
 
+// Routing gains created during a playSound() call are registered here so stopSound()
+// can fast-fade and disconnect them before the next voice starts.
+let activeVoiceGains: GainNode[] = []
+let capturingVoice = false
+
 /** Send `node` to the dry (master) bus and/or the wet (reverb) bus. */
 function route(eng: Engine, node: AudioNode, dry: number, wet: number): void {
   const { ctx, master, reverbIn } = eng
@@ -114,13 +119,43 @@ function route(eng: Engine, node: AudioNode, dry: number, wet: number): void {
     g.gain.value = dry
     node.connect(g)
     g.connect(master)
+    if (capturingVoice) activeVoiceGains.push(g)
   }
   if (wet > 0) {
     const g = ctx.createGain()
     g.gain.value = wet
     node.connect(g)
     g.connect(reverbIn)
+    if (capturingVoice) activeVoiceGains.push(g)
   }
+}
+
+/**
+ * Fast-fade and disconnect any currently playing alarm voice. Ramps each captured
+ * routing gain to near-silence over ~25ms (time-constant 6ms) to avoid clicks/pops,
+ * then disconnects after 50ms once inaudible.
+ */
+export function stopSound(): void {
+  const gains = activeVoiceGains
+  activeVoiceGains = []
+  if (gains.length === 0 || !engine) return
+  const now = (engine.ctx as AudioContext).currentTime
+  for (const g of gains) {
+    try {
+      g.gain.setTargetAtTime(0.0001, now, 0.006)
+    } catch {
+      // ignore
+    }
+  }
+  setTimeout(() => {
+    for (const g of gains) {
+      try {
+        g.disconnect()
+      } catch {
+        // already disconnected
+      }
+    }
+  }, 50)
 }
 
 /** A gain node shaped as attack → exponential decay to silence. */
@@ -520,9 +555,12 @@ export const VOICES: Record<Sound, Voice> = {
   aurora: vAurora,
 }
 
-/** Play a completion cue. `volume` is 0–100; <= 0 is silent. Best-effort. */
+/** Play a completion cue. `volume` is 0–100; <= 0 is silent. Best-effort.
+ *  Stops any currently playing alarm voice first (fast ~25ms fade) so rapid
+ *  chip clicks never stack multiple voices on top of each other. */
 export function playSound(key: Sound, volume: number): void {
   if (volume <= 0) return
+  stopSound()
   try {
     const eng = ensureEngine()
     if (!eng) return
@@ -530,8 +568,11 @@ export function playSound(key: Sound, volume: number): void {
     if (ctx.state === 'suspended') void ctx.resume()
     eng.master.gain.setValueAtTime((Math.min(100, Math.max(0, volume)) / 100) * 0.9, ctx.currentTime)
     const voice = VOICES[key] ?? VOICES.chime
+    capturingVoice = true
     voice(eng, ctx.currentTime + 0.03)
+    capturingVoice = false
   } catch {
+    capturingVoice = false
     // Audio is best-effort (e.g. before any user gesture); ignore failures.
   }
 }
