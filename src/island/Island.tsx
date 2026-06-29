@@ -397,7 +397,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number; noS
         color: 'var(--il-text)',
         borderRadius: `${notch ? '0 0' : '26px 26px'} ${br}px ${br}px`,
         padding: `${notch ? 26 : 22}px 24px 20px`,
-        boxShadow: noShadow ? 'none' : '0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32)',
+        boxShadow: 'none',
         fontFamily: SANS,
         position: 'relative',
         cursor: 'pointer',
@@ -545,7 +545,7 @@ function ExpandedWithTasks(props: IslandProps) {
       display: 'flex',
       flexDirection: 'column',
       borderRadius: props.notch ? '0 0 26px 26px' : 26,
-      boxShadow: '0 24px 64px rgba(0,0,0,.48),0 5px 14px rgba(0,0,0,.32)',
+      boxShadow: 'none',
       overflow: 'hidden',
     }}>
       <ExpandedBody {...props} bottomRadius={0} noShadow />
