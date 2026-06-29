@@ -17,12 +17,12 @@ body.island-body {
 }
 
 .island-icon-btn:hover {
-  background: rgba(242, 241, 236, 0.08) !important;
-  color: #f2f1ec !important;
+  background: var(--il-hover) !important;
+  color: var(--il-text) !important;
 }
 
 .island-menu-item:hover {
-  background: rgba(143, 200, 192, 0.12) !important;
+  background: var(--il-hover) !important;
 }
 .island-menu-item--danger:hover {
   background: rgba(226, 162, 74, 0.12) !important;

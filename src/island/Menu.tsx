@@ -36,19 +36,19 @@ export function MenuDropdown({ onTasks, onSettings, onQuit }: DropdownProps) {
             width="5"
             height="5"
             rx="1"
-            stroke="var(--il-teal)"
+            stroke="var(--il-icon)"
             strokeWidth="1.3"
           />
           <path
             d="M2.5 4l1.2 1.2 2-2.4"
-            stroke="var(--il-teal)"
+            stroke="var(--il-icon)"
             strokeWidth="1.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
             d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4"
-            stroke="var(--il-teal)"
+            stroke="var(--il-icon)"
             strokeWidth="1.3"
             strokeLinecap="round"
           />

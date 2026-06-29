@@ -22,6 +22,7 @@ const DARK: Tokens = {
   '--il-line': 'rgba(242,241,236,0.09)',
   '--il-teal': '#8FC8C0',
   '--il-icon': '#B8BDC2',
+  '--il-hover': 'rgba(242,241,236,0.08)',
 }
 
 const LIGHT: Tokens = {
@@ -36,6 +37,7 @@ const LIGHT: Tokens = {
   '--il-line': 'rgba(23,25,29,0.08)',
   '--il-teal': '#0F5E57',
   '--il-icon': '#565C63',
+  '--il-hover': 'rgba(23,25,29,0.06)',
 }
 
 /** Neutral JS-side colors for derive.ts (taskColor + inactive dot) — keyed by resolved theme. */
