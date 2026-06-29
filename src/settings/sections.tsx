@@ -19,25 +19,23 @@ import type {
 import type { CSSProperties, ReactNode } from 'react'
 import { useState } from 'react'
 
-function RabbitIcon() {
+/** Three tapering wind lines — conveys a quick gust/snap. */
+function WindIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor">
-      <rect x="2.5" y="0" width="3" height="7.5" rx="1.5" />
-      <rect x="9.5" y="0" width="3" height="7.5" rx="1.5" />
-      <ellipse cx="7.5" cy="11.5" rx="5.5" ry="3.5" />
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeLinecap="round">
+      <path d="M1 4.5 Q5 3 9 4.5" strokeWidth="1.6" />
+      <path d="M1 7.5 Q6 5.5 11 7.5" strokeWidth="1.6" />
+      <path d="M1 10.5 Q4.5 9 7 10.5" strokeWidth="1.6" />
     </svg>
   )
 }
 
-function TurtleIcon() {
+/** Simple leaf with a centre vein — conveys gentle, unhurried. */
+function LeafIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor">
-      <circle cx="7.5" cy="1.8" r="1.8" />
-      <ellipse cx="7.5" cy="9" rx="4.8" ry="4.2" />
-      <circle cx="2" cy="6" r="1.6" />
-      <circle cx="13" cy="6" r="1.6" />
-      <circle cx="2" cy="12" r="1.6" />
-      <circle cx="13" cy="12" r="1.6" />
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7.5 13 C7.5 13 2 10 2 5.5 C2 2.5 4.5 1 7.5 1 C10.5 1 13 2.5 13 5.5 C13 10 7.5 13 7.5 13 Z" strokeWidth="1.5" />
+      <path d="M7.5 13 L7.5 4" strokeWidth="1.3" />
     </svg>
   )
 }
@@ -967,8 +965,8 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               desc="Collapse delay when cursor leaves the peek view"
               value={prefs.hoverRetractMs}
               presets={[
-                [200, <RabbitIcon />, 'Snappy — 0.2s'],
-                [500, <TurtleIcon />, 'Gentle — 0.5s'],
+                [200, <WindIcon />, 'Snappy — 0.2s'],
+                [500, <LeafIcon />, 'Gentle — 0.5s'],
               ]}
               min={100}
               max={2000}
@@ -979,8 +977,8 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               desc="Collapse delay when cursor leaves the expanded view"
               value={prefs.expandRetractMs}
               presets={[
-                [800, <RabbitIcon />, 'Quick — 0.8s'],
-                [1200, <TurtleIcon />, 'Relaxed — 1.2s'],
+                [800, <WindIcon />, 'Quick — 0.8s'],
+                [1200, <LeafIcon />, 'Relaxed — 1.2s'],
               ]}
               min={300}
               max={5000}
