@@ -87,7 +87,7 @@ export function Island(props: IslandProps) {
           {/* Invisible spacer keeps the Electron window tall enough for the floating menu */}
           <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
           {/* Absolutely-positioned menu — floats over task list and any other content */}
-          <div style={{ position: 'absolute', right: 0, bottom: 0, zIndex: 100 }} onClick={stop}>
+          <div style={{ position: 'absolute', right: 0, top: `calc(100% - ${MENU_ALLOWANCE}px + 4px)`, zIndex: 100 }} onClick={stop}>
             <MenuDropdown onTasks={props.onOpenTasks} onSettings={props.onSettings} onQuit={props.onQuit} />
           </div>
         </>

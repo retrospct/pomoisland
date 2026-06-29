@@ -30,10 +30,37 @@ export function MenuDropdown({ onTasks, onSettings, onQuit }: DropdownProps) {
     <div style={popover}>
       <button className="island-menu-item" onClick={onTasks} style={menuItem}>
         <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
-          <rect x="1.5" y="1.5" width="5" height="5" rx="1" stroke="var(--il-teal)" strokeWidth="1.3" />
-          <path d="M2.5 4l1.2 1.2 2-2.4" stroke="var(--il-teal)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4" stroke="var(--il-teal)" strokeWidth="1.3" strokeLinecap="round" />
-          <rect x="1.5" y="8.5" width="5" height="4" rx="1" stroke="var(--il-muted)" strokeWidth="1.3" />
+          <rect
+            x="1.5"
+            y="1.5"
+            width="5"
+            height="5"
+            rx="1"
+            stroke="var(--il-teal)"
+            strokeWidth="1.3"
+          />
+          <path
+            d="M2.5 4l1.2 1.2 2-2.4"
+            stroke="var(--il-teal)"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8.5 3.5h4M8.5 7h4M8.5 10.5h4"
+            stroke="var(--il-teal)"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
+          <rect
+            x="1.5"
+            y="8.5"
+            width="5"
+            height="4"
+            rx="1"
+            stroke="var(--il-muted)"
+            strokeWidth="1.3"
+          />
         </svg>
         Tasks
       </button>
@@ -88,7 +115,7 @@ const iconBtn: React.CSSProperties = {
 
 const popover: React.CSSProperties = {
   width: 178,
-  background: 'var(--il-bg-menu)',
+  background: 'var(--il-bg)',
   border: '1px solid var(--il-border)',
   borderRadius: 13,
   padding: 6,
