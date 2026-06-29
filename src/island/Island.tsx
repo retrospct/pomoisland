@@ -22,9 +22,6 @@ interface Handlers {
   onPlayPause: () => void
   onReset: () => void
   onSkip: () => void
-  onMouseDown?: (e: React.MouseEvent) => void
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
   menuOpen: boolean
   onToggleMenu: (e: React.MouseEvent) => void
   switchLabel: string
@@ -85,9 +82,6 @@ function Collapsed({
   notch,
   ripple,
   onToggleExpand,
-  onMouseDown,
-  onMouseEnter,
-  onMouseLeave,
 }: IslandProps) {
   const pill: CSSProperties = {
     position: 'relative',
@@ -116,9 +110,6 @@ function Collapsed({
         data-island="1"
         style={pill}
         onClick={onToggleExpand}
-        onMouseDown={onMouseDown}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
       >
         {notch && <NotchDot top={5} />}
         {view.showRing && (
@@ -176,7 +167,7 @@ function Collapsed({
   )
 }
 
-function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip, onMouseDown, onMouseEnter, onMouseLeave }: IslandProps) {
+function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
   return (
     <div
       style={{
@@ -192,9 +183,6 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip, onMouseDown, o
         cursor: 'pointer',
       }}
       onClick={onToggleExpand}
-      onMouseDown={onMouseDown}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
     >
       {notch && <NotchDot top={8} size={8} />}
       <div
@@ -324,7 +312,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip, onMouseDown, o
 }
 
 function Expanded(props: IslandProps) {
-  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, onMouseDown, onMouseEnter, onMouseLeave } = props
+  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip } = props
   return (
     <div
       style={{
@@ -340,9 +328,6 @@ function Expanded(props: IslandProps) {
         cursor: 'pointer',
       }}
       onClick={onToggleExpand}
-      onMouseDown={onMouseDown}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
     >
       {notch && <NotchDot top={9} size={8} />}
       <div

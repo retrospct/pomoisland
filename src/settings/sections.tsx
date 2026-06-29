@@ -10,6 +10,7 @@ import type {
   AccentKey,
   Layout,
   Prefs,
+  RetractSpeed,
   Ripple,
   Sound,
   ThemeChoice,
@@ -812,6 +813,63 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                 padTop={20}
               />
             ))}
+          </div>
+        </div>
+
+        <div>
+          <SectionLabel>Auto-retract speed</SectionLabel>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+                Retract delay
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
+                How long the island stays open after the cursor leaves.
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 3,
+                background: 'var(--sp-field)',
+                border: '1px solid var(--sp-border)',
+                borderRadius: 11,
+                padding: 3,
+                flex: '0 0 auto',
+              }}
+            >
+              {([['quick', 'Quick'], ['normal', 'Normal'], ['slow', 'Slow']] as [RetractSpeed, string][]).map(([k, label]) => {
+                const on = prefs.retractSpeed === k
+                return (
+                  <button
+                    key={k}
+                    onClick={() => set({ retractSpeed: k })}
+                    style={{
+                      height: 30,
+                      minWidth: 34,
+                      padding: '0 11px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: 8,
+                      background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                      fontFamily: SANS,
+                      fontSize: 12.5,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

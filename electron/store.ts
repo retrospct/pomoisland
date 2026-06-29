@@ -4,7 +4,7 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Prefs, TickSound } from '../src/shared/types'
+import type { Prefs, RetractSpeed, TickSound } from '../src/shared/types'
 
 export const DEFAULT_PREFS: Prefs = {
   // General · Timer
@@ -36,6 +36,7 @@ export const DEFAULT_PREFS: Prefs = {
   // Window behavior (not surfaced in SettingsPanel)
   alwaysTop: true,
   magnetic: true,
+  retractSpeed: 'normal' as RetractSpeed,
 }
 
 type Listener = (p: Prefs) => void
