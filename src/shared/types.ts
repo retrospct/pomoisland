@@ -118,6 +118,33 @@ export interface IslandSize {
   height: number
 }
 
+// ---- Task model (MO-6) ----
+
+export interface Task {
+  id: string
+  title: string
+  /** Target focus sessions for this task. */
+  estimatePomodoros: number
+  /** Focus sessions completed while this task was active. */
+  completedPomodoros: number
+  done: boolean
+}
+
+export interface TasksState {
+  tasks: Task[]
+  activeTaskId: string | null
+  /** Focus sessions completed today (MO-7). */
+  completedToday: number
+  /** ISO date string (YYYY-MM-DD) tracking when completedToday was last reset. */
+  completedDate: string
+}
+
+export type TaskMutation =
+  | { type: 'add'; title: string }
+  | { type: 'update'; id: string; patch: Partial<Pick<Task, 'title' | 'estimatePomodoros' | 'done'>> }
+  | { type: 'delete'; id: string }
+  | { type: 'setActive'; id: string | null }
+
 /** The surface exposed to renderers via contextBridge as `window.api`. */
 export interface PomApi {
   platform: string
@@ -130,6 +157,11 @@ export interface PomApi {
     get(): Promise<Prefs>
     set(patch: Partial<Prefs>): void
     onChange(cb: (p: Prefs) => void): () => void
+  }
+  tasks: {
+    get(): Promise<TasksState>
+    mutate(m: TaskMutation): void
+    onChange(cb: (s: TasksState) => void): () => void
   }
   island: {
     resize(size: IslandSize): void
@@ -154,6 +186,9 @@ export const IPC = {
   prefsGet: 'prefs:get',
   prefsSet: 'prefs:set',
   prefsChanged: 'prefs:changed',
+  tasksGet: 'tasks:get',
+  tasksMutate: 'tasks:mutate',
+  tasksChanged: 'tasks:changed',
   islandResize: 'island:resize',
   islandPlacement: 'island:placement',
   islandGetPlacement: 'island:getPlacement',

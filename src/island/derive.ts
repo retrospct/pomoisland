@@ -17,13 +17,14 @@ export interface IslandView {
   micro: string
   displayTask: string
   taskColor: string
-  taskItalic: boolean
   isRunning: boolean
   isComplete: boolean
   isBreak: boolean
   dots: DotStyle[]
   showRing: boolean
   showTimeText: boolean
+  /** Focus sessions completed today — drives the SessionDots hover reveal (MO-7). */
+  completedToday: number
 }
 
 export interface DotStyle {
@@ -36,6 +37,7 @@ export function deriveIsland(
   state: TimerState,
   prefs: Prefs,
   resolvedTheme: 'light' | 'dark' = 'dark',
+  completedToday = 0,
 ): IslandView {
   const { status, mode, total, remaining, sessionIndex, sessionTotal } = state
   const isBreak = mode === 'break'
@@ -97,7 +99,7 @@ export function deriveIsland(
     const done = i < sessionIndex || (i === sessionIndex && isComplete)
     const current = i === sessionIndex && !isComplete
     dots.push({
-      size: current ? 7 : 6,
+      size: current ? 8 : 7,
       background: done || current ? accent : n.dotInactive,
       boxShadow: current ? `0 0 0 3px ${hexToRgba(accent, 0.18)}` : 'none',
     })
@@ -114,12 +116,12 @@ export function deriveIsland(
     micro,
     displayTask,
     taskColor,
-    taskItalic: !hasTask,
     isRunning,
     isComplete,
     isBreak,
     dots,
     showRing: prefs.layout !== 'minimal',
     showTimeText: prefs.layout !== 'compact',
+    completedToday,
   }
 }
