@@ -1,0 +1,66 @@
+/* Notch-native progress animation keyframes, ported verbatim from the design
+   handoff (NotchConcept.dc.html / README "CSS Keyframes"). Shared by the island
+   collapsed view and the Settings live previews via src/shared/NotchProgress.tsx
+   so the swatch the user picks matches exactly what renders on the notch.
+
+   NOTE: per the repo convention these are intentionally un-tuned — feel
+   (durations/easing/choreography + prefers-reduced-motion gating) is a deliberate
+   later-stage pass, not part of this feature. */
+
+/* Outline glow breathing */
+@keyframes ncGlow {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* Leading dot pulse */
+@keyframes ncDot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.7);
+    opacity: 0.4;
+  }
+}
+
+/* Bright sheen on the leading dot */
+@keyframes ncSheen {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Comet orbit — stroke-dashoffset drives the spark's position */
+@keyframes ncComet {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Underlight breathe + horizontal scale */
+@keyframes ncUnder {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.62;
+    transform: scaleX(1.06);
+  }
+}

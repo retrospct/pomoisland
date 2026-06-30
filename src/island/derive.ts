@@ -1,7 +1,7 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
 import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
 import { fmtTime, frac as fracOf } from '@shared/format'
-import type { Prefs, TimerState } from '@shared/types'
+import type { Prefs, TimerState, TimerStyle } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
 import { deriveClusters, type IslandClusters } from './placement'
 
@@ -21,6 +21,8 @@ export interface IslandView {
   isRunning: boolean
   isComplete: boolean
   isBreak: boolean
+  /** Notch-native progress treatment chosen by the user (A–H). */
+  timerStyle: TimerStyle
   dots: DotStyle[]
   /**
    * Where each visible element sits around the notch (MO-22), grouped into
@@ -128,6 +130,7 @@ export function deriveIsland(
     isRunning,
     isComplete,
     isBreak,
+    timerStyle: prefs.timerStyle,
     dots,
     clusters: deriveClusters(prefs.layout, prefs.islandPlacement, prefs.showDots),
     completedToday,

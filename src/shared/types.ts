@@ -6,7 +6,22 @@ export type Mode = 'focus' | 'break'
 
 export type Preset = 'classic' | 'focus' | 'custom'
 export type ThemeChoice = 'light' | 'dark' | 'system'
-export type TimerStyle = 'circular' | 'outline' | 'bar'
+/**
+ * Notch-native progress treatment (the design handoff's A–H variants). Replaces
+ * the old `circular | outline | bar` set. Every variant either sits *below* the
+ * notch (`below`) or traces the physical notch *outline*; none draws over the
+ * opaque camera housing. `underlight` and `comet` are "running" cues that don't
+ * encode progress (they pair with the time readout). See src/shared/NotchProgress.tsx.
+ */
+export type TimerStyle =
+  | 'below'
+  | 'outline'
+  | 'glow'
+  | 'front'
+  | 'underlight'
+  | 'converge'
+  | 'split'
+  | 'comet'
 export type Layout = 'split' | 'minimal' | 'compact'
 /**
  * Collapsed-island elements whose position around the notch is user-configurable
@@ -88,6 +103,7 @@ export interface Prefs {
   // ---- Preferences · Appearance ----
   accent: AccentKey
   theme: ThemeChoice
+  /** Notch-native progress treatment (A–H). See TimerStyle + NotchProgress.tsx. */
   timerStyle: TimerStyle
   layout: Layout
   /**

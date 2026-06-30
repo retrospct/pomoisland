@@ -33,7 +33,11 @@ Use these terms exactly; avoid the synonyms in parentheses.
   Focus uses the accent; break uses a warm clay; the final minute shifts to urgent amber.
   The swatches are pastels; on a light theme the accent (and break/urgent) is darkened for
   legibility — the same treatment in both the island and Settings windows.
-- **Timer style** — how progress is drawn: `circular` (ring), `outline` (notch outline), `bar`.
+- **Timer style** — the notch-native progress treatment (design handoff A–H, see
+  `src/shared/NotchProgress.tsx` + ADR-0006). `below` is the pill below the notch (keeps the
+  per-element placement model); `outline` / `glow` / `front` trace the notch outline as a
+  filling bar; `converge` / `split` fill the outline from/to center; `underlight` and `comet`
+  are ambient "running" cues that don't encode progress (they pair with the time readout).
 - **Layout** — collapsed density: `split`, `minimal`, `compact`.
 - **Micro-message / encouraging message** — the small serif nudge in the expanded panel.
 - **Completion animation / "Done animation"** — the ripple that fires on finishing a block.

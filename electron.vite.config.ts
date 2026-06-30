@@ -36,10 +36,6 @@ export default defineConfig({
           island: resolve(__dirname, 'index.html'),
           settings: resolve(__dirname, 'settings.html'),
           'snap-overlay': resolve(__dirname, 'snap-overlay.html'),
-          // PROTOTYPE — MO-21 animation tuning. Delete when variant wins.
-          'prototype-anim': resolve(__dirname, 'prototype-anim.html'),
-          // PROTOTYPE — MO-23 notch progress treatments. Delete when variant wins.
-          prototype: resolve(__dirname, 'prototype.html'),
         },
       },
     },

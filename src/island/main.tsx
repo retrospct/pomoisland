@@ -6,6 +6,7 @@ import '@fontsource/inter/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import '@shared/tokens.css'
+import '@shared/notch.css'
 import './animations.css'
 import './island.css'
 

@@ -4,6 +4,7 @@
 // Every control writes straight through to prefs (optimistic in SettingsApp).
 
 import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
+import { NotchProgress, TIMER_STYLE_META } from '@shared/NotchProgress'
 import { RIPPLE_DEFS } from '@shared/ripple'
 import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
 import type {
@@ -16,7 +17,6 @@ import type {
   Sound,
   ThemeChoice,
   TickSound,
-  TimerStyle,
 } from '@shared/types'
 import type { CSSProperties, ReactNode } from 'react'
 
@@ -683,56 +683,69 @@ const TICK_OPTIONS: { k: TickSound; label: string }[] = [
   { k: 'crisp', label: TICK_LABELS.crisp },
 ]
 
-const STYLE_OPTIONS: { k: TimerStyle; label: string; icon: ReactNode }[] = [
-  {
-    k: 'circular',
-    label: 'Circular',
-    icon: (
-      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-        <circle cx="15" cy="15" r="11" stroke="var(--sp-border)" strokeWidth="2.4" opacity="0.3" />
-        <path
-          d="M15 4 a11 11 0 0 1 9.5 16.5"
-          stroke="var(--sp-teal)"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    k: 'outline',
-    label: 'Notch-outline',
-    icon: (
-      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-        <path
-          d="M3 15 h4 a3 3 0 0 0 3-3 a3 3 0 0 1 3-3 h4 a3 3 0 0 1 3 3 a3 3 0 0 0 3 3 h4"
-          stroke="var(--sp-teal)"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    k: 'bar',
-    label: 'Progress bar',
-    icon: (
-      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-        <rect
-          x="4"
-          y="12.5"
-          width="22"
-          height="5"
-          rx="2.5"
-          stroke="var(--sp-border)"
-          strokeWidth="2"
-          opacity="0.3"
-        />
-        <rect x="4" y="12.5" width="13" height="5" rx="2.5" fill="var(--sp-teal)" />
-      </svg>
-    ),
-  },
-]
+// Demo values for the live notch-style previews (a representative mid-session).
+const STYLE_PREVIEW_PROGRESS = 0.62
+const STYLE_PREVIEW_TIME = '17:24'
+
+/** One selectable notch-style card with a live, scaled NotchProgress preview. */
+function NotchStyleCard({
+  meta,
+  selected,
+  accent,
+  accentBright,
+  onClick,
+}: {
+  meta: (typeof TIMER_STYLE_META)[number]
+  selected: boolean
+  accent: string
+  accentBright: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        position: 'relative',
+        border: `1.5px solid ${selected ? 'var(--sp-teal)' : 'var(--sp-border)'}`,
+        background: selected ? 'var(--sp-tint)' : 'var(--sp-surface)',
+        borderRadius: 12,
+        padding: '12px 12px 11px',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 9,
+        transition: 'all .15s',
+      }}
+    >
+      <NotchProgress
+        variant={meta.key}
+        progress={STYLE_PREVIEW_PROGRESS}
+        accent={accent}
+        accentBright={accentBright}
+        time={STYLE_PREVIEW_TIME}
+        label="FOCUS"
+        frame
+        scale={0.56}
+      />
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontSize: 12,
+            fontWeight: 500,
+            color: selected ? 'var(--sp-teal)' : 'var(--sp-body)',
+          }}
+        >
+          {meta.label}
+        </div>
+        <div style={{ fontFamily: SANS, fontSize: 10.5, color: 'var(--sp-faint)', marginTop: 1 }}>
+          {meta.desc}
+        </div>
+      </div>
+    </button>
+  )
+}
 
 const LAYOUT_OPTIONS: { k: Layout; label: string; icon: ReactNode }[] = [
   {
@@ -782,6 +795,10 @@ const SLOT_OPTIONS: { k: IslandSlot; label: string }[] = [
 ]
 
 export function PreferencesTab({ prefs, set }: TabProps) {
+  // Notch-style previews sit on a dark mini-screen, so use the pastel accent
+  // as-is (the island's dark-mode treatment) rather than the light-deepened one.
+  const styleAccent = accentHex(prefs.accent)
+  const styleAccentBright = lighten(styleAccent, 0.4)
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
       {/* Left: colors / dots / timer style / layout */}
@@ -887,14 +904,15 @@ export function PreferencesTab({ prefs, set }: TabProps) {
 
         <div style={{ marginBottom: 24 }}>
           <SectionLabel>Timer style</SectionLabel>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {STYLE_OPTIONS.map((o) => (
-              <SelectCard
-                key={o.k}
-                selected={prefs.timerStyle === o.k}
-                onClick={() => set({ timerStyle: o.k })}
-                icon={o.icon}
-                label={o.label}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {TIMER_STYLE_META.map((meta) => (
+              <NotchStyleCard
+                key={meta.key}
+                meta={meta}
+                selected={prefs.timerStyle === meta.key}
+                accent={styleAccent}
+                accentBright={styleAccentBright}
+                onClick={() => set({ timerStyle: meta.key })}
               />
             ))}
           </div>

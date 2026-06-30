@@ -38,7 +38,7 @@ function makePrefs(focusMinutes = 1): Prefs {
     notify: false,
     accent: 'teal',
     theme: 'dark',
-    timerStyle: 'circular',
+    timerStyle: 'outline',
     layout: 'split',
     showDots: true,
     ripple: 'burst',
