@@ -25,6 +25,13 @@ files:
 
 asar: true
 
+# Menu-bar tray icons (Variant D exports at 16/22/32 pt).
+extraResources:
+  - from: build/tray
+    to: tray
+    filter:
+      - '**/*'
+
 # Trim non-English Electron locale bundles to keep the app small.
 electronLanguages:
   - en

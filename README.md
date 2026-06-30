@@ -83,6 +83,10 @@ only *plays* synthesized audio). Verify a finished build with `spctl --assess --
 > Variant D / `pill-top`, exported as `build/icon.png`). Alternate variants (E and others) live in
 > `design-reference/project/icons/`. To swap, copy the desired `AppIcon-*-1024.png` over
 > `build/icon.png` and repackage.
+>
+> **Menu-bar tray icon.** Uses the Variant D iconset exports in `build/tray/` (16 pt + 22 pt,
+> @1x/@2x). While a focus/break block is active the tray also shows a live `mm:ss` title beside
+> the icon. Source PNGs: `design-reference/project/icons/PomodoroFocus-D.iconset/`.
 
 ## Architecture
 

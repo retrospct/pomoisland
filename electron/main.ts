@@ -13,7 +13,7 @@ function bootstrap(): void {
   registerIpc(timer)
   createIslandWindow()
   createSnapOverlayWindow()
-  createTray()
+  createTray(timer)
   timer.start()
 }
 
