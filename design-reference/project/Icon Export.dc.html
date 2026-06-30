@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/colors.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/typography.css">
+<script src="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/_ds_bundle.js"></script>
+<style>html,body{margin:0;padding:0;background:transparent;}</style>
+</helmet>
+<div style="width:1024px;height:1024px;background:transparent;">
+  <dc-import name="AppIcon" variant="{{ variant }}" style="width:1024px;height:1024px;display:block;" hint-size="1024px,1024px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { v: 'pill-top' };
+  componentDidMount() {
+    const read = () => {
+      const h = (location.hash || '').replace('#', '');
+      this.setState({ v: h || 'pill-top' });
+    };
+    read();
+    window.addEventListener('hashchange', read);
+  }
+  renderVals() { return { variant: this.state.v }; }
+}
+</script>
+</body>
+</html>

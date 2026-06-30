@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/colors.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/typography.css">
+</helmet>
+
+<div style="position:relative;width:100%;height:100%;border-radius:22.5%;overflow:hidden;container-type:size;box-shadow:0 7cqw 18cqw -7cqw rgba(23,25,29,0.45), inset 0 1.2cqw 0 rgba(255,255,255,0.18);">
+
+  <!-- ===== ISLAND : Dynamic Island live activity — pill + detached split-circle ===== -->
+  <sc-if value="{{ isIsland }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;inset:0;background:#F5F5F1;display:flex;align-items:center;justify-content:center;gap:5cqw;">
+      <!-- main pill: leading mini progress ring + trailing time -->
+      <div style="height:30cqw;background:#0C0D0F;border-radius:999px;display:flex;align-items:center;gap:5cqw;padding:0 8cqw 0 6cqw;box-shadow:0 2cqw 6cqw rgba(0,0,0,0.35);">
+        <svg viewBox="0 0 36 36" style="width:18cqw;height:18cqw;transform:rotate(-90deg);flex:none;">
+          <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(242,241,236,0.22)" stroke-width="5"></circle>
+          <circle cx="18" cy="18" r="14" fill="none" stroke="#8FC8C0" stroke-width="5" stroke-linecap="round" stroke-dasharray="54 88"></circle>
+        </svg>
+        <div style="font-family:var(--font-mono);font-weight:500;font-size:13cqw;letter-spacing:-0.02em;color:#FCFCFA;font-variant-numeric:tabular-nums;">18:24</div>
+      </div>
+      <!-- detached split-circle: the iconic Dynamic Island cue -->
+      <div style="width:20cqw;height:20cqw;border-radius:999px;background:#0C0D0F;display:flex;align-items:center;justify-content:center;box-shadow:0 2cqw 6cqw rgba(0,0,0,0.35);flex:none;">
+        <div style="width:8cqw;height:8cqw;border-radius:999px;background:#8FC8C0;box-shadow:0 0 4cqw 1cqw rgba(143,200,192,0.5);"></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== TOMATO : pomodoro fruit as the mark ===== -->
+  <sc-if value="{{ isTomato }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#F5F5F1;display:flex;align-items:center;justify-content:center;">
+      <div style="position:relative;width:60cqw;height:54cqw;margin-top:7cqw;">
+        <!-- leaves -->
+        <div style="position:absolute;top:-9cqw;left:50%;transform:translateX(-50%);width:36cqw;height:20cqw;z-index:2;">
+          <div style="position:absolute;left:6cqw;bottom:2cqw;width:18cqw;height:10cqw;border-radius:50%;background:#0F5E57;transform:rotate(-32deg);transform-origin:right center;"></div>
+          <div style="position:absolute;right:6cqw;bottom:2cqw;width:18cqw;height:10cqw;border-radius:50%;background:#0F5E57;transform:rotate(32deg);transform-origin:left center;"></div>
+          <div style="position:absolute;left:50%;bottom:-1cqw;transform:translateX(-50%);width:6cqw;height:13cqw;border-radius:3cqw;background:#0B4842;"></div>
+        </div>
+        <!-- body -->
+        <div style="position:absolute;inset:0;border-radius:50% 50% 50% 50% / 46% 46% 54% 54%;background:#9A5316;box-shadow:inset -7cqw -9cqw 0 rgba(0,0,0,0.14);"></div>
+        <!-- specular highlight -->
+        <div style="position:absolute;top:9cqw;left:11cqw;width:16cqw;height:11cqw;border-radius:50%;background:rgba(255,255,255,0.28);transform:rotate(-20deg);"></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== RING : circular progress on dark ink ===== -->
+  <sc-if value="{{ isRing }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#17191D;display:flex;align-items:center;justify-content:center;">
+      <svg viewBox="0 0 100 100" style="width:78%;height:78%;transform:rotate(-90deg);">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(242,241,236,0.13)" stroke-width="8"></circle>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#8FC8C0" stroke-width="8" stroke-linecap="round" stroke-dasharray="164 264"></circle>
+      </svg>
+      <div style="position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1;">
+        <div style="font-family:var(--font-mono);font-weight:500;font-size:30cqw;letter-spacing:-0.03em;color:#F2F1EC;font-variant-numeric:tabular-nums;">14</div>
+        <div style="font-family:var(--font-mono);font-size:6.5cqw;letter-spacing:0.18em;color:#8FC8C0;margin-top:3cqw;">MIN</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== NOTCH : dark, progress bar traces the notch outline ===== -->
+  <sc-if value="{{ isNotch }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#17191D;display:flex;align-items:center;justify-content:center;">
+      <!-- notch silhouette, flush to top, hugged by a progress stroke -->
+      <svg viewBox="0 0 100 30" style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:72cqw;overflow:visible;">
+        <path d="M18,0 L18,13 Q18,23 28,23 L72,23 Q82,23 82,13 L82,0" pathLength="100" fill="none" stroke="rgba(242,241,236,0.14)" stroke-width="6" stroke-linecap="round"></path>
+        <path d="M18,0 L18,13 Q18,23 28,23 L72,23 Q82,23 82,13 L82,0" pathLength="100" fill="none" stroke="#8FC8C0" stroke-width="6" stroke-linecap="round" stroke-dasharray="60 100"></path>
+      </svg>
+      <!-- time, sitting below the notch -->
+      <div style="display:flex;flex-direction:column;align-items:center;margin-top:14cqw;line-height:1;">
+        <div style="font-family:var(--font-mono);font-weight:500;font-size:19cqw;letter-spacing:-0.02em;color:#F2F1EC;font-variant-numeric:tabular-nums;">25:00</div>
+        <div style="font-family:var(--font-mono);font-size:6cqw;letter-spacing:0.2em;color:#8FC8C0;margin-top:5cqw;">FOCUS</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== TABULAR : type-forward, editorial clock ===== -->
+  <sc-if value="{{ isTabular }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#0F5E57;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="font-family:var(--font-mono);font-weight:500;font-size:40cqw;line-height:0.92;letter-spacing:-0.04em;color:#F2F1EC;font-variant-numeric:tabular-nums;">25</div>
+      <div style="width:30cqw;height:1.4cqw;background:rgba(242,241,236,0.4);margin:5cqw 0;"></div>
+      <div style="font-family:var(--font-mono);font-size:7cqw;letter-spacing:0.26em;color:#8FC8C0;padding-left:0.26em;">MINUTES</div>
+    </div>
+  </sc-if>
+
+  <!-- ===== PILL FAMILY : reference island — leading 3/4 ring + stacked block, camera notch ===== -->
+  <sc-if value="{{ isPill }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#F5F5F1;display:flex;align-items:center;justify-content:center;">
+      <!-- icon-top notch (Variant D): the MacBook's own notch -->
+      <sc-if value="{{ notchOnTop }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:30cqw;height:9cqw;background:#0C0D0F;border-radius:0 0 5.5cqw 5.5cqw;display:flex;align-items:center;justify-content:center;">
+          <div style="width:3cqw;height:3cqw;border-radius:999px;background:#1B1E21;box-shadow:0 0 0 0.5cqw rgba(143,200,192,0.22);"></div>
+          <div style="position:absolute;right:6cqw;top:50%;transform:translateY(-50%);width:1.8cqw;height:1.8cqw;border-radius:999px;background:#3FE06A;box-shadow:0 0 2.5cqw 0.6cqw rgba(63,224,106,0.6);"></div>
+        </div>
+      </sc-if>
+      <div style="position:relative;height:43cqw;background:#0C0D0F;border-radius:999px;display:flex;align-items:center;gap:7cqw;padding:0 11cqw 0 8cqw;box-shadow:0 2.5cqw 7cqw rgba(0,0,0,0.32);">
+        <!-- camera notch on pill: subtle dark recess (hidden for Variant D) -->
+        <sc-if value="{{ pillNotch }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:20cqw;height:7cqw;background:#000000;border-radius:0 0 4.5cqw 4.5cqw;display:flex;align-items:flex-end;justify-content:center;box-shadow:inset 0 -0.5cqw 0 rgba(242,241,236,0.05);">
+            <div style="width:2.6cqw;height:2.6cqw;border-radius:999px;background:#1B1E21;margin-bottom:1.2cqw;box-shadow:0 0 0 0.5cqw rgba(143,200,192,0.22);"></div>
+          </div>
+        </sc-if>
+        <!-- leading progress ring, 3/4 filled -->
+        <svg viewBox="0 0 36 36" style="width:25cqw;height:25cqw;transform:rotate(-90deg);flex:none;">
+          <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(242,241,236,0.16)" stroke-width="4.5"></circle>
+          <circle cx="18" cy="18" r="14" fill="none" stroke="#8FC8C0" stroke-width="4.5" stroke-linecap="round" pathLength="100" stroke-dasharray="75 100"></circle>
+        </svg>
+        <!-- trailing stacked block — centered (A/B/C) -->
+        <sc-if value="{{ centerStack }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3cqw;line-height:1;">
+            <sc-if value="{{ showFocus }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-mono);font-size:5.5cqw;letter-spacing:0.24em;color:#8FC8C0;padding-left:0.24em;">FOCUS</div>
+            </sc-if>
+            <sc-if value="{{ showTime }}" hint-placeholder-val="{{ true }}">
+              <div style="font-family:var(--font-mono);font-weight:500;font-size:14cqw;letter-spacing:-0.02em;color:#F2F1EC;font-variant-numeric:tabular-nums;">25:00</div>
+            </sc-if>
+            <sc-if value="{{ showDots }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:4cqw;">
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:#8FC8C0;"></div>
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:#8FC8C0;"></div>
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:#8FC8C0;"></div>
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:rgba(242,241,236,0.22);"></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <!-- trailing stacked block — left aligned (D/E) -->
+        <sc-if value="{{ leftAlign }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3cqw;line-height:1;">
+            <sc-if value="{{ focusLeftNormal }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-mono);font-size:5.5cqw;letter-spacing:0.24em;color:#8FC8C0;padding-left:0.12em;">FOCUS</div>
+            </sc-if>
+            <sc-if value="{{ focusBig }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:var(--font-mono);font-weight:500;font-size:9.5cqw;letter-spacing:0.14em;color:#F2F1EC;padding-left:0.07em;">FOCUS</div>
+            </sc-if>
+            <sc-if value="{{ showTime }}" hint-placeholder-val="{{ true }}">
+              <div style="font-family:var(--font-mono);font-weight:500;font-size:14cqw;letter-spacing:-0.02em;color:#F2F1EC;font-variant-numeric:tabular-nums;">25:00</div>
+            </sc-if>
+            <sc-if value="{{ showDots }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:4cqw;">
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:#8FC8C0;"></div>
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:#8FC8C0;"></div>
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:#8FC8C0;"></div>
+                <div style="width:4cqw;height:4cqw;border-radius:999px;background:rgba(242,241,236,0.22);"></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:220,&quot;height&quot;:220},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;island&quot;,&quot;tomato&quot;,&quot;ring&quot;,&quot;notch&quot;,&quot;tabular&quot;,&quot;pill-fd&quot;,&quot;pill-f&quot;,&quot;pill-d&quot;,&quot;pill-top&quot;,&quot;pill-e&quot;],&quot;default&quot;:&quot;notch&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const v = this.props.variant || 'island';
+    return {
+      isIsland: v === 'island',
+      isTomato: v === 'tomato',
+      isRing: v === 'ring',
+      isNotch: v === 'notch',
+      isTabular: v === 'tabular',
+      isPill: v.indexOf('pill') === 0,
+      notchOnTop: v === 'pill-top' || v === 'pill-e',
+      pillNotch: v.indexOf('pill') === 0 && v !== 'pill-top' && v !== 'pill-e',
+      showFocus: v === 'pill-fd' || v === 'pill-f' || v === 'pill-top' || v === 'pill-e',
+      showTime: v.indexOf('pill') === 0 && v !== 'pill-e',
+      showDots: v === 'pill-fd' || v === 'pill-d' || v === 'pill-e',
+      leftAlign: v === 'pill-top' || v === 'pill-e',
+      centerStack: v.indexOf('pill') === 0 && v !== 'pill-top' && v !== 'pill-e',
+      focusBig: v === 'pill-e',
+      focusLeftNormal: v === 'pill-top',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -79,9 +79,10 @@ Hardened runtime is on, with entitlements in `build/entitlements.mac.plist` (the
 JIT/unsigned-memory/library-validation set Electron needs; no mic/camera/network — Pomoisland
 only *plays* synthesized audio). Verify a finished build with `spctl --assess --type execute -vv`.
 
-> **App icon.** No custom icon ships yet, so the default Electron icon is used (electron-builder
-> logs `default Electron icon is used`). Drop a 1024×1024 `build/icon.png` (or `build/icon.icns`)
-> to brand it — no config change needed.
+> **App icon.** Ships from the design handoff (`design-reference/project/Icon Export.dc.html` →
+> Variant D / `pill-top`, exported as `build/icon.png`). Alternate variants (E and others) live in
+> `design-reference/project/icons/`. To swap, copy the desired `AppIcon-*-1024.png` over
+> `build/icon.png` and repackage.
 
 ## Architecture
 

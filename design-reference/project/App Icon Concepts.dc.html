@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/colors.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/typography.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/styles.css">
+<script src="_ds/paper-design-system-e1268b1c-8fa8-4452-8065-a88d05ee9e63/_ds_bundle.js"></script>
+</helmet>
+
+<div style="width:1240px;background:#F5F5F1;padding:64px 70px 80px;box-sizing:border-box;font-family:var(--font-sans);">
+
+  <!-- ===== FEATURED : reference-based island, 3 ways ===== -->
+  <div style="font-family:var(--font-mono);font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--teal);font-weight:500;margin-bottom:14px;">Latest · The live island, Folio-fied</div>
+  <h1 style="font-family:var(--font-display);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-0.02em;color:var(--ink);margin:0 0 14px;">The live pill, five ways.</h1>
+  <p style="font-size:16.5px;line-height:1.6;letter-spacing:-0.005em;color:var(--ink-2);margin:0 0 40px;max-width:660px;">Your reference, redrawn in the paper palette — flat, no glow. Leading 3/4 progress ring, camera notch, "25:00" in mono, and four session dots (three filled). Same island, five takes.</p>
+
+  <!-- Variants D & E — featured, left-aligned stacks -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:28px;margin-bottom:28px;">
+
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:30px 30px 26px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="pill-top" style="width:244px;height:244px;display:block;" hint-size="244px,244px"></dc-import>
+      <div style="margin-top:26px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:7px;">Variant D · New</div>
+        <div style="font-family:var(--font-display);font-size:21px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Notch up top</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);max-width:340px;">Notch on the icon's top edge with a live green capture LED. Clean pill below — ring, focus, time, left-aligned.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:30px 30px 26px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="pill-e" style="width:244px;height:244px;display:block;" hint-size="244px,244px"></dc-import>
+      <div style="margin-top:26px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--teal);margin-bottom:7px;">Variant E · New</div>
+        <div style="font-family:var(--font-display);font-size:21px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Focus · dots</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);max-width:340px;">Built on D — same top notch and green LED. No countdown; a larger FOCUS label over the four session dots, left-aligned. The most ambient of the set.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-bottom:56px;">
+
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:30px 26px 26px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="pill-fd" style="width:236px;height:236px;display:block;" hint-size="236px,236px"></dc-import>
+      <div style="margin-top:26px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">Variant A</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Focus · time · dots</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">The full stack. Most informative — label, countdown, session progress.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:30px 26px 26px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="pill-f" style="width:236px;height:236px;display:block;" hint-size="236px,236px"></dc-import>
+      <div style="margin-top:26px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">Variant B</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Focus · time</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">Calmer. The label grounds it as a focus tool; cleanest at small sizes.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:30px 26px 26px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="pill-d" style="width:236px;height:236px;display:block;" hint-size="236px,236px"></dc-import>
+      <div style="margin-top:26px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">Variant C</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Time · dots</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">No words. Reads closest to the reference — countdown plus session dots.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="height:1px;background:var(--line-strong);margin:0 0 44px;"></div>
+
+  <!-- ===== HEADER ===== -->
+  <div style="font-family:var(--font-mono);font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:14px;">Earlier directions · 5 concepts</div>
+  <h1 style="font-family:var(--font-display);font-weight:500;font-size:44px;line-height:1.04;letter-spacing:-0.02em;color:var(--ink);margin:0 0 14px;">Five marks for the Mac.</h1>
+  <p style="font-size:16.5px;line-height:1.6;letter-spacing:-0.005em;color:var(--ink-2);margin:0 0 44px;max-width:640px;">Each sits on the standard macOS rounded-square canvas, drawn from the Folio palette. A spread of angles — the product, the technique, the timer, the hardware, the type. Pick a direction and I'll refine it (and cut the full icon set).</p>
+
+  <!-- ===== GALLERY ===== -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;">
+
+    <!-- 1 ISLAND -->
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:28px 26px 24px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="island" style="width:208px;height:208px;display:block;" hint-size="208px,208px"></dc-import>
+      <div style="margin-top:24px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">01 — The Island</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Live activity</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">Leading progress ring + the split-circle — unmistakably a Dynamic Island.</div>
+      </div>
+    </div>
+
+    <!-- 2 TOMATO -->
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:28px 26px 24px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="tomato" style="width:208px;height:208px;display:block;" hint-size="208px,208px"></dc-import>
+      <div style="margin-top:24px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">02 — Pomodoro</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">The fruit</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">The namesake tomato in clay + teal. Friendly, instantly "focus timer."</div>
+      </div>
+    </div>
+
+    <!-- 3 RING -->
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:28px 26px 24px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="ring" style="width:208px;height:208px;display:block;" hint-size="208px,208px"></dc-import>
+      <div style="margin-top:24px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">03 — Focus ring</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Countdown</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">Progress arc with minutes remaining. Dark, calm, function-first.</div>
+      </div>
+    </div>
+
+    <!-- 4 NOTCH -->
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:28px 26px 24px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="notch" style="width:208px;height:208px;display:block;" hint-size="208px,208px"></dc-import>
+      <div style="margin-top:24px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">04 — The Notch</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Around the notch</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">Dark mode — progress traces the notch outline. The product, literally.</div>
+      </div>
+    </div>
+
+    <!-- 5 TABULAR -->
+    <div style="background:var(--card);border:1px solid var(--line-strong);border-radius:14px;padding:28px 26px 24px;display:flex;flex-direction:column;align-items:center;">
+      <dc-import name="AppIcon" variant="tabular" style="width:208px;height:208px;display:block;" hint-size="208px,208px"></dc-import>
+      <div style="margin-top:24px;text-align:center;">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;">05 — Tabular</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--ink);margin-bottom:6px;">Just the number</div>
+        <div style="font-size:13.5px;line-height:1.5;color:var(--muted);">Type-only, editorial. Most distinctive on a crowded dock.</div>
+      </div>
+    </div>
+
+    <!-- DOCK TEST -->
+    <div style="background:var(--ink);border:1px solid var(--line-strong);border-radius:14px;padding:28px 26px;display:flex;flex-direction:column;justify-content:space-between;">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--on-ink-teal);margin-bottom:7px;">Legibility</div>
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:500;letter-spacing:-0.015em;color:var(--on-ink);margin-bottom:6px;">At dock size</div>
+        <div style="font-size:13px;line-height:1.5;color:rgba(242,241,236,0.6);">How each reads small, where it actually lives.</div>
+      </div>
+      <div style="margin-top:24px;display:flex;align-items:flex-end;justify-content:center;gap:13px;background:rgba(242,241,236,0.08);border:1px solid rgba(242,241,236,0.12);border-radius:18px;padding:12px 16px;backdrop-filter:blur(8px);">
+        <dc-import name="AppIcon" variant="island" style="width:54px;height:54px;display:block;" hint-size="54px,54px"></dc-import>
+        <dc-import name="AppIcon" variant="tomato" style="width:54px;height:54px;display:block;" hint-size="54px,54px"></dc-import>
+        <dc-import name="AppIcon" variant="ring" style="width:54px;height:54px;display:block;" hint-size="54px,54px"></dc-import>
+        <dc-import name="AppIcon" variant="notch" style="width:54px;height:54px;display:block;" hint-size="54px,54px"></dc-import>
+        <dc-import name="AppIcon" variant="tabular" style="width:54px;height:54px;display:block;" hint-size="54px,54px"></dc-import>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
