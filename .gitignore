@@ -27,3 +27,6 @@ pnpm-debug.log*
 # Editor
 .vscode/
 .idea/
+
+# pnpm content-addressable store (created when pnpm resolves from a worktree)
+.pnpm-store/
