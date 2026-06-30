@@ -1,7 +1,7 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
 import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
 import { fmtTime, frac as fracOf } from '@shared/format'
-import type { FloatingLayout, FloatingProgress, Prefs, TimerState, TimerStyle } from '@shared/types'
+import type { FloatingLayout, Prefs, TimerState, TimerStyle } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
 import { deriveClusters, type IslandClusters } from './placement'
 
@@ -36,8 +36,6 @@ export interface IslandView {
   dailyGoal: number
   /** Layout variant for the floating card (when not snapped). */
   floatingLayout: FloatingLayout
-  /** Progress indicator style for the floating card. */
-  floatingProgress: FloatingProgress
 }
 
 export interface DotStyle {
@@ -147,6 +145,5 @@ export function deriveIsland(
     completedToday,
     dailyGoal: prefs.dailyGoal,
     floatingLayout: prefs.floatingLayout,
-    floatingProgress: prefs.floatingProgress,
   }
 }

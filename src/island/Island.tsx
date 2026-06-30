@@ -715,7 +715,7 @@ function FloatingCard({
   renderElement: (key: IslandElement) => React.ReactNode
 }) {
   const layout = view.floatingLayout
-  const isRing = view.floatingProgress === 'ring'
+  const isRing = view.timerStyle === 'below'
   const { left, below, right } = view.clusters
 
   if (layout === 'L4') {
