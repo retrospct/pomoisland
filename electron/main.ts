@@ -1,12 +1,21 @@
 import { app, BrowserWindow } from 'electron'
 import { registerIpc } from './ipc'
 import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
-import { getPrefs } from './store'
+import { getPrefs, onPrefsChange } from './store'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
 import { createIslandWindow, createSnapOverlayWindow } from './windows'
 
 let timer: Timer | null = null
+
+function applyDockVisibility(show: boolean): void {
+  if (process.platform !== 'darwin' || !app.dock) return
+  if (show) {
+    void app.dock.show()
+  } else {
+    app.dock.hide()
+  }
+}
 
 function bootstrap(): void {
   timer = new Timer(getPrefs)
@@ -18,10 +27,12 @@ function bootstrap(): void {
 }
 
 app.whenReady().then(() => {
-  // The island is a menu-bar / always-on-top utility; keep it out of the Dock.
-  if (process.platform === 'darwin' && app.dock) app.dock.hide()
+  applyDockVisibility(getPrefs().showDockIcon)
 
   bootstrap()
+
+  // Keep dock visibility in sync with the pref.
+  onPrefsChange((p) => applyDockVisibility(p.showDockIcon))
   registerGlobalShortcuts()
 
   app.on('activate', () => {

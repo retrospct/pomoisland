@@ -4,7 +4,9 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Prefs, TickSound, TimerStyle } from '../src/shared/types'
+import type { IslandPlacement, IslandSlot, Prefs, TickSound, TimerStyle } from '../src/shared/types'
+
+type Layout = 'split' | 'minimal' | 'compact'
 
 export const DEFAULT_PREFS: Prefs = {
   // General · Timer
@@ -21,6 +23,7 @@ export const DEFAULT_PREFS: Prefs = {
   messages: true,
   hideShare: false,
   pauseIdle: true,
+  showDockIcon: true,
   // Preferences · Alarm & sound
   sound: 'chime',
   volume: 70,
@@ -31,11 +34,10 @@ export const DEFAULT_PREFS: Prefs = {
   theme: 'dark',
   // Notch-outline bar — the headline notch-native treatment from the design handoff.
   timerStyle: 'outline',
-  layout: 'split',
-  // MO-22: default arrangement is all three elements to the right of the notch.
-  islandPlacement: { ring: 'right', time: 'right', dots: 'right' },
-  showDots: true,
+  // Default: Focus label, countdown, and session dots below the notch; ring hidden.
+  islandPlacement: { ring: 'off', status: 'below', time: 'below', dots: 'below' },
   ripple: 'burst',
+  floatingLayout: 'L1',
   // Window behavior (not surfaced in SettingsPanel)
   alwaysTop: true,
   magnetic: true,
@@ -89,13 +91,47 @@ function migrateTimerStyle(raw: unknown): TimerStyle {
   }
 }
 
+/**
+ * Migrate from the old 3-element placement (ring/time/dots, no `status`, no `off`)
+ * plus separate `layout` and `showDots` fields to the new 4-element placement with
+ * an `off` slot. Called when the persisted prefs predate this schema.
+ */
+function migrateIslandPlacement(raw: unknown, layout: unknown, showDots: unknown): IslandPlacement {
+  const defaults = DEFAULT_PREFS.islandPlacement
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+
+  const slotOrOff = (v: unknown, fallback: IslandSlot): IslandSlot => {
+    if (v === 'left' || v === 'below' || v === 'right' || v === 'off') return v
+    return fallback
+  }
+
+  // Old `layout` controlled visibility: minimal hid ring, compact hid time.
+  const layoutHidesRing = (layout as Layout) === 'minimal'
+  const layoutHidesTime = (layout as Layout) === 'compact'
+
+  // Old `time` slot seeds both new `status` and `time`.
+  const oldTimeSlot = slotOrOff(p.time, 'below')
+
+  return {
+    ring: layoutHidesRing ? 'off' : slotOrOff(p.ring, defaults.ring),
+    status: oldTimeSlot,
+    time: layoutHidesTime ? 'off' : oldTimeSlot,
+    dots: showDots === false ? 'off' : slotOrOff(p.dots, defaults.dots),
+  }
+}
+
 function load(): Prefs {
   try {
     const raw = readFileSync(filePath(), 'utf8')
-    const parsed = JSON.parse(raw) as Partial<Prefs>
-    const merged = { ...DEFAULT_PREFS, ...parsed }
-    merged.tick = migrateTick((parsed as { tick?: unknown }).tick)
-    merged.timerStyle = migrateTimerStyle((parsed as { timerStyle?: unknown }).timerStyle)
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const merged = { ...DEFAULT_PREFS, ...parsed } as Prefs
+    merged.tick = migrateTick(parsed.tick)
+    merged.timerStyle = migrateTimerStyle(parsed.timerStyle)
+    // Migrate old placement shape if `status` key is missing (pre-split schema).
+    const rawPlacement = parsed.islandPlacement as Record<string, unknown> | undefined
+    if (!rawPlacement || !('status' in rawPlacement)) {
+      merged.islandPlacement = migrateIslandPlacement(rawPlacement, parsed.layout, parsed.showDots)
+    }
     return merged
   } catch {
     return { ...DEFAULT_PREFS }

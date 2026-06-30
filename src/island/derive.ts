@@ -1,7 +1,7 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
 import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
 import { fmtTime, frac as fracOf } from '@shared/format'
-import type { Prefs, TimerState, TimerStyle } from '@shared/types'
+import type { FloatingLayout, Prefs, TimerState, TimerStyle } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
 import { deriveClusters, type IslandClusters } from './placement'
 
@@ -34,6 +34,8 @@ export interface IslandView {
   completedToday: number
   /** Daily goal — shown alongside completedToday as "X/Y" on hover. */
   dailyGoal: number
+  /** Layout variant for the floating card (when not snapped). */
+  floatingLayout: FloatingLayout
 }
 
 export interface DotStyle {
@@ -105,7 +107,7 @@ export function deriveIsland(
   const taskColor = hasTask ? n.taskColor : n.taskDim
 
   const dots: DotStyle[] = []
-  const count = prefs.showDots ? sessionTotal : 0
+  const count = prefs.islandPlacement.dots !== 'off' ? sessionTotal : 0
   for (let i = 0; i < count; i++) {
     const done = i < sessionIndex || (i === sessionIndex && isComplete)
     const current = i === sessionIndex && !isComplete
@@ -115,6 +117,13 @@ export function deriveIsland(
       boxShadow: current ? `0 0 0 3px ${hexToRgba(accent, 0.18)}` : 'none',
     })
   }
+
+  // Fix 7: the circular ring element is only positionable when timerStyle === 'below'.
+  // In all other styles the notch trace IS the progress — ring is redundant and hidden.
+  const placement =
+    prefs.timerStyle === 'below'
+      ? prefs.islandPlacement
+      : { ...prefs.islandPlacement, ring: 'off' as const }
 
   return {
     accent,
@@ -132,8 +141,9 @@ export function deriveIsland(
     isBreak,
     timerStyle: prefs.timerStyle,
     dots,
-    clusters: deriveClusters(prefs.layout, prefs.islandPlacement, prefs.showDots),
+    clusters: deriveClusters(placement),
     completedToday,
     dailyGoal: prefs.dailyGoal,
+    floatingLayout: prefs.floatingLayout,
   }
 }

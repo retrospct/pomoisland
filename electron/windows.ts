@@ -16,7 +16,7 @@ let islandWin: BrowserWindow | null = null
 let settingsWin: BrowserWindow | null = null
 let snapOverlayWin: BrowserWindow | null = null
 
-const placement: Placement = { snapped: true, dragging: false, nearSnap: false }
+const placement: Placement = { snapped: true, dragging: false, nearSnap: false, hasNotch: false, notchHeight: 0 }
 let islandSize: IslandSize = { width: 240, height: 60 }
 
 interface DragCtx {
@@ -40,6 +40,16 @@ function displayAtPoint(x: number, y: number): Display {
 }
 
 /**
+ * Heuristic notch detection: built-in notched displays have a menu bar height
+ * of ~32–38px vs ~24px on external monitors. Threshold of 30px catches all
+ * current MacBook Pro / Air notch models and rejects external monitors.
+ */
+function notchMetrics(d: Display): { hasNotch: boolean; notchHeight: number } {
+  const notchHeight = d.workArea.y - d.bounds.y
+  return { hasNotch: notchHeight >= 30, notchHeight }
+}
+
+/**
  * Top-left origin for snapping the island to the top-center of a display.
  * Anchors at bounds.y (true top edge) so the island overlaps the menubar on
  * both notch and external monitors (MO-11).
@@ -58,6 +68,14 @@ export function getPlacement(): Placement {
 
 /** Reposition snap overlay, then broadcast placement to all renderer windows. */
 function broadcastPlacement(): void {
+  // Refresh notch metrics for the display the island currently sits on.
+  if (islandWin) {
+    const b = islandWin.getBounds()
+    const d = displayAtPoint(b.x + b.width / 2, b.y + b.height / 2)
+    const { hasNotch, notchHeight } = notchMetrics(d)
+    placement.hasNotch = hasNotch
+    placement.notchHeight = notchHeight
+  }
   updateSnapOverlay()
   for (const w of BrowserWindow.getAllWindows()) {
     w.webContents.send(IPC.islandPlacement, getPlacement())
@@ -67,6 +85,14 @@ function broadcastPlacement(): void {
 export function createIslandWindow(): BrowserWindow {
   const prefs = getPrefs()
   const { x, y } = snappedTopLeft(islandSize.width)
+
+  // Prime notch metrics for the primary display before the first broadcast.
+  {
+    const d = screen.getPrimaryDisplay()
+    const { hasNotch, notchHeight } = notchMetrics(d)
+    placement.hasNotch = hasNotch
+    placement.notchHeight = notchHeight
+  }
 
   islandWin = new BrowserWindow({
     width: islandSize.width,
@@ -87,6 +113,13 @@ export function createIslandWindow(): BrowserWindow {
       preload: PRELOAD,
       contextIsolation: true,
       nodeIntegration: false,
+      // The island is a passive always-on-top widget that is almost never the
+      // focused window. With Chromium's default background throttling, its CSS
+      // keyframe animations (the notch progress treatments — comet/glow/front/
+      // underlight) freeze whenever another app is focused, so progress appears
+      // not to animate at all. Disable throttling so the trace keeps animating
+      // while the user works in other apps.
+      backgroundThrottling: false,
     },
   })
 
@@ -138,9 +171,11 @@ export function resizeIsland(size: IslandSize): void {
   } else {
     // Keep the horizontal center and top fixed as content grows/shrinks.
     const prev = islandWin.getBounds()
+    const d = displayAtPoint(prev.x + prev.width / 2, prev.y + prev.height / 2)
     const centerX = prev.x + prev.width / 2
     x = Math.round(centerX - width / 2)
-    y = prev.y
+    // Never let a floating resize push the window back behind the menu bar.
+    y = Math.max(prev.y, d.workArea.y)
   }
   islandWin.setBounds({ x, y, width, height })
 }
@@ -193,17 +228,27 @@ export function applyAlwaysOnTop(on: boolean): void {
 export function dragStart(cursorX: number, cursorY: number): void {
   if (!islandWin) return
   const b = islandWin.getBounds()
+  placement.dragging = true
+  placement.snapped = false
+  applyIslandWindowLevel() // floating while dragging
+
+  // The window may be at y=0 (snapped to the notch at 'screen-saver' level).
+  // After dropping to 'floating' level the floating card renders into that same
+  // y=0 position — hidden behind the menu bar. Nudge the window to workArea.y
+  // (the first pixel below the menu bar) immediately, and update the drag origin
+  // so dragMove's position math stays consistent from the new start point.
+  const d = displayAtPoint(cursorX, cursorY)
+  const startY = Math.max(b.y, d.workArea.y)
+  if (startY !== b.y) islandWin.setPosition(b.x, startY)
+
   drag = {
     startCursorX: cursorX,
     startCursorY: cursorY,
     startX: b.x,
-    startY: b.y,
+    startY,
     lastCursorX: cursorX,
     lastCursorY: cursorY,
   }
-  placement.dragging = true
-  placement.snapped = false
-  applyIslandWindowLevel() // floating while dragging
   broadcastPlacement()
 }
 
@@ -214,9 +259,13 @@ export function dragMove(cursorX: number, cursorY: number): void {
   const b = islandWin.getBounds()
   let x = drag.startX + (cursorX - drag.startCursorX)
   let y = drag.startY + (cursorY - drag.startCursorY)
-  // Clamp within the full display bounds (not workArea) so island can overlap the menubar.
+  // Clamp x within full display bounds; clamp y to workArea so the floating
+  // card can never slide behind the menu bar.  The snap zone (y < SNAP_Y_TOLERANCE)
+  // still triggers because workArea.y (~38) is always < SNAP_Y_TOLERANCE (56),
+  // so dragging back toward the notch correctly shows the snap overlay and
+  // re-snaps on release.
   x = Math.max(d.bounds.x, Math.min(d.bounds.x + d.bounds.width - b.width, x))
-  y = Math.max(d.bounds.y, Math.min(d.bounds.y + d.bounds.height - b.height, y))
+  y = Math.max(d.workArea.y, Math.min(d.bounds.y + d.bounds.height - b.height, y))
   islandWin.setPosition(Math.round(x), Math.round(y))
 
   drag.lastCursorX = cursorX

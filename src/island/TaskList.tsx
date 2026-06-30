@@ -77,7 +77,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
         <span
           style={{
             fontFamily: MONO,
-            fontSize: 9,
+            fontSize: 12,
             letterSpacing: '0.16em',
             color: accent,
             fontWeight: 500,
@@ -359,6 +359,25 @@ function TaskRow({
         )}
       </div>
 
+      {/* Edit — immediately after title, not shown while editing */}
+      {!isEditing && (
+        <button
+          aria-label="Edit task title"
+          onClick={(e) => { e.stopPropagation(); onStartEdit(task) }}
+          style={iconActionBtn}
+        >
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M8.5 1.5L10.5 3.5L4 10L1 11L2 8L8.5 1.5Z"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      )}
+
       {/* Session controls: − + only for incomplete tasks */}
       {!isEditing && !task.done && (
         <>
@@ -388,32 +407,15 @@ function TaskRow({
         />
       )}
 
-      {/* Edit — not shown while editing */}
-      {!isEditing && (
-        <button
-          aria-label="Edit task title"
-          onClick={(e) => { e.stopPropagation(); onStartEdit(task) }}
-          style={iconActionBtn}
-        >
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M8.5 1.5L10.5 3.5L4 10L1 11L2 8L8.5 1.5Z"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      )}
-
       {/* Delete */}
       <button
         aria-label="Delete task"
         onClick={(e) => { e.stopPropagation(); onDelete() }}
         style={iconActionBtn}
       >
-        ✕
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+          <path d="M2 3h8M5 3V2h2v1M4.5 3v6.5h3V3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </button>
     </div>
   )

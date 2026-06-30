@@ -11,13 +11,13 @@
 
 import type { CSSProperties } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { renderProgressTrace } from './progressTrace'
 import type { TimerStyle } from './types'
 
 const MONO = "'IBM Plex Mono', monospace"
 
 /** Full notch outline (open path — no closing Z), left edge down/around to right edge. */
 const OUTLINE = 'M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0'
-const TRACK = 'rgba(242,241,236,0.13)'
 
 export interface NotchStyleMeta {
   key: TimerStyle
@@ -69,9 +69,18 @@ export interface NotchProgressProps {
    * which implies simulateNotch.
    */
   simulateNotch?: boolean
+  /**
+   * When false, suppress the bundled label/time/dots readout so only the SVG
+   * progress trace (and optional mock notch) renders. The island passes `false`
+   * so placed clusters handle the readout instead. Defaults to true so Settings
+   * previews keep showing the full readout.
+   */
+  readout?: boolean
   /** Uniform scale for compact previews; keeps layout box correct. */
   scale?: number
 }
+
+let cachedLen = 0
 
 export function NotchProgress({
   variant,
@@ -84,22 +93,20 @@ export function NotchProgress({
   textColor = '#F2F1EC',
   frame = false,
   simulateNotch = frame,
+  readout = true,
   scale = 1,
 }: NotchProgressProps) {
   const pathRef = useRef<SVGPathElement>(null)
-  const [len, setLen] = useState(0)
+  const [len, setLen] = useState(cachedLen)
   const [front, setFront] = useState({ x: 130, y: 30 })
 
   const isBelow = variant === 'below'
-  const isGlow = variant === 'glow'
   const isFront = variant === 'front'
   const isUnderlight = variant === 'underlight'
-  const isConverge = variant === 'converge'
   const isSplit = variant === 'split'
-  const isComet = variant === 'comet'
-  const isTwoSide = isConverge || isSplit
-  const drawFullOutline = variant === 'outline' || isGlow || isFront
-  const showReadout = !isBelow
+  const drawFullOutline = variant === 'outline' || variant === 'glow' || isFront
+  // showReadout: variant-level condition AND the readout prop must both be true.
+  const showReadout = readout && !isBelow
 
   const p = Math.min(1, Math.max(0, Number.isFinite(progress) ? progress : 0))
 
@@ -110,6 +117,7 @@ export function NotchProgress({
     const path = pathRef.current
     if (!path || !drawFullOutline) return
     const l = path.getTotalLength()
+    cachedLen = l
     setLen(l)
     if (isFront) {
       const pt = path.getPointAtLength(l * p)
@@ -117,23 +125,18 @@ export function NotchProgress({
     }
   }, [drawFullOutline, isFront, p, variant])
 
-  const dashArray = len ? len.toFixed(2) : '1000'
-  const dashOffset = len ? (len * (1 - p)).toFixed(2) : '1000'
-
   const ringR = 9.5
   const ringCirc = 2 * Math.PI * ringR
   const ringOffset = (ringCirc * (1 - p)).toFixed(2)
 
-  const twoOffset = (100 * (1 - p)).toFixed(2)
   const leftPath = isSplit ? 'M130 30 L68 30 Q55 30 55 17 L55 0' : 'M55 0 L55 17 Q55 30 68 30 L130 30'
   const rightPath = isSplit
     ? 'M130 30 L192 30 Q205 30 205 17 L205 0'
     : 'M205 0 L205 17 Q205 30 192 30 L130 30'
-  const meetOpacity = isConverge ? p * p : 0
-  const hasFront = isFront && len > 0
 
   const baseW = 260
-  const baseH = frame ? 128 : isBelow ? 84 : dots && dots.length ? 100 : 86
+  // When readout is suppressed, height only needs to cover the 72px SVG trace zone.
+  const baseH = !readout ? 72 : frame ? 128 : isBelow ? 84 : dots && dots.length ? 100 : 86
 
   const inner = (
     <>
@@ -144,40 +147,8 @@ export function NotchProgress({
         style={{ position: 'absolute', top: 0, left: 0, zIndex: 2, overflow: 'visible' }}
       >
         {/* Underlight ellipses render BELOW the notch fill so they peek out from
-            beneath it (handoff z-order note). */}
-        {isUnderlight && (
-          <>
-            <ellipse
-              cx={130}
-              cy={35}
-              rx={84}
-              ry={18}
-              fill={accent}
-              data-nc-anim
-              style={{
-                filter: 'blur(10px)',
-                transformBox: 'fill-box',
-                transformOrigin: 'center',
-                animation: 'ncUnder 2.6s ease-in-out infinite',
-              }}
-            />
-            <ellipse
-              cx={130}
-              cy={32}
-              rx={56}
-              ry={11}
-              fill={accentBright}
-              opacity={0.55}
-              data-nc-anim
-              style={{
-                filter: 'blur(6px)',
-                transformBox: 'fill-box',
-                transformOrigin: 'center',
-                animation: 'ncUnder 2.6s ease-in-out infinite 0.25s',
-              }}
-            />
-          </>
-        )}
+            beneath it (handoff z-order note). These are passed to renderProgressTrace
+            when variant === 'underlight'. */}
 
         {simulateNotch && (
           <>
@@ -186,175 +157,50 @@ export function NotchProgress({
           </>
         )}
 
-        {isUnderlight && (
-          <>
-            <path
-              d="M55 17 Q55 30 68 30 L192 30 Q205 30 205 17"
-              fill="none"
-              stroke={accent}
-              strokeWidth={4.5}
-              strokeLinecap="round"
-              opacity={0.9}
-              data-nc-anim
-              style={{ filter: 'blur(3px)', animation: 'ncGlow 2.6s ease-in-out infinite' }}
-            />
-            <path
-              d="M59 26 Q61 30 68 30 L192 30 Q199 30 201 26"
-              fill="none"
-              stroke={accentBright}
-              strokeWidth={1.6}
-              strokeLinecap="round"
-              opacity={0.92}
-            />
-          </>
-        )}
-
-        {drawFullOutline && (
-          <>
-            <path d={OUTLINE} fill="none" stroke={TRACK} strokeWidth={2.5} />
-            {isGlow && (
+        {renderProgressTrace({
+          variant,
+          p,
+          accent,
+          accentBright,
+          fullPath: OUTLINE,
+          leftPath,
+          rightPath,
+          meetPoint: { x: 130, y: 30 },
+          len,
+          front,
+          pathRef,
+          underlightEllipses: isUnderlight
+            ? [
+                { cx: 130, cy: 35, rx: 84, ry: 18, fill: accent, delay: undefined },
+                { cx: 130, cy: 32, rx: 56, ry: 11, fill: accentBright, opacity: 0.55, delay: '0.25s' },
+              ]
+            : undefined,
+          underlightArcPath: isUnderlight ? (
+            <>
               <path
-                d={OUTLINE}
+                d="M55 17 Q55 30 68 30 L192 30 Q205 30 205 17"
+                fill="none"
+                stroke={accent}
+                strokeWidth={4.5}
+                strokeLinecap="round"
+                opacity={0.9}
+                data-nc-anim
+                style={{ filter: 'blur(3px)', animation: 'ncGlow 2.6s ease-in-out infinite' }}
+              />
+              <path
+                d="M59 26 Q61 30 68 30 L192 30 Q199 30 201 26"
                 fill="none"
                 stroke={accentBright}
-                strokeWidth={3}
+                strokeWidth={1.6}
                 strokeLinecap="round"
-                strokeDasharray={dashArray}
-                strokeDashoffset={dashOffset}
-                className="nc-progress-stroke"
-                data-nc-anim
-                style={{ filter: 'blur(3.5px)', animation: 'ncGlow 2.1s ease-in-out infinite' }}
+                opacity={0.92}
               />
-            )}
-            <path
-              ref={pathRef}
-              d={OUTLINE}
-              fill="none"
-              stroke={accent}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeDasharray={dashArray}
-              strokeDashoffset={dashOffset}
-              className="nc-progress-stroke"
-            />
-            {hasFront && (
-              <>
-                <circle
-                  cx={front.x}
-                  cy={front.y}
-                  r={7}
-                  fill={accent}
-                  opacity={0.4}
-                  data-nc-anim
-                  style={{
-                    filter: 'blur(3px)',
-                    transformBox: 'fill-box',
-                    transformOrigin: 'center',
-                    animation: 'ncDot 1.6s ease-in-out infinite',
-                  }}
-                />
-                <circle
-                  cx={front.x}
-                  cy={front.y}
-                  r={2.8}
-                  fill={accentBright}
-                  data-nc-anim
-                  style={{ animation: 'ncSheen 1.6s ease-in-out infinite' }}
-                />
-              </>
-            )}
-          </>
-        )}
-
-        {isTwoSide && (
-          <>
-            <path d={leftPath} pathLength={100} fill="none" stroke={TRACK} strokeWidth={2.5} />
-            <path d={rightPath} pathLength={100} fill="none" stroke={TRACK} strokeWidth={2.5} />
-            <path
-              d={leftPath}
-              pathLength={100}
-              fill="none"
-              stroke={accent}
-              strokeWidth={2.8}
-              strokeLinecap="round"
-              strokeDasharray={100}
-              strokeDashoffset={twoOffset}
-              className="nc-progress-stroke"
-            />
-            <path
-              d={rightPath}
-              pathLength={100}
-              fill="none"
-              stroke={accent}
-              strokeWidth={2.8}
-              strokeLinecap="round"
-              strokeDasharray={100}
-              strokeDashoffset={twoOffset}
-              className="nc-progress-stroke"
-            />
-            <circle
-              cx={130}
-              cy={30}
-              r={3.2}
-              fill={accentBright}
-              opacity={meetOpacity}
-              style={{ filter: 'blur(0.6px)' }}
-            />
-          </>
-        )}
-
-        {isComet && (
-          <>
-            <path d={OUTLINE} pathLength={100} fill="none" stroke="rgba(242,241,236,0.10)" strokeWidth={2.5} />
-            <path
-              d={OUTLINE}
-              pathLength={100}
-              fill="none"
-              stroke={accent}
-              strokeWidth={5}
-              strokeLinecap="round"
-              strokeDasharray="14 86"
-              data-nc-anim
-              style={{ filter: 'blur(3px)', animation: 'ncComet 2.4s linear infinite' }}
-            />
-            <path
-              d={OUTLINE}
-              pathLength={100}
-              fill="none"
-              stroke={accentBright}
-              strokeWidth={2.6}
-              strokeLinecap="round"
-              strokeDasharray="13 87"
-              data-nc-anim
-              style={{ animation: 'ncComet 2.4s linear infinite' }}
-            />
-            <path
-              d={OUTLINE}
-              pathLength={100}
-              fill="none"
-              stroke={accent}
-              strokeWidth={4}
-              strokeLinecap="round"
-              strokeDasharray="11 89"
-              data-nc-anim
-              style={{ filter: 'blur(2px)', animation: 'ncComet 2.4s linear infinite', animationDelay: '-1.2s' }}
-            />
-            <path
-              d={OUTLINE}
-              pathLength={100}
-              fill="none"
-              stroke={accentBright}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              strokeDasharray="10 90"
-              data-nc-anim
-              style={{ animation: 'ncComet 2.4s linear infinite', animationDelay: '-1.2s' }}
-            />
-          </>
-        )}
+            </>
+          ) : undefined,
+        })}
       </svg>
 
-      {isBelow && (
+      {readout && isBelow && (
         <div
           style={{
             position: 'absolute',

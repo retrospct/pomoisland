@@ -1,9 +1,9 @@
-import { NotchProgress } from '@shared/NotchProgress'
 import { RIPPLE_DEFS } from '@shared/ripple'
-import type { IslandElement, Ripple, TasksState } from '@shared/types'
+import type { IslandElement, Ripple, TasksState, TimerStyle } from '@shared/types'
 import { useReducedMotion } from '@shared/useReducedMotion'
+import { renderProgressTrace } from '@shared/progressTrace'
 import type { CSSProperties } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { IslandView } from './derive'
 import {
   PlayPauseLarge,
@@ -38,6 +38,10 @@ interface IslandProps extends Handlers {
   present: Present
   view: IslandView
   notch: boolean
+  /** True when the current display has a hardware notch. */
+  hasNotch: boolean
+  /** Height (px) of the notch band: workArea.y - bounds.y. */
+  notchHeight: number
   ripple: Ripple
   messagesOn: boolean
   tasks: TasksState | null
@@ -123,15 +127,24 @@ const FX_PAD = 180
 // when snapped, so the clusters flank the notch instead of sitting under it (MO-22).
 // Approximate MacBook notch width; calibrate against real hardware later.
 const NOTCH_GAP = 200
-// Bar-row height reserved above a "below" cluster so it drops under the notch edge.
-const BAR_ROW_H = 34
 
-function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
+function Collapsed({ view, notch, hasNotch, notchHeight, ripple, onToggleExpand }: IslandProps) {
   const rm = useReducedMotion()
-  const pillRadius: CSSProperties['borderRadius'] = notch ? '0 0 20px 20px' : 999
 
   const [fxPhase, setFxPhase] = useState<'enter' | 'exit' | 'none'>('none')
   const fxActiveRef = useRef(false)
+
+  // Body measurement for snapped CardOutline overlay — must be unconditional (React rules of hooks)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [bodyDims, setBodyDims] = useState({ w: 0, h: 0 })
+  useLayoutEffect(() => {
+    if (!notch) return  // only measure in snapped mode
+    const el = bodyRef.current
+    if (!el) return
+    const { width, height } = el.getBoundingClientRect()
+    const w = Math.round(width), h = Math.round(height)
+    setBodyDims(prev => (prev.w === w && prev.h === h) ? prev : { w, h })
+  })
 
   useEffect(() => {
     if (view.isComplete) {
@@ -152,8 +165,6 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
   const hasContent = (key: IslandElement) => (key === 'dots' ? view.dots.length > 0 : true)
   const filled = [left, below, right].map((keys) => keys.filter(hasContent))
   const [leftKeys, belowKeys, rightKeys] = filled
-  const pillCount = filled.filter((k) => k.length > 0).length
-  const soloNotch = notch && pillCount <= 1
 
   const renderElement = (key: IslandElement) => {
     switch (key) {
@@ -172,44 +183,38 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
             <RingGlyphSmall glyph={view.glyph} accent={view.accent} />
           </Ring>
         )
-      case 'time':
+      case 'status':
         return (
-          <div
-            key="time"
+          <span
+            key="status"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 3,
-              lineHeight: 1,
-              flex: '0 0 auto',
+              fontFamily: MONO,
+              fontSize: 10,
+              letterSpacing: '0.16em',
+              color: view.accent,
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              transition: rm ? undefined : 'color 1.5s ease-in-out',
             }}
           >
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 10,
-                letterSpacing: '0.16em',
-                color: view.accent,
-                fontWeight: 500,
-                whiteSpace: 'nowrap',
-                transition: rm ? undefined : 'color 1.5s ease-in-out',
-              }}
-            >
-              {view.statusLabel}
-            </span>
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 15,
-                fontWeight: 500,
-                letterSpacing: '0.01em',
-                fontVariantNumeric: 'tabular-nums',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {view.timeStr}
-            </span>
-          </div>
+            {view.statusLabel}
+          </span>
+        )
+      case 'time':
+        return (
+          <span
+            key="time"
+            style={{
+              fontFamily: MONO,
+              fontSize: 15,
+              fontWeight: 500,
+              letterSpacing: '0.01em',
+              fontVariantNumeric: 'tabular-nums',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {view.timeStr}
+          </span>
         )
       case 'dots':
         return <SessionDots key="dots" dots={view.dots} />
@@ -220,6 +225,7 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
     }
   }
 
+  // renderPill is used for the floating (non-snapped) layout only.
   const renderPill = (keys: IslandElement[]) => {
     if (keys.length === 0) return null
     const pill: CSSProperties = {
@@ -230,11 +236,8 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
       gap: 13,
       background: 'var(--il-bg)',
       color: 'var(--il-text)',
-      borderRadius: pillRadius,
-      padding: `${notch ? 13 : 8}px 20px 9px 10px`,
-      // Preserve the single-pill snapped width; flanking pills size to content.
-      minWidth: soloNotch ? 210 : 0,
-      justifyContent: soloNotch ? 'space-between' : 'flex-start',
+      borderRadius: 999,
+      padding: '8px 20px 9px 10px',
       boxShadow: 'none',
       cursor: 'pointer',
       minHeight: 44,
@@ -248,15 +251,147 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
   }
 
   const fxActive = fxPhase !== 'none'
+  const fxBorderRadius: CSSProperties['borderRadius'] = notch ? '0 0 20px 20px' : 999
 
+  if (notch) {
+    // ── Snapped unified body: hangs from the real notch (Fix 8) ──────────────
+    // One dark body div with squared top corners (meets the physical notch) and
+    // rounded bottom. Left/right elements are bare (no pill), below content sits
+    // flush under the notch spacer. No mock notch drawn — real hardware shows through.
+    const belowVisible = belowKeys.filter(hasContent)
+    const leftVisible = leftKeys.filter(hasContent)
+    const rightVisible = rightKeys.filter(hasContent)
+
+    return (
+      <div
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          paddingLeft: fxActive ? FX_PAD : undefined,
+          paddingRight: fxActive ? FX_PAD : undefined,
+          paddingBottom: fxActive ? FX_PAD : undefined,
+        }}
+      >
+        {fxActive && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: FX_PAD,
+              right: FX_PAD,
+              bottom: FX_PAD,
+              pointerEvents: 'none',
+            }}
+          >
+            <CompletionFx
+              ripple={ripple}
+              accent={view.accent}
+              accentBright={view.accentBright}
+              borderRadius={fxBorderRadius}
+              exiting={fxPhase === 'exit'}
+            />
+          </div>
+        )}
+        <div
+          ref={bodyRef}
+          data-island="1"
+          onClick={onToggleExpand}
+          style={{
+            position: 'relative',
+            display: 'inline-grid',
+            gridTemplateColumns: 'auto auto auto',
+            alignItems: 'center',
+            background: 'var(--il-bg)',
+            color: 'var(--il-text)',
+            borderRadius: '0 0 20px 20px',
+            cursor: 'pointer',
+          }}
+        >
+          {/* Left column — bare elements flanking the notch */}
+          <div
+            style={{
+              alignSelf: 'center',
+              padding: '0 10px 0 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 13,
+            }}
+          >
+            {leftVisible.map(renderElement)}
+          </div>
+
+          {/* Center column — transparent notch spacer + below content */}
+          <div
+            style={{
+              minWidth: NOTCH_GAP,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            {hasNotch && (
+              <div
+                aria-hidden
+                style={{ height: notchHeight, minWidth: NOTCH_GAP, flexShrink: 0 }}
+              />
+            )}
+            {belowVisible.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 13,
+                  padding: '8px 20px 12px',
+                }}
+              >
+                {belowVisible.map(renderElement)}
+              </div>
+            )}
+            {belowVisible.length === 0 && !hasNotch && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px' }}>
+                {renderElement('status')}
+                {renderElement('time')}
+              </div>
+            )}
+          </div>
+
+          {/* Right column — bare elements flanking the notch */}
+          <div
+            style={{
+              alignSelf: 'center',
+              padding: '0 14px 0 10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 13,
+            }}
+          >
+            {rightVisible.map(renderElement)}
+          </div>
+
+          {/* CardOutline overlay — variant-aware progress trace for non-'below' styles */}
+          {view.timerStyle !== 'below' && bodyDims.w > 0 && (
+            <CardOutline
+              width={bodyDims.w}
+              height={bodyDims.h}
+              rxTop={0}
+              rxBottom={20}
+              variant={view.timerStyle}
+              progress={view.frac}
+              accent={view.accent}
+              accentBright={view.accentBright}
+            />
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Floating mode: FloatingCard (Fix 6) ──────────────────────────────────
   return (
     <div
       style={{
         position: 'relative',
         display: 'inline-flex',
-        // When FX fires, pad the container so the ResizeObserver sees a larger element and
-        // the Electron window grows to give the ripple rings room to expand unclipped.
-        // Sides and bottom only — no top pad so the pill stays flush with the notch/top edge.
         paddingLeft: fxActive ? FX_PAD : undefined,
         paddingRight: fxActive ? FX_PAD : undefined,
         paddingBottom: fxActive ? FX_PAD : undefined,
@@ -277,50 +412,537 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
             ripple={ripple}
             accent={view.accent}
             accentBright={view.accentBright}
-            borderRadius={pillRadius}
+            borderRadius={fxBorderRadius}
             exiting={fxPhase === 'exit'}
           />
         </div>
       )}
-      {/* Snapped: all eight handoff variants via NotchProgress (real notch shows through).
-          Floating: pill-cluster placement — outline treatments need hardware. */}
-      {notch ? (
-        <div data-island="1" onClick={onToggleExpand} style={{ cursor: 'pointer' }}>
-          <NotchProgress
+      <FloatingCard view={view} onToggleExpand={onToggleExpand} renderPill={renderPill} renderElement={renderElement} />
+    </div>
+  )
+}
+
+// ── CardOutline — variant-aware pill-border progress trace (Fix 6) ──────────
+// Module-level cache avoids the dashoffset flash on remount (same pattern as
+// NotchProgress.tsx cachedLen). Uses rounded-rect path geometry so all 8
+// TimerStyle treatments work (via renderProgressTrace from progressTrace.tsx).
+let cachedCardLen = 0
+
+/** Build a closed rounded-rect perimeter path starting at top-center, going clockwise. */
+function cardPath(W: number, H: number, rxT: number, rxB: number): string {
+  const rT = Math.min(rxT, W / 2, H / 2)
+  const rB = Math.min(rxB, W / 2, H / 2)
+  return [
+    `M ${W / 2} 0`,
+    `L ${W - rT} 0`,
+    `Q ${W} 0 ${W} ${rT}`,
+    `L ${W} ${H - rB}`,
+    `Q ${W} ${H} ${W - rB} ${H}`,
+    `L ${W / 2} ${H}`,
+    // continue full path for measurement — left side back to top-center
+    `L ${rB} ${H}`,
+    `Q 0 ${H} 0 ${H - rB}`,
+    `L 0 ${rT}`,
+    `Q 0 0 ${rT} 0`,
+    `L ${W / 2} 0`,
+    `Z`,
+  ].join(' ')
+}
+
+/** Left converge path: from top-center counterclockwise to bottom-center. */
+function cardLeftConverge(W: number, H: number, rxT: number, rxB: number): string {
+  const rT = Math.min(rxT, W / 2, H / 2)
+  const rB = Math.min(rxB, W / 2, H / 2)
+  return [
+    `M ${W / 2} 0`,
+    `L ${rT} 0`,
+    `Q 0 0 0 ${rT}`,
+    `L 0 ${H - rB}`,
+    `Q 0 ${H} ${rB} ${H}`,
+    `L ${W / 2} ${H}`,
+  ].join(' ')
+}
+
+/** Right converge path: from top-center clockwise to bottom-center. */
+function cardRightConverge(W: number, H: number, rxT: number, rxB: number): string {
+  const rT = Math.min(rxT, W / 2, H / 2)
+  const rB = Math.min(rxB, W / 2, H / 2)
+  return [
+    `M ${W / 2} 0`,
+    `L ${W - rT} 0`,
+    `Q ${W} 0 ${W} ${rT}`,
+    `L ${W} ${H - rB}`,
+    `Q ${W} ${H} ${W - rB} ${H}`,
+    `L ${W / 2} ${H}`,
+  ].join(' ')
+}
+
+/** Left split path: from bottom-center counterclockwise to top-center (reverse of left converge). */
+function cardLeftSplit(W: number, H: number, rxT: number, rxB: number): string {
+  const rT = Math.min(rxT, W / 2, H / 2)
+  const rB = Math.min(rxB, W / 2, H / 2)
+  return [
+    `M ${W / 2} ${H}`,
+    `L ${rB} ${H}`,
+    `Q 0 ${H} 0 ${H - rB}`,
+    `L 0 ${rT}`,
+    `Q 0 0 ${rT} 0`,
+    `L ${W / 2} 0`,
+  ].join(' ')
+}
+
+/** Right split path: from bottom-center clockwise to top-center (reverse of right converge). */
+function cardRightSplit(W: number, H: number, rxT: number, rxB: number): string {
+  const rT = Math.min(rxT, W / 2, H / 2)
+  const rB = Math.min(rxB, W / 2, H / 2)
+  return [
+    `M ${W / 2} ${H}`,
+    `L ${W - rB} ${H}`,
+    `Q ${W} ${H} ${W} ${H - rB}`,
+    `L ${W} ${rT}`,
+    `Q ${W} 0 ${W - rT} 0`,
+    `L ${W / 2} 0`,
+  ].join(' ')
+}
+
+interface CardOutlineProps {
+  width: number
+  height: number
+  /** Top corner radius (0 = square, ~999 = pill). */
+  rxTop: number
+  /** Bottom corner radius. */
+  rxBottom: number
+  variant: TimerStyle
+  progress: number
+  accent: string
+  accentBright: string
+}
+
+function CardOutline({ width: W, height: H, rxTop, rxBottom, variant, progress, accent, accentBright }: CardOutlineProps) {
+  const pathRef = useRef<SVGPathElement>(null)
+  const [len, setLen] = useState(cachedCardLen)
+  const [front, setFront] = useState({ x: W / 2, y: 0 })
+
+  const clampedP = Math.min(1, Math.max(0, progress))
+  const isSplit = variant === 'split'
+
+  const fullPath = cardPath(W, H, rxTop, rxBottom)
+  const leftPath = isSplit
+    ? cardLeftSplit(W, H, rxTop, rxBottom)
+    : cardLeftConverge(W, H, rxTop, rxBottom)
+  const rightPath = isSplit
+    ? cardRightSplit(W, H, rxTop, rxBottom)
+    : cardRightConverge(W, H, rxTop, rxBottom)
+
+  useLayoutEffect(() => {
+    const el = pathRef.current
+    if (!el) return
+    const l = el.getTotalLength()
+    cachedCardLen = l
+    setLen(l)
+    if (variant === 'front' && l > 0) {
+      const pt = el.getPointAtLength(l * clampedP)
+      setFront({ x: +pt.x.toFixed(2), y: +pt.y.toFixed(2) })
+    }
+  }, [W, H, rxTop, rxBottom, variant, clampedP])
+
+  return (
+    <svg
+      width={W}
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+    >
+      {renderProgressTrace({
+        variant,
+        p: clampedP,
+        accent,
+        accentBright,
+        fullPath,
+        leftPath,
+        rightPath,
+        meetPoint: { x: W / 2, y: H },
+        len,
+        front,
+        pathRef,
+        underlightEllipses:
+          variant === 'underlight'
+            ? [
+                { cx: W / 2, cy: H, rx: W * 0.32, ry: H * 0.2, fill: accent, delay: undefined },
+                { cx: W / 2, cy: H, rx: W * 0.22, ry: H * 0.13, fill: accentBright, opacity: 0.55, delay: '0.25s' },
+              ]
+            : undefined,
+      })}
+    </svg>
+  )
+}
+
+// ── TimerPet — animated SVG character for Layout 3 (Fix 6) ──────────────────
+function TimerPet({
+  isRunning,
+  isBreak,
+  isComplete,
+  accent,
+}: {
+  isRunning: boolean
+  isBreak: boolean
+  isComplete: boolean
+  accent: string
+}) {
+  const expression = isComplete ? 'complete' : isBreak ? 'break' : isRunning ? 'running' : 'paused'
+  return (
+    <svg width={32} height={32} viewBox="0 0 32 32">
+      <style>{`
+        @keyframes petBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+        @keyframes petIdle   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1px)} }
+        .pet-body-run { animation: petBounce 3s ease-in-out infinite; transform-box:fill-box; transform-origin:center bottom }
+        .pet-body-idle{ animation: petIdle   5s ease-in-out infinite; transform-box:fill-box; transform-origin:center bottom }
+      `}</style>
+      <g className={isRunning ? 'pet-body-run' : isBreak ? 'pet-body-idle' : undefined}>
+        {/* Body */}
+        <ellipse cx={16} cy={18} rx={9} ry={8} fill="rgba(242,241,236,0.10)" />
+        {/* Face */}
+        <ellipse cx={16} cy={15} rx={7} ry={7} fill="#17191D" stroke="rgba(242,241,236,0.08)" strokeWidth={1} />
+        {/* Eyes */}
+        {expression === 'running' && (
+          <>
+            <circle cx={13.5} cy={14.5} r={1.5} fill={accent} />
+            <circle cx={18.5} cy={14.5} r={1.5} fill={accent} />
+          </>
+        )}
+        {expression === 'paused' && (
+          <>
+            <path d="M12.5 14.5 Q13.5 13.8 14.5 14.5" fill="none" stroke={accent} strokeWidth={1.2} strokeLinecap="round" />
+            <path d="M17.5 14.5 Q18.5 13.8 19.5 14.5" fill="none" stroke={accent} strokeWidth={1.2} strokeLinecap="round" />
+          </>
+        )}
+        {expression === 'break' && (
+          <>
+            <circle cx={13.5} cy={14.5} r={2} fill={accent} opacity={0.8} />
+            <circle cx={18.5} cy={14.5} r={2} fill={accent} opacity={0.8} />
+          </>
+        )}
+        {expression === 'complete' && (
+          <>
+            <path d="M12 13 L13 15 L15 12" fill="none" stroke={accent} strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M17 13 L18 15 L20 12" fill="none" stroke={accent} strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" />
+          </>
+        )}
+      </g>
+    </svg>
+  )
+}
+
+// ── L3Card — Companion layout with optional CardOutline (Fix 6) ─────────────
+function L3Card({
+  view,
+  onToggleExpand,
+  isRing,
+  rx,
+}: {
+  view: IslandView
+  onToggleExpand: () => void
+  isRing: boolean
+  rx: number
+}) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ w: 0, h: 0 })
+  useLayoutEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const { width, height } = el.getBoundingClientRect()
+    const w = Math.round(width), h = Math.round(height)
+    setDims(prev => (prev.w === w && prev.h === h) ? prev : { w, h })
+  })
+  return (
+    <div
+      ref={cardRef}
+      data-island="1"
+      onClick={onToggleExpand}
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'var(--il-bg)',
+        color: 'var(--il-text)',
+        borderRadius: rx,
+        padding: '10px 16px 10px 12px',
+        cursor: 'pointer',
+      }}
+    >
+      <TimerPet
+        isRunning={view.isRunning}
+        isBreak={view.isBreak}
+        isComplete={view.isComplete}
+        accent={view.accent}
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: view.accent, fontWeight: 500 }}>
+          {view.statusLabel}
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 15, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
+          {view.timeStr}
+        </span>
+      </div>
+      {view.dots.length > 0 && <SessionDots dots={view.dots} />}
+      {!isRing && dims.w > 0 && (
+        <CardOutline
+          width={dims.w}
+          height={dims.h}
+          rxTop={rx}
+          rxBottom={rx}
+          variant={view.timerStyle}
+          progress={view.frac}
+          accent={view.accent}
+          accentBright={view.accentBright}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── FloatingCard — floating island layouts L1–L4 (Fix 6) ────────────────────
+function FloatingCard({
+  view,
+  onToggleExpand,
+  renderPill,
+  renderElement,
+}: {
+  view: IslandView
+  onToggleExpand: () => void
+  renderPill: (keys: IslandElement[]) => React.ReactNode
+  renderElement: (key: IslandElement) => React.ReactNode
+}) {
+  const layout = view.floatingLayout
+  const isRing = view.timerStyle === 'below'
+  const { left, below, right } = view.clusters
+
+  if (layout === 'L4') {
+    // Badge: near-square card. Ring border when isRing, CardOutline otherwise.
+    const sz = 100
+    const rx4 = 24
+    const ringR = 44
+    const ringCirc = 2 * Math.PI * ringR
+    const ringOffset = (ringCirc * (1 - Math.min(1, view.frac))).toFixed(2)
+    return (
+      <div
+        data-island="1"
+        onClick={onToggleExpand}
+        style={{
+          position: 'relative',
+          width: sz,
+          height: sz,
+          background: 'var(--il-bg)',
+          borderRadius: rx4,
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          color: 'var(--il-text)',
+        }}
+      >
+        {isRing ? (
+          <svg
+            width={sz}
+            height={sz}
+            viewBox={`0 0 ${sz} ${sz}`}
+            style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transform: 'rotate(-90deg)' }}
+          >
+            <circle cx={50} cy={50} r={ringR} fill="none" stroke="var(--il-track)" strokeWidth={3} />
+            <circle
+              cx={50}
+              cy={50}
+              r={ringR}
+              fill="none"
+              stroke={view.accent}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeDasharray={ringCirc.toFixed(2)}
+              strokeDashoffset={ringOffset}
+              className="nc-progress-stroke"
+            />
+          </svg>
+        ) : (
+          <CardOutline
+            width={sz}
+            height={sz}
+            rxTop={rx4}
+            rxBottom={rx4}
             variant={view.timerStyle}
             progress={view.frac}
             accent={view.accent}
             accentBright={view.accentBright}
-            time={view.timeStr}
-            label={view.statusLabel}
-            dots={view.dots}
-            textColor="var(--il-text)"
           />
-        </div>
-      ) : (
-        <div
-          data-island="1"
-          onClick={onToggleExpand}
-          style={{
-            display: 'inline-grid',
-            gridTemplateColumns: 'auto auto auto',
-            alignItems: 'start',
-          }}
-        >
-          <div style={{ justifySelf: 'end' }}>{renderPill(leftKeys)}</div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              minWidth: leftKeys.length > 0 && rightKeys.length > 0 ? NOTCH_GAP : 0,
-            }}
-          >
-            {belowKeys.length > 0 && <div aria-hidden style={{ height: BAR_ROW_H }} />}
-            {renderPill(belowKeys)}
+        )}
+        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: view.accent, fontWeight: 500 }}>
+          {view.statusLabel}
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em' }}>
+          {view.timeStr}
+        </span>
+        {view.dots.length > 0 && <SessionDots dots={view.dots} />}
+      </div>
+    )
+  }
+
+  if (layout === 'L3') {
+    // Companion: pet | focus+timer stacked | dots.
+    // Wrap with CardOutline when !isRing.
+    const rx3 = 24
+    return (
+      <L3Card
+        view={view}
+        onToggleExpand={onToggleExpand}
+        isRing={isRing}
+        rx={rx3}
+      />
+    )
+  }
+
+  // L1 and L2: cluster-grid pill layout with optional CardOutline or Ring
+  const hasContent = (key: IslandElement) => (key === 'dots' ? view.dots.length > 0 : true)
+  const leftKeys = left.filter(hasContent)
+  const belowKeys = below.filter(hasContent)
+  const rightKeys = right.filter(hasContent)
+  const allKeys = [...leftKeys, ...belowKeys, ...rightKeys]
+
+  // L2 adds the task name as a second row
+  const showTask = layout === 'L2'
+
+  const cardPad = { paddingTop: 8, paddingBottom: showTask ? 10 : 9, paddingLeft: 10, paddingRight: 20 }
+  const cardH = showTask ? undefined : 44
+
+  if (isRing) {
+    // Ring on the left, then content
+    const rSz = 28, rR = 10
+    const rCirc = 2 * Math.PI * rR
+    const rOff = (rCirc * (1 - Math.min(1, view.frac))).toFixed(2)
+    return (
+      <div
+        data-island="1"
+        onClick={onToggleExpand}
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 10,
+          background: 'var(--il-bg)',
+          color: 'var(--il-text)',
+          borderRadius: 999,
+          ...cardPad,
+          minHeight: cardH,
+          cursor: 'pointer',
+          boxSizing: 'border-box',
+        }}
+      >
+        <svg width={rSz} height={rSz} viewBox={`0 0 ${rSz} ${rSz}`} style={{ flex: '0 0 auto', transform: 'rotate(-90deg)' }}>
+          <circle cx={rSz/2} cy={rSz/2} r={rR} fill="none" stroke="var(--il-track)" strokeWidth={2.5} />
+          <circle cx={rSz/2} cy={rSz/2} r={rR} fill="none" stroke={view.accent} strokeWidth={2.5} strokeLinecap="round"
+            strokeDasharray={rCirc.toFixed(2)} strokeDashoffset={rOff} className="nc-progress-stroke" />
+        </svg>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 13 }}>
+            {allKeys.map(renderElement)}
           </div>
-          <div style={{ justifySelf: 'start' }}>{renderPill(rightKeys)}</div>
+          {showTask && (
+            <span style={{ fontFamily: MONO, fontSize: 11.5, color: view.accent, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+              {view.displayTask}
+            </span>
+          )}
         </div>
+      </div>
+    )
+  }
+
+  // !isRing: CardOutline wrapping the content row
+  // We need to know the card dimensions for the outline. Use a ref-measured approach;
+  // start with a generous width estimate and let the outline measure itself.
+  return (
+    <OutlinedCard
+      view={view}
+      showTask={showTask}
+      allKeys={allKeys}
+      renderElement={renderElement}
+      cardPad={cardPad}
+      cardH={cardH}
+      renderPill={renderPill}
+      onToggleExpand={onToggleExpand}
+    />
+  )
+}
+
+function OutlinedCard({
+  view,
+  showTask,
+  allKeys,
+  renderElement,
+  cardPad,
+  cardH,
+  onToggleExpand,
+}: {
+  view: IslandView
+  showTask: boolean
+  allKeys: IslandElement[]
+  renderElement: (key: IslandElement) => React.ReactNode
+  cardPad: CSSProperties
+  cardH: number | undefined
+  renderPill: (keys: IslandElement[]) => React.ReactNode
+  onToggleExpand: () => void
+}) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ w: 0, h: 0 })
+  useLayoutEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const { width, height } = el.getBoundingClientRect()
+    const w = Math.round(width), h = Math.round(height)
+    setDims(prev => (prev.w === w && prev.h === h) ? prev : { w, h })
+  })
+  const rx = 999 // pill shape
+  return (
+    <div
+      ref={cardRef}
+      data-island="1"
+      onClick={onToggleExpand}
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 13,
+        background: 'var(--il-bg)',
+        color: 'var(--il-text)',
+        borderRadius: rx,
+        ...cardPad,
+        minHeight: cardH,
+        cursor: 'pointer',
+        boxSizing: 'border-box',
+        flexDirection: showTask ? 'column' : 'row',
+        minWidth: 210,
+        justifyContent: 'space-between',
+      }}
+    >
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 13 }}>
+        {allKeys.map(renderElement)}
+      </div>
+      {showTask && (
+        <span style={{ fontFamily: MONO, fontSize: 11.5, color: view.accent, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+          {view.displayTask}
+        </span>
+      )}
+      {dims.w > 0 && (
+        <CardOutline
+          width={dims.w}
+          height={dims.h}
+          rxTop={rx}
+          rxBottom={rx}
+          variant={view.timerStyle}
+          progress={view.frac}
+          accent={view.accent}
+          accentBright={view.accentBright}
+        />
       )}
     </div>
   )

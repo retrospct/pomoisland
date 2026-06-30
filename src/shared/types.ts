@@ -22,18 +22,19 @@ export type TimerStyle =
   | 'converge'
   | 'split'
   | 'comet'
-export type Layout = 'split' | 'minimal' | 'compact'
 /**
- * Collapsed-island elements whose position around the notch is user-configurable
- * (MO-22). Intentionally open to growth — more elements (e.g. task text) can be
- * added here without changing the placement model.
+ * Collapsed-island elements whose position around the notch is user-configurable.
+ * `status` = the Focus/Break/Paused label; `time` = the MM:SS countdown; `ring` =
+ * the circular progress indicator; `dots` = session progress dots.
  */
-export type IslandElement = 'ring' | 'time' | 'dots'
-/** Where an element sits relative to the camera notch. */
-export type IslandSlot = 'left' | 'below' | 'right'
-/** Per-element position map. Default is all `'right'` (see DEFAULT_PREFS). */
+export type IslandElement = 'ring' | 'status' | 'time' | 'dots'
+/** Where an element sits relative to the camera notch. `off` hides the element. */
+export type IslandSlot = 'off' | 'left' | 'below' | 'right'
+/** Per-element position map. Default: ring off, status/time/dots below. */
 export type IslandPlacement = Record<IslandElement, IslandSlot>
 export type AccentKey = 'teal' | 'clay' | 'blue' | 'violet' | 'rose' | 'green'
+/** Floating-card layout variant when the island is not snapped to the notch. */
+export type FloatingLayout = 'L1' | 'L2' | 'L3' | 'L4'
 /**
  * Completion alarm voices — synthesized in the renderer via Web Audio (see
  * src/shared/sound.ts and ADR-0005). `chime/bell/marimba/digital` are the clean
@@ -94,6 +95,8 @@ export interface Prefs {
   messages: boolean
   hideShare: boolean
   pauseIdle: boolean
+  /** Show the Pomisland icon in the macOS Dock. */
+  showDockIcon: boolean
   // ---- Preferences · Alarm & sound ----
   sound: Sound
   volume: number
@@ -105,16 +108,15 @@ export interface Prefs {
   theme: ThemeChoice
   /** Notch-native progress treatment (A–H). See TimerStyle + NotchProgress.tsx. */
   timerStyle: TimerStyle
-  layout: Layout
   /**
-   * Where each collapsed-island element sits around the notch (MO-22). `layout`
-   * still controls *visibility* (split = all, minimal = no ring, compact = no
-   * time); this controls *placement* of whatever is visible. Default: all right.
+   * Where each collapsed-island element sits around the notch. Setting a slot to
+   * `'off'` hides that element. Replaces the old `layout` + `showDots` pair.
    */
   islandPlacement: IslandPlacement
-  showDots: boolean
   /** Completion ("done") animation. */
   ripple: Ripple
+  /** Floating card layout when the island is dragged off the notch. */
+  floatingLayout: FloatingLayout
   // ---- Window behavior (not in SettingsPanel UI; read by main) ----
   alwaysTop: boolean
   magnetic: boolean
@@ -143,6 +145,10 @@ export interface Placement {
   dragging: boolean
   /** True while dragging and close enough to the notch to snap on release. */
   nearSnap: boolean
+  /** True when the current display has a hardware notch (menuBarHeight ≥ 30px). */
+  hasNotch: boolean
+  /** Height (px) of the notch band: workArea.y - bounds.y. 0 on non-notch displays. */
+  notchHeight: number
 }
 
 export interface IslandSize {

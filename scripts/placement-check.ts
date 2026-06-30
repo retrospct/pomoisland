@@ -1,16 +1,12 @@
-// Assertion script: proves the pure placement derivation (MO-22) groups the
-// visible collapsed-island elements into the correct left/below/right clusters,
-// honouring layout visibility (split/minimal/compact), per-element slot
-// assignment, showDots, and canonical element order.
+// Assertion script: proves the pure placement derivation groups the
+// collapsed-island elements into the correct left/below/right clusters,
+// honouring per-element slot assignment (including 'off') and canonical
+// element order.
 //
 // Mirrors the audio-check.ts / tick-cadence-check.ts style: a synchronous,
 // deterministic test that runs in Node without a test framework.
 //
-// Run:  node scripts/placement-check.ts
-//
-// The TDD seam is `deriveClusters()` in src/island/placement.ts — a pure
-// function with no rendering or Electron deps, so this logic is proven before
-// any view code consumes it.
+// Run:  npx tsx scripts/placement-check.ts
 
 import { deriveClusters } from '../src/island/placement.ts'
 import type { IslandPlacement } from '../src/shared/types.ts'
@@ -28,66 +24,69 @@ function eq(label: string, actual: unknown, expected: unknown): void {
   }
 }
 
-const allRight: IslandPlacement = { ring: 'right', time: 'right', dots: 'right' }
+const defaultPlacement: IslandPlacement = {
+  ring: 'off',
+  status: 'below',
+  time: 'below',
+  dots: 'below',
+}
 
-// --- default arrangement: everything right of the notch ---
+// --- default: ring off, status/time/dots below the notch ---
 eq(
-  'split + all-right → all three on the right, in order',
-  deriveClusters('split', allRight, true),
-  {
-    left: [],
-    below: [],
-    right: ['ring', 'time', 'dots'],
-  },
+  'default: ring off, status+time+dots below in canonical order',
+  deriveClusters(defaultPlacement),
+  { left: [], below: ['status', 'time', 'dots'], right: [] },
 )
 
-// --- layout visibility still applies (placement only moves what is visible) ---
-eq('minimal hides the ring', deriveClusters('minimal', allRight, true), {
-  left: [],
-  below: [],
-  right: ['time', 'dots'],
-})
-eq('compact hides the timer numbers', deriveClusters('compact', allRight, true), {
-  left: [],
-  below: [],
-  right: ['ring', 'dots'],
-})
+// --- off slot hides an element ---
+eq(
+  'off hides an element',
+  deriveClusters({ ring: 'off', status: 'off', time: 'below', dots: 'below' }),
+  { left: [], below: ['time', 'dots'], right: [] },
+)
 
-// --- showDots gates the dots element ---
-eq('showDots=false drops the dots', deriveClusters('split', allRight, false), {
-  left: [],
-  below: [],
-  right: ['ring', 'time'],
-})
+// --- all elements off → empty clusters ---
+eq(
+  'all off → empty clusters',
+  deriveClusters({ ring: 'off', status: 'off', time: 'off', dots: 'off' }),
+  { left: [], below: [], right: [] },
+)
 
 // --- per-element slots distribute across all three positions ---
 eq(
-  'mixed slots split across left/below/right',
-  deriveClusters('split', { ring: 'left', time: 'below', dots: 'right' }, true),
-  { left: ['ring'], below: ['time'], right: ['dots'] },
+  'mixed slots: ring left, status below, time right, dots right',
+  deriveClusters({ ring: 'left', status: 'below', time: 'right', dots: 'right' }),
+  { left: ['ring'], below: ['status'], right: ['time', 'dots'] },
 )
 
-// --- multiple elements on one side keep canonical order (ring, time, dots) ---
+// --- multiple elements on one side keep canonical order (ring, status, time, dots) ---
+eq(
+  'all on right preserve canonical order',
+  deriveClusters({ ring: 'right', status: 'right', time: 'right', dots: 'right' }),
+  { left: [], below: [], right: ['ring', 'status', 'time', 'dots'] },
+)
 eq(
   'all on left preserve canonical order',
-  deriveClusters('split', { ring: 'left', time: 'left', dots: 'left' }, true),
-  { left: ['ring', 'time', 'dots'], below: [], right: [] },
-)
-eq(
-  'order is canonical regardless of assignment order',
-  deriveClusters('split', { dots: 'right', ring: 'right', time: 'right' } as IslandPlacement, true),
-  { left: [], below: [], right: ['ring', 'time', 'dots'] },
+  deriveClusters({ ring: 'left', status: 'left', time: 'left', dots: 'left' }),
+  { left: ['ring', 'status', 'time', 'dots'], below: [], right: [] },
 )
 
-// --- a hidden element's slot is irrelevant ---
+// --- status and time can be placed independently ---
 eq(
-  'minimal: ring slot ignored, time+dots land where assigned',
-  deriveClusters('minimal', { ring: 'left', time: 'left', dots: 'right' }, true),
-  { left: ['time'], below: [], right: ['dots'] },
+  'status left, time right, rest off',
+  deriveClusters({ ring: 'off', status: 'left', time: 'right', dots: 'off' }),
+  { left: ['status'], below: [], right: ['time'] },
+)
+
+// --- canonical order is ring, status, time, dots regardless of object key order ---
+eq(
+  'order is canonical regardless of assignment order',
+  deriveClusters({ dots: 'right', ring: 'right', time: 'right', status: 'right' } as IslandPlacement),
+  { left: [], below: [], right: ['ring', 'status', 'time', 'dots'] },
 )
 
 if (failures > 0) {
-  console.error(`\n\u2717 ${failures} placement assertion(s) failed.`)
+  console.error(`\n✗ ${failures} placement assertion(s) failed.`)
   process.exit(1)
 }
-console.log('\n\u2713 All placement assertions passed.')
+console.log('\n✓ All placement assertions passed.')
