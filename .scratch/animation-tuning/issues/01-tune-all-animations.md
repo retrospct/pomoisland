@@ -25,6 +25,13 @@ durations/easing as placeholders, not final.
 - Respecting reduced-motion preferences (`prefers-reduced-motion`) — currently not handled.
 - Consistency of timing language across island + settings.
 
+## Scoped exceptions (early passes before the global sweep)
+
+- **Drop ghost (MO-35, 2026-06-29):** The snap-zone overlay received a targeted
+  animation pass in `src/snapOverlay/snapOverlay.css` — fade-in + scaleY on drag
+  start, glow pulse while nearSnap, `prefers-reduced-motion` guard. Durations are
+  *not* final; treat them as starting points for the global consistency pass.
+
 ## Notes
 
 - Keep the island and the Settings ripple preview visually in sync — they share

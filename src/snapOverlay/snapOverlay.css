@@ -1,0 +1,45 @@
+/**
+ * Snap-zone overlay animations (MO-35 scoped exception to global animation deferral).
+ * See .scratch/animation-tuning/issues/01-tune-all-animations.md — this file covers
+ * only the drop ghost; all other animations remain in the later global pass.
+ */
+
+@keyframes snapGhostFadeIn {
+  from {
+    opacity: 0;
+    transform: scaleY(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes snapGhostGlowPulse {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.snap-overlay-root {
+  animation: snapGhostFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top center;
+}
+
+.snap-ghost-near {
+  animation: snapGhostGlowPulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snap-overlay-root {
+    animation: none;
+  }
+
+  .snap-ghost-near {
+    animation: none;
+  }
+}

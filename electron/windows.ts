@@ -90,7 +90,7 @@ export function createIslandWindow(): BrowserWindow {
     },
   })
 
-  if (prefs.alwaysTop) islandWin.setAlwaysOnTop(true, 'floating')
+  applyIslandWindowLevel()
   islandWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   loadRoute(islandWin, 'index.html')
   islandWin.on('closed', () => {
@@ -139,9 +139,33 @@ export function resizeIsland(size: IslandSize): void {
   islandWin.setBounds({ x, y, width, height })
 }
 
+/**
+ * Set the island window level based on the current snapped state.
+ *
+ * When snapped, use 'status' (NSStatusWindowLevel ≈ 25), which sits above the
+ * macOS menu bar (kCGMainMenuWindowLevel ≈ 24) so the island can paint at the
+ * true screen top and appear to emerge from the notch — see ADR-0006.
+ * When floating/dragging, 'floating' is sufficient (above normal windows, below
+ * the menu bar, which is fine since the island isn't at the top edge anyway).
+ */
+function applyIslandWindowLevel(): void {
+  if (!islandWin) return
+  const prefs = getPrefs()
+  if (!prefs.alwaysTop) {
+    islandWin.setAlwaysOnTop(false)
+    return
+  }
+  const level = placement.snapped ? 'status' : 'floating'
+  islandWin.setAlwaysOnTop(true, level)
+}
+
 export function applyAlwaysOnTop(on: boolean): void {
   if (!islandWin) return
-  islandWin.setAlwaysOnTop(on, on ? 'floating' : 'normal')
+  if (!on) {
+    islandWin.setAlwaysOnTop(false)
+    return
+  }
+  applyIslandWindowLevel()
 }
 
 export function dragStart(cursorX: number, cursorY: number): void {
@@ -157,6 +181,7 @@ export function dragStart(cursorX: number, cursorY: number): void {
   }
   placement.dragging = true
   placement.snapped = false
+  applyIslandWindowLevel() // floating while dragging
   broadcastPlacement()
 }
 
@@ -198,6 +223,7 @@ export function dragEnd(): void {
     islandWin.setBounds({ x: tl.x, y: tl.y, width: islandSize.width, height: islandSize.height })
   }
   placement.nearSnap = false
+  applyIslandWindowLevel() // back to 'status' if snapped, 'floating' if not
   broadcastPlacement()
 }
 
@@ -216,9 +242,11 @@ export function createSnapOverlayWindow(): BrowserWindow {
 
   snapOverlayWin = new BrowserWindow({
     width: islandSize.width + OVERLAY_PADDING_X * 2,
-    height: islandSize.height + OVERLAY_PADDING_Y * 2,
+    // No top padding: window sits flush at y=0 (the screen top). Extra height
+    // below lets the glow bleed without being clipped — see SnapOverlayApp.tsx.
+    height: islandSize.height + OVERLAY_PADDING_Y,
     x: x - OVERLAY_PADDING_X,
-    y: y - OVERLAY_PADDING_Y,
+    y,
     frame: false,
     transparent: true,
     hasShadow: false,
@@ -271,10 +299,10 @@ function updateSnapOverlay(): void {
   const snap = snappedTopLeft(islandSize.width, d)
 
   const w = islandSize.width + OVERLAY_PADDING_X * 2
-  const h = islandSize.height + OVERLAY_PADDING_Y * 2
+  const h = islandSize.height + OVERLAY_PADDING_Y
   snapOverlayWin.setBounds({
     x: snap.x - OVERLAY_PADDING_X,
-    y: snap.y - OVERLAY_PADDING_Y,
+    y: snap.y, // flush at the screen top — no negative-y offset
     width: w,
     height: h,
   })
