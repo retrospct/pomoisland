@@ -35,12 +35,29 @@ body.island-body {
   transform: translateY(-1.5px);
 }
 
-.island-primary-btn {
-  transition: transform 0.16s;
-}
 .island-primary-btn:hover {
   transform: scale(1.06);
 }
 .island-primary-btn:active {
   transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island-pill {
+    transition: none;
+  }
+  .island-pill:hover {
+    transform: none;
+  }
+  /* Primary button transform is overridden via inline transition when rm is on.
+     These rules guard the hover/active states set by CSS class selectors. */
+  .island-primary-btn:hover {
+    transform: none;
+  }
+  .island-primary-btn:active {
+    transform: none;
+  }
+  .island-icon-btn {
+    transition: none;
+  }
 }

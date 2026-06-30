@@ -1,5 +1,6 @@
 import { RIPPLE_DEFS } from '@shared/ripple'
 import type { IslandElement, Ripple, TasksState } from '@shared/types'
+import { useReducedMotion } from '@shared/useReducedMotion'
 import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import type { IslandView } from './derive'
@@ -125,6 +126,7 @@ const NOTCH_GAP = 200
 const BAR_ROW_H = 34
 
 function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
+  const rm = useReducedMotion()
   const pillRadius: CSSProperties['borderRadius'] = notch ? '0 0 20px 20px' : 999
 
   const [fxPhase, setFxPhase] = useState<'enter' | 'exit' | 'none'>('none')
@@ -189,6 +191,7 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
                 color: view.accent,
                 fontWeight: 500,
                 whiteSpace: 'nowrap',
+                transition: rm ? undefined : 'color 1.5s ease-in-out',
               }}
             >
               {view.statusLabel}
@@ -309,6 +312,7 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
 }
 
 function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+  const rm = useReducedMotion()
   return (
     <div
       style={{
@@ -341,6 +345,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
             letterSpacing: '0.16em',
             color: view.accent,
             fontWeight: 500,
+            transition: rm ? undefined : 'color 1.5s ease-in-out',
           }}
         >
           {view.statusLabel}
@@ -376,7 +381,9 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
             width: `${Math.round(view.frac * 100)}%`,
             background: view.accent,
             borderRadius: 999,
-            transition: 'width .35s',
+            transition: rm
+              ? 'background 1.5s ease-in-out'
+              : 'width .35s, background 1.5s ease-in-out',
           }}
         />
       </div>
@@ -419,6 +426,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
               cursor: 'pointer',
               flex: '0 0 auto',
               padding: 0,
+              transition: rm ? undefined : 'background 1.5s ease-in-out',
             }}
           >
             <PlayPausePeek isPause={view.isRunning} />
@@ -453,6 +461,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
 
 /** Shared body used by both Expanded and ExpandedWithTasks. */
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
+  const rm = useReducedMotion()
   const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
     props
   const br = bottomRadius ?? 26
@@ -488,6 +497,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
             color: view.accent,
             fontWeight: 500,
             whiteSpace: 'nowrap',
+            transition: rm ? undefined : 'color 1.5s ease-in-out',
           }}
         >
           {view.statusLabel}
@@ -597,6 +607,11 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
             placeItems: 'center',
             cursor: 'pointer',
             boxShadow: `0 6px 18px ${view.accentSoft}`,
+            // Combine transform (hover/press, 0.16s) with accent shift (urgent, 1.5s).
+            // Inline transition overrides the CSS class, so we carry both properties here.
+            transition: rm
+              ? 'background 0s, box-shadow 0s'
+              : 'transform 0.16s, background 1.5s ease-in-out, box-shadow 1.5s ease-in-out',
           }}
         >
           <PlayPauseLarge isPause={view.isRunning} />
@@ -670,6 +685,7 @@ function CompletionFx({
   borderRadius: CSSProperties['borderRadius']
   exiting: boolean
 }) {
+  const rm = useReducedMotion()
   const defs = RIPPLE_DEFS[ripple]
   return (
     <div
@@ -677,6 +693,8 @@ function CompletionFx({
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
+        // Keep the exit fade even at reduced-motion — it's a single short pulse,
+        // not a looping animation, and it signals state completion.
         animation: exiting ? 'islandFxExit 0.55s ease-out forwards' : undefined,
       }}
     >
@@ -686,7 +704,9 @@ function CompletionFx({
           inset: 0,
           borderRadius,
           boxShadow: `0 0 34px 6px ${accentBright}`,
-          animation: exiting ? undefined : 'islandGlow 2.6s ease-in-out infinite',
+          // With reduced-motion: hold glow at peak opacity instead of pulsing.
+          animation: exiting || rm ? undefined : 'islandGlow 2.6s ease-in-out infinite',
+          opacity: rm && !exiting ? 0.66 : undefined,
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -703,9 +723,14 @@ function CompletionFx({
             zIndex: 3,
             ['--op' as string]: d.op,
             ['--sc' as string]: d.sc,
-            animation: exiting
-              ? undefined
-              : `islandRipple ${d.dur}s cubic-bezier(.16,.6,.3,1) ${d.delay}s infinite`,
+            // With reduced-motion: show only the first ring at resting opacity,
+            // no expand/loop. Show nothing for subsequent rings so the state
+            // is still visible without any motion.
+            opacity: rm && !exiting ? (i === 0 ? d.op : 0) : undefined,
+            animation:
+              exiting || rm
+                ? undefined
+                : `islandRipple ${d.dur}s cubic-bezier(.16,.6,.3,1) ${d.delay}s infinite`,
           }}
         />
       ))}

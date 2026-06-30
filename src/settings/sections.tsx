@@ -6,6 +6,7 @@
 import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
 import { RIPPLE_DEFS } from '@shared/ripple'
 import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
+import { useReducedMotion } from '@shared/useReducedMotion'
 import type {
   AccentKey,
   IslandElement,
@@ -1161,6 +1162,7 @@ export function PreferencesTab({ prefs, set }: TabProps) {
 }
 
 function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey }) {
+  const rm = useReducedMotion()
   const base = accentHex(accent)
   const bright = lighten(base, 0.35)
   return (
@@ -1171,7 +1173,9 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
           inset: 0,
           borderRadius: 999,
           boxShadow: `0 0 32px 6px ${hexToRgba(base, 0.5)}`,
-          animation: 'rcGlow 2.6s ease-in-out infinite',
+          // With reduced-motion: hold glow at peak opacity, no pulse.
+          animation: rm ? undefined : 'rcGlow 2.6s ease-in-out infinite',
+          opacity: rm ? 0.6 : undefined,
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -1188,7 +1192,9 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
             zIndex: 3,
             ...cssVar('--op', r.op),
             ...cssVar('--sc', r.sc),
-            animation: `rcExpand ${r.dur}s cubic-bezier(.16,.6,.3,1) ${r.delay}s infinite`,
+            // With reduced-motion: show only the first ring at resting opacity; hide the rest.
+            opacity: rm ? (i === 0 ? r.op : 0) : undefined,
+            animation: rm ? undefined : `rcExpand ${r.dur}s cubic-bezier(.16,.6,.3,1) ${r.delay}s infinite`,
           }}
         />
       ))}
