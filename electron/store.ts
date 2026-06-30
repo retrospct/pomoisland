@@ -4,7 +4,7 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Prefs, TickSound } from '../src/shared/types'
+import type { Prefs, TickSound, TimerStyle } from '../src/shared/types'
 
 export const DEFAULT_PREFS: Prefs = {
   // General · Timer
@@ -29,7 +29,8 @@ export const DEFAULT_PREFS: Prefs = {
   // Preferences · Appearance
   accent: 'teal',
   theme: 'dark',
-  timerStyle: 'circular',
+  // Notch-outline bar — the headline notch-native treatment from the design handoff.
+  timerStyle: 'outline',
   layout: 'split',
   // MO-22: default arrangement is all three elements to the right of the notch.
   islandPlacement: { ring: 'right', time: 'right', dots: 'right' },
@@ -62,12 +63,39 @@ function migrateTick(raw: unknown): TickSound {
   return 'off'
 }
 
+/**
+ * `timerStyle` used to be `circular | outline | bar`; it is now the notch-native
+ * A–H set (see TimerStyle). Map the two legacy values that have no 1:1 successor:
+ * the ring-in-a-pill `circular` → the pill `below` the notch; the `bar` →
+ * the notch-`outline` bar. `outline` keeps its name. Unknown/missing → `outline`.
+ */
+function migrateTimerStyle(raw: unknown): TimerStyle {
+  switch (raw) {
+    case 'below':
+    case 'outline':
+    case 'glow':
+    case 'front':
+    case 'underlight':
+    case 'converge':
+    case 'split':
+    case 'comet':
+      return raw
+    case 'circular':
+      return 'below'
+    case 'bar':
+      return 'outline'
+    default:
+      return 'outline'
+  }
+}
+
 function load(): Prefs {
   try {
     const raw = readFileSync(filePath(), 'utf8')
     const parsed = JSON.parse(raw) as Partial<Prefs>
     const merged = { ...DEFAULT_PREFS, ...parsed }
     merged.tick = migrateTick((parsed as { tick?: unknown }).tick)
+    merged.timerStyle = migrateTimerStyle((parsed as { timerStyle?: unknown }).timerStyle)
     return merged
   } catch {
     return { ...DEFAULT_PREFS }

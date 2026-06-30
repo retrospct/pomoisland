@@ -1,3 +1,4 @@
+import { NotchProgress } from '@shared/NotchProgress'
 import { RIPPLE_DEFS } from '@shared/ripple'
 import type { IslandElement, Ripple, TasksState } from '@shared/types'
 import { useReducedMotion } from '@shared/useReducedMotion'
@@ -281,32 +282,46 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
           />
         </div>
       )}
-      {/* left | center (notch gap + below cluster) | right — see MO-22 placement model */}
-      <div
-        data-island="1"
-        onClick={onToggleExpand}
-        style={{
-          display: 'inline-grid',
-          gridTemplateColumns: 'auto auto auto',
-          alignItems: 'start',
-        }}
-      >
-        <div style={{ justifySelf: 'end' }}>{renderPill(leftKeys)}</div>
+      {/* Snapped: all eight handoff variants via NotchProgress (real notch shows through).
+          Floating: pill-cluster placement — outline treatments need hardware. */}
+      {notch ? (
+        <div data-island="1" onClick={onToggleExpand} style={{ cursor: 'pointer' }}>
+          <NotchProgress
+            variant={view.timerStyle}
+            progress={view.frac}
+            accent={view.accent}
+            accentBright={view.accentBright}
+            time={view.timeStr}
+            label={view.statusLabel}
+            dots={view.dots}
+            textColor="var(--il-text)"
+          />
+        </div>
+      ) : (
         <div
+          data-island="1"
+          onClick={onToggleExpand}
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            // Reserve the camera gap only when clusters actually flank both sides;
-            // a single-side arrangement (e.g. the default all-right) keeps today's look.
-            minWidth: notch && leftKeys.length > 0 && rightKeys.length > 0 ? NOTCH_GAP : 0,
+            display: 'inline-grid',
+            gridTemplateColumns: 'auto auto auto',
+            alignItems: 'start',
           }}
         >
-          {notch && belowKeys.length > 0 && <div aria-hidden style={{ height: BAR_ROW_H }} />}
-          {renderPill(belowKeys)}
+          <div style={{ justifySelf: 'end' }}>{renderPill(leftKeys)}</div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              minWidth: leftKeys.length > 0 && rightKeys.length > 0 ? NOTCH_GAP : 0,
+            }}
+          >
+            {belowKeys.length > 0 && <div aria-hidden style={{ height: BAR_ROW_H }} />}
+            {renderPill(belowKeys)}
+          </div>
+          <div style={{ justifySelf: 'start' }}>{renderPill(rightKeys)}</div>
         </div>
-        <div style={{ justifySelf: 'start' }}>{renderPill(rightKeys)}</div>
-      </div>
+      )}
     </div>
   )
 }
