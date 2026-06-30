@@ -113,6 +113,15 @@ export function createIslandWindow(): BrowserWindow {
     fullscreenable: false,
     skipTaskbar: true,
     alwaysOnTop: prefs.alwaysTop,
+    // macOS forcibly clamps window frames below the menu bar via
+    // -[NSWindow constrainFrameRect:toScreen:] — that's why setBounds(y:0) kept
+    // snapping back to workArea.y. Electron overrides that constraint when this is
+    // true, which is exactly what native notch apps (SuperIsland) do by hand. It
+    // lets the snapped island actually sit at y=0 over the menu bar / notch.
+    enableLargerThanScreen: true,
+    // NSPanel: floats without becoming the key window, so docking to the notch
+    // never steals focus from the app the user is working in.
+    type: 'panel',
     webPreferences: {
       preload: PRELOAD,
       contextIsolation: true,
