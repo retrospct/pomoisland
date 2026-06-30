@@ -8,6 +8,16 @@ export type Preset = 'classic' | 'focus' | 'custom'
 export type ThemeChoice = 'light' | 'dark' | 'system'
 export type TimerStyle = 'circular' | 'outline' | 'bar'
 export type Layout = 'split' | 'minimal' | 'compact'
+/**
+ * Collapsed-island elements whose position around the notch is user-configurable
+ * (MO-22). Intentionally open to growth — more elements (e.g. task text) can be
+ * added here without changing the placement model.
+ */
+export type IslandElement = 'ring' | 'time' | 'dots'
+/** Where an element sits relative to the camera notch. */
+export type IslandSlot = 'left' | 'below' | 'right'
+/** Per-element position map. Default is all `'right'` (see DEFAULT_PREFS). */
+export type IslandPlacement = Record<IslandElement, IslandSlot>
 export type AccentKey = 'teal' | 'clay' | 'blue' | 'violet' | 'rose' | 'green'
 /**
  * Completion alarm voices — synthesized in the renderer via Web Audio (see
@@ -16,15 +26,7 @@ export type AccentKey = 'teal' | 'clay' | 'blue' | 'violet' | 'rose' | 'green'
  * `aurora` is a granular ambient bloom (Hologram Microcosm-inspired).
  */
 export type Sound =
-  | 'chime'
-  | 'bell'
-  | 'marimba'
-  | 'digital'
-  | 'halcyon'
-  | 'spice'
-  | 'pocket'
-  | 'koto'
-  | 'aurora'
+  'chime' | 'bell' | 'marimba' | 'digital' | 'halcyon' | 'spice' | 'pocket' | 'koto' | 'aurora'
 /** Completion ("done") animation variants — see RippleConcept.dc.html. */
 export type Ripple = 'burst' | 'echo' | 'heartbeat' | 'bloom'
 
@@ -88,6 +90,12 @@ export interface Prefs {
   theme: ThemeChoice
   timerStyle: TimerStyle
   layout: Layout
+  /**
+   * Where each collapsed-island element sits around the notch (MO-22). `layout`
+   * still controls *visibility* (split = all, minimal = no ring, compact = no
+   * time); this controls *placement* of whatever is visible. Default: all right.
+   */
+  islandPlacement: IslandPlacement
   showDots: boolean
   /** Completion ("done") animation. */
   ripple: Ripple

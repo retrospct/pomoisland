@@ -3,6 +3,7 @@ import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
 import { fmtTime, frac as fracOf } from '@shared/format'
 import type { Prefs, TimerState } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
+import { deriveClusters, type IslandClusters } from './placement'
 
 export type Glyph = 'play' | 'pause' | 'check' | 'cup' | 'none'
 
@@ -21,8 +22,12 @@ export interface IslandView {
   isComplete: boolean
   isBreak: boolean
   dots: DotStyle[]
-  showRing: boolean
-  showTimeText: boolean
+  /**
+   * Where each visible element sits around the notch (MO-22), grouped into
+   * left / below / right clusters. Replaces the old showRing/showTimeText
+   * booleans: visibility is encoded by an element's presence in a cluster.
+   */
+  clusters: IslandClusters
   /** Focus sessions completed today — drives the SessionDots hover reveal (MO-7). */
   completedToday: number
   /** Daily goal — shown alongside completedToday as "X/Y" on hover. */
@@ -124,8 +129,7 @@ export function deriveIsland(
     isComplete,
     isBreak,
     dots,
-    showRing: prefs.layout !== 'minimal',
-    showTimeText: prefs.layout !== 'compact',
+    clusters: deriveClusters(prefs.layout, prefs.islandPlacement, prefs.showDots),
     completedToday,
     dailyGoal: prefs.dailyGoal,
   }

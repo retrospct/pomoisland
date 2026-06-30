@@ -1,5 +1,5 @@
 import { RIPPLE_DEFS } from '@shared/ripple'
-import type { Ripple, TasksState } from '@shared/types'
+import type { IslandElement, Ripple, TasksState } from '@shared/types'
 import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import type { IslandView } from './derive'
@@ -117,6 +117,13 @@ const FX_PAD = 180
 // MO-20: completion fx tracks enter/exit phase to animate in and out.
 // MO-30: outer wrapper grows by FX_PAD when FX fires so the window is large enough to
 //        show the full ring expansion without clipping.
+// Width (px) reserved between the left and right clusters for the physical camera
+// when snapped, so the clusters flank the notch instead of sitting under it (MO-22).
+// Approximate MacBook notch width; calibrate against real hardware later.
+const NOTCH_GAP = 200
+// Bar-row height reserved above a "below" cluster so it drops under the notch edge.
+const BAR_ROW_H = 34
+
 function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
   const pillRadius: CSSProperties['borderRadius'] = notch ? '0 0 20px 20px' : 999
 
@@ -137,64 +144,20 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
     }
   }, [view.isComplete])
 
-  const pill: CSSProperties = {
-    position: 'relative',
-    zIndex: 2,
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 13,
-    background: 'var(--il-bg)',
-    color: 'var(--il-text)',
-    borderRadius: pillRadius,
-    padding: `${notch ? 13 : 8}px 20px 9px 10px`,
-    minWidth: notch ? 210 : 0,
-    justifyContent: notch ? 'space-between' : 'flex-start',
-    boxShadow: 'none',
-    cursor: 'pointer',
-    minHeight: 44,
-    boxSizing: 'border-box',
-  }
+  const { left, below, right } = view.clusters
+  // Drop the dots element when there are no dots to show, so we never render an empty pill.
+  const hasContent = (key: IslandElement) => (key === 'dots' ? view.dots.length > 0 : true)
+  const filled = [left, below, right].map((keys) => keys.filter(hasContent))
+  const [leftKeys, belowKeys, rightKeys] = filled
+  const pillCount = filled.filter((k) => k.length > 0).length
+  const soloNotch = notch && pillCount <= 1
 
-  const fxActive = fxPhase !== 'none'
-
-  return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'inline-flex',
-        // When FX fires, pad the container so the ResizeObserver sees a larger element and
-        // the Electron window grows to give the ripple rings room to expand unclipped.
-        // Sides and bottom only — no top pad so the pill stays flush with the notch/top edge.
-        paddingLeft: fxActive ? FX_PAD : undefined,
-        paddingRight: fxActive ? FX_PAD : undefined,
-        paddingBottom: fxActive ? FX_PAD : undefined,
-      }}
-    >
-      {fxActive && (
-        // Positioned to cover exactly the pill area within the padded wrapper, so
-        // CompletionFx ring transforms overflow into the bleed zone rather than being clipped.
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: FX_PAD,
-            right: FX_PAD,
-            bottom: FX_PAD,
-            pointerEvents: 'none',
-          }}
-        >
-          <CompletionFx
-            ripple={ripple}
-            accent={view.accent}
-            accentBright={view.accentBright}
-            borderRadius={pillRadius}
-            exiting={fxPhase === 'exit'}
-          />
-        </div>
-      )}
-      <div className="island-pill" data-island="1" style={pill} onClick={onToggleExpand}>
-        {view.showRing && (
+  const renderElement = (key: IslandElement) => {
+    switch (key) {
+      case 'ring':
+        return (
           <Ring
+            key="ring"
             size={30}
             radius={11}
             strokeWidth={3}
@@ -205,9 +168,11 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
           >
             <RingGlyphSmall glyph={view.glyph} accent={view.accent} />
           </Ring>
-        )}
-        {view.showTimeText && (
+        )
+      case 'time':
+        return (
           <div
+            key="time"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -241,8 +206,103 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
               {view.timeStr}
             </span>
           </div>
-        )}
-        <SessionDots dots={view.dots} />
+        )
+      case 'dots':
+        return <SessionDots key="dots" dots={view.dots} />
+      default: {
+        const _exhaustive: never = key
+        return _exhaustive
+      }
+    }
+  }
+
+  const renderPill = (keys: IslandElement[]) => {
+    if (keys.length === 0) return null
+    const pill: CSSProperties = {
+      position: 'relative',
+      zIndex: 2,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 13,
+      background: 'var(--il-bg)',
+      color: 'var(--il-text)',
+      borderRadius: pillRadius,
+      padding: `${notch ? 13 : 8}px 20px 9px 10px`,
+      // Preserve the single-pill snapped width; flanking pills size to content.
+      minWidth: soloNotch ? 210 : 0,
+      justifyContent: soloNotch ? 'space-between' : 'flex-start',
+      boxShadow: 'none',
+      cursor: 'pointer',
+      minHeight: 44,
+      boxSizing: 'border-box',
+    }
+    return (
+      <div className="island-pill" data-island="1" style={pill}>
+        {keys.map(renderElement)}
+      </div>
+    )
+  }
+
+  const fxActive = fxPhase !== 'none'
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        // When FX fires, pad the container so the ResizeObserver sees a larger element and
+        // the Electron window grows to give the ripple rings room to expand unclipped.
+        // Sides and bottom only — no top pad so the pill stays flush with the notch/top edge.
+        paddingLeft: fxActive ? FX_PAD : undefined,
+        paddingRight: fxActive ? FX_PAD : undefined,
+        paddingBottom: fxActive ? FX_PAD : undefined,
+      }}
+    >
+      {fxActive && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: FX_PAD,
+            right: FX_PAD,
+            bottom: FX_PAD,
+            pointerEvents: 'none',
+          }}
+        >
+          <CompletionFx
+            ripple={ripple}
+            accent={view.accent}
+            accentBright={view.accentBright}
+            borderRadius={pillRadius}
+            exiting={fxPhase === 'exit'}
+          />
+        </div>
+      )}
+      {/* left | center (notch gap + below cluster) | right — see MO-22 placement model */}
+      <div
+        data-island="1"
+        onClick={onToggleExpand}
+        style={{
+          display: 'inline-grid',
+          gridTemplateColumns: 'auto auto auto',
+          alignItems: 'start',
+        }}
+      >
+        <div style={{ justifySelf: 'end' }}>{renderPill(leftKeys)}</div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            // Reserve the camera gap only when clusters actually flank both sides;
+            // a single-side arrangement (e.g. the default all-right) keeps today's look.
+            minWidth: notch && leftKeys.length > 0 && rightKeys.length > 0 ? NOTCH_GAP : 0,
+          }}
+        >
+          {notch && belowKeys.length > 0 && <div aria-hidden style={{ height: BAR_ROW_H }} />}
+          {renderPill(belowKeys)}
+        </div>
+        <div style={{ justifySelf: 'start' }}>{renderPill(rightKeys)}</div>
       </div>
     </div>
   )

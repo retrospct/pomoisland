@@ -8,6 +8,8 @@ import { RIPPLE_DEFS } from '@shared/ripple'
 import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
 import type {
   AccentKey,
+  IslandElement,
+  IslandSlot,
   Layout,
   Prefs,
   Ripple,
@@ -767,6 +769,18 @@ const LAYOUT_OPTIONS: { k: Layout; label: string; icon: ReactNode }[] = [
   },
 ]
 
+// MO-22: per-element placement around the notch. Labels use product vocabulary.
+const PLACEMENT_ELEMENTS: { k: IslandElement; label: string }[] = [
+  { k: 'ring', label: 'Progressive timer' },
+  { k: 'time', label: 'Timer numbers' },
+  { k: 'dots', label: 'Session dots' },
+]
+const SLOT_OPTIONS: { k: IslandSlot; label: string }[] = [
+  { k: 'left', label: 'Left' },
+  { k: 'below', label: 'Below' },
+  { k: 'right', label: 'Right' },
+]
+
 export function PreferencesTab({ prefs, set }: TabProps) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
@@ -902,7 +916,66 @@ export function PreferencesTab({ prefs, set }: TabProps) {
           </div>
         </div>
 
-        <div>
+        <div style={{ marginTop: 24 }}>
+          <SectionLabel>Element placement</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+            {PLACEMENT_ELEMENTS.map(({ k, label }) => (
+              <div
+                key={k}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                }}
+              >
+                <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>
+                  {label}
+                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 3,
+                    background: 'var(--sp-field)',
+                    border: '1px solid var(--sp-border)',
+                    borderRadius: 11,
+                    padding: 3,
+                    flex: '0 0 auto',
+                  }}
+                >
+                  {SLOT_OPTIONS.map((s) => {
+                    const on = prefs.islandPlacement[k] === s.k
+                    return (
+                      <button
+                        key={s.k}
+                        onClick={() =>
+                          set({ islandPlacement: { ...prefs.islandPlacement, [k]: s.k } })
+                        }
+                        style={{
+                          height: 30,
+                          minWidth: 34,
+                          padding: '0 12px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          borderRadius: 8,
+                          background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                          color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                          fontFamily: SANS,
+                          fontSize: 12.5,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
           <SectionLabel>Auto-retract</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             <RetractControl

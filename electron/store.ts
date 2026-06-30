@@ -31,6 +31,8 @@ export const DEFAULT_PREFS: Prefs = {
   theme: 'dark',
   timerStyle: 'circular',
   layout: 'split',
+  // MO-22: default arrangement is all three elements to the right of the notch.
+  islandPlacement: { ring: 'right', time: 'right', dots: 'right' },
   showDots: true,
   ripple: 'burst',
   // Window behavior (not surfaced in SettingsPanel)

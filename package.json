@@ -18,6 +18,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",
     "audio:check": "node scripts/audio-check.ts",
     "tick:check": "node scripts/tick-cadence-check.ts",
+    "placement:check": "node scripts/placement-check.ts",
     "package": "electron-vite build && electron-builder --mac --dir"
   },
   "devDependencies": {
