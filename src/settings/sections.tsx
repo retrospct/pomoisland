@@ -11,6 +11,7 @@ import { useReducedMotion } from '@shared/useReducedMotion'
 import type {
   AccentKey,
   FloatingLayout,
+  FloatingProgress,
   IslandElement,
   IslandSlot,
   Prefs,
@@ -708,6 +709,10 @@ const FLOATING_LAYOUTS: { k: FloatingLayout; label: string }[] = [
   { k: 'L3', label: 'Companion' },
   { k: 'L4', label: 'Badge' },
 ]
+const FLOATING_PROGRESS_OPTIONS: { k: FloatingProgress; label: string }[] = [
+  { k: 'outline', label: 'Card outline' },
+  { k: 'ring', label: 'Ring' },
+]
 
 export function PreferencesTab({ prefs, set }: TabProps) {
   // Notch-style previews sit on a dark mini-screen, so use the pastel accent
@@ -909,6 +914,27 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                       }}
                     >
                       {l.k}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+              <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>Progress</span>
+              <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
+                {FLOATING_PROGRESS_OPTIONS.map((p) => {
+                  const on = prefs.floatingProgress === p.k
+                  return (
+                    <button
+                      key={p.k}
+                      onClick={() => set({ floatingProgress: p.k })}
+                      style={{
+                        height: 30, minWidth: 34, padding: '0 12px', border: 'none', cursor: 'pointer',
+                        borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                        color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
+                      }}
+                    >
+                      {p.label}
                     </button>
                   )
                 })}

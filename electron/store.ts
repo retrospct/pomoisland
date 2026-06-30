@@ -38,6 +38,7 @@ export const DEFAULT_PREFS: Prefs = {
   islandPlacement: { ring: 'off', status: 'below', time: 'below', dots: 'below' },
   ripple: 'burst',
   floatingLayout: 'L1',
+  floatingProgress: 'outline',
   // Window behavior (not surfaced in SettingsPanel)
   alwaysTop: true,
   magnetic: true,
