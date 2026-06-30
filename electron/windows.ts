@@ -91,6 +91,12 @@ export function createIslandWindow(): BrowserWindow {
   })
 
   applyIslandWindowLevel()
+  // Re-apply bounds after raising the window level.
+  // macOS clamps the initial y to workArea.y when the window is constructed at
+  // a level below the menu bar. Once applyIslandWindowLevel() raises it to
+  // 'status' (above the menu bar) the clamp is lifted, so we explicitly reset
+  // the position to the requested y=0 (bounds.y, not workArea.y).
+  islandWin.setBounds({ x, y, width: islandSize.width, height: islandSize.height })
   islandWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   loadRoute(islandWin, 'index.html')
   islandWin.on('closed', () => {
@@ -166,6 +172,15 @@ export function applyAlwaysOnTop(on: boolean): void {
     return
   }
   applyIslandWindowLevel()
+  // After raising to 'status' level, re-apply the snapped position.
+  // If alwaysOnTop was previously off, macOS may have clamped the window to
+  // workArea.y. The level change lifts that clamp, so we reposition explicitly.
+  if (placement.snapped) {
+    const b = islandWin.getBounds()
+    const d = displayAtPoint(b.x + b.width / 2, b.y + b.height / 2)
+    const tl = snappedTopLeft(islandSize.width, d)
+    islandWin.setPosition(tl.x, tl.y)
+  }
 }
 
 export function dragStart(cursorX: number, cursorY: number): void {
