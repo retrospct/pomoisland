@@ -64,3 +64,19 @@
     transform: scaleX(1.06);
   }
 }
+
+/* MO-23 prototype: smooth progress fills between timer ticks. */
+.nc-progress-stroke {
+  transition: stroke-dashoffset 0.35s linear;
+}
+
+/* Handoff README §6 — gate infinite/keyframe motion; progress position stays static. */
+@media (prefers-reduced-motion: reduce) {
+  .nc-progress-stroke {
+    transition: none;
+  }
+
+  [data-nc-anim] {
+    animation: none !important;
+  }
+}

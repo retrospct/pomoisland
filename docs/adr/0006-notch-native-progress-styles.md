@@ -36,20 +36,20 @@ island and Settings, and have the outline treatments hug the **real** notch geom
   `NotchConcept.dc.html`, 260×72 notch viewport) renders every variant. Both the island
   collapsed view and the Settings live previews use it, so the picked swatch matches exactly
   what renders on the notch — mirroring the `ripple.ts → CompletionFx / RipplePreview` pattern.
-  Keyframes live in `src/shared/notch.css`, imported by both renderers.
+- Keyframes live in `src/shared/notch.css`, imported by both renderers. Progress strokes use
+  `stroke-dashoffset` transitions (0.35s linear, from MO-23 prototype). Keyframe-driven layers
+  are gated by `@media (prefers-reduced-motion: reduce)` via `[data-nc-anim]`.
 - **Island integration** (`src/island/Island.tsx`, collapsed presentation only — peek/expanded
   keep their `Ring`):
-  - `below` keeps the existing pill-cluster code, preserving the per-element placement model
-    (MO-22, `islandPlacement`).
-  - Every other variant renders `NotchProgress` transparently. Because the island window is
-    already snapped top-center with its top flush to the screen edge (`snappedTopLeft` anchors
-    at `display.bounds.y`) and auto-resizes to content, a centered 260-wide treatment overlays
-    the physical notch outline. Exact hardware-width calibration is deferred (same "later pass"
-    as the existing `NOTCH_GAP` note).
+  - When **snapped to the notch** (`notch === true`), every `timerStyle` — including handoff
+    `below` (A) — renders via `NotchProgress` with `simulateNotch={false}` so the physical
+    camera housing shows through (no opaque fill or faux camera dot).
+  - When **floating** (`notch === false`), the pill-cluster placement model (MO-22,
+    `islandPlacement`) is used for all styles — outline treatments need real hardware geometry.
   - Session dots still render under the outline readout when `showDots` is on (a small,
     faithful extension of the handoff, which showed dots only in `below`).
-- **Settings** (`src/settings/sections.tsx`): the three-icon picker becomes a 2-column grid of
-  eight cards, each a live, scaled `NotchProgress` preview (in `frame` mode — the handoff's dark
+- **Settings** (`src/settings/sections.tsx`): the three-icon picker becomes a 4×2 grid of eight
+  cards, each a live, scaled `NotchProgress` preview (in `frame` mode — the handoff's dark
   mini-screen) so the animations are auditionable, consistent with how Sound/Done-animation
   preview on select.
 - **Accent, not the demo palette.** The handoff drew `comet` in purple; we always use the
@@ -72,12 +72,12 @@ island and Settings, and have the outline treatments hug the **real** notch geom
 
 - `timerStyle` is now an honest, implemented setting; the unused `circular`/`bar` strings are gone.
 - The MO-23 notch prototype is superseded and removed (`prototype.html`, `src/prototype/main.tsx`,
-  `NotchProgressPrototype.tsx`); its broken Vite inputs (and the already-missing MO-21
-  `prototype-anim.html` input) were dropped from `electron.vite.config.ts` so the production
-  build no longer ships prototype pages.
+  `NotchProgressPrototype.tsx`, and the orphaned MO-21 `src/prototype/anim/` harness); its broken
+  Vite inputs (and the already-missing MO-21 `prototype-anim.html` input) were dropped from
+  `electron.vite.config.ts` so the production build no longer ships prototype pages.
 - `underlight` and `comet` intentionally don't show progress — they're "running" cues paired with
   the time readout. UI copy in the picker says so.
-- Animation *feel* (durations/easing + `prefers-reduced-motion` gating, which the handoff lists)
-  is intentionally **left un-tuned**, consistent with the repo-wide deferred animation-tuning pass.
+- Animation *feel* (durations/easing/choreography beyond the baseline transitions above) is
+  intentionally **left un-tuned**, consistent with the repo-wide deferred animation-tuning pass.
 - Real-notch width calibration against actual hardware is a follow-up; the treatment currently
   uses the handoff's 260px viewport centered on the display.

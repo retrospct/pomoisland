@@ -282,9 +282,22 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
           />
         </div>
       )}
-      {/* `below` keeps the pill-cluster placement model (MO-22); every other
-          variant traces the physical notch outline via the shared NotchProgress. */}
-      {view.timerStyle === 'below' ? (
+      {/* Snapped: all eight handoff variants via NotchProgress (real notch shows through).
+          Floating: pill-cluster placement — outline treatments need hardware. */}
+      {notch ? (
+        <div data-island="1" onClick={onToggleExpand} style={{ cursor: 'pointer' }}>
+          <NotchProgress
+            variant={view.timerStyle}
+            progress={view.frac}
+            accent={view.accent}
+            accentBright={view.accentBright}
+            time={view.timeStr}
+            label={view.statusLabel}
+            dots={view.dots}
+            textColor="var(--il-text)"
+          />
+        </div>
+      ) : (
         <div
           data-island="1"
           onClick={onToggleExpand}
@@ -300,28 +313,13 @@ function Collapsed({ view, notch, ripple, onToggleExpand }: IslandProps) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              // Reserve the camera gap only when clusters actually flank both sides;
-              // a single-side arrangement (e.g. the default all-right) keeps today's look.
-              minWidth: notch && leftKeys.length > 0 && rightKeys.length > 0 ? NOTCH_GAP : 0,
+              minWidth: leftKeys.length > 0 && rightKeys.length > 0 ? NOTCH_GAP : 0,
             }}
           >
-            {notch && belowKeys.length > 0 && <div aria-hidden style={{ height: BAR_ROW_H }} />}
+            {belowKeys.length > 0 && <div aria-hidden style={{ height: BAR_ROW_H }} />}
             {renderPill(belowKeys)}
           </div>
           <div style={{ justifySelf: 'start' }}>{renderPill(rightKeys)}</div>
-        </div>
-      ) : (
-        <div data-island="1" onClick={onToggleExpand} style={{ cursor: 'pointer' }}>
-          <NotchProgress
-            variant={view.timerStyle}
-            progress={view.frac}
-            accent={view.accent}
-            accentBright={view.accentBright}
-            time={view.timeStr}
-            label={view.statusLabel}
-            dots={view.dots}
-            textColor="var(--il-text)"
-          />
         </div>
       )}
     </div>

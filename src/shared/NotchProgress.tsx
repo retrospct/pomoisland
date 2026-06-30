@@ -63,6 +63,12 @@ export interface NotchProgressProps {
    * so the trace hugs the real hardware notch).
    */
   frame?: boolean
+  /**
+   * When false (default for the island), skip the handoff's opaque notch fill and
+   * camera lens so real hardware shows through. Settings previews pass `frame`
+   * which implies simulateNotch.
+   */
+  simulateNotch?: boolean
   /** Uniform scale for compact previews; keeps layout box correct. */
   scale?: number
 }
@@ -77,6 +83,7 @@ export function NotchProgress({
   dots,
   textColor = '#F2F1EC',
   frame = false,
+  simulateNotch = frame,
   scale = 1,
 }: NotchProgressProps) {
   const pathRef = useRef<SVGPathElement>(null)
@@ -146,6 +153,7 @@ export function NotchProgress({
               rx={84}
               ry={18}
               fill={accent}
+              data-nc-anim
               style={{
                 filter: 'blur(10px)',
                 transformBox: 'fill-box',
@@ -160,6 +168,7 @@ export function NotchProgress({
               ry={11}
               fill={accentBright}
               opacity={0.55}
+              data-nc-anim
               style={{
                 filter: 'blur(6px)',
                 transformBox: 'fill-box',
@@ -170,8 +179,12 @@ export function NotchProgress({
           </>
         )}
 
-        <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0 Z" fill="#050506" />
-        <circle cx={130} cy={13} r={3.4} fill="#0A0A0B" stroke="#26292E" strokeWidth={1.3} />
+        {simulateNotch && (
+          <>
+            <path d="M55 0 L55 17 Q55 30 68 30 L192 30 Q205 30 205 17 L205 0 Z" fill="#050506" />
+            <circle cx={130} cy={13} r={3.4} fill="#0A0A0B" stroke="#26292E" strokeWidth={1.3} />
+          </>
+        )}
 
         {isUnderlight && (
           <>
@@ -182,6 +195,7 @@ export function NotchProgress({
               strokeWidth={4.5}
               strokeLinecap="round"
               opacity={0.9}
+              data-nc-anim
               style={{ filter: 'blur(3px)', animation: 'ncGlow 2.6s ease-in-out infinite' }}
             />
             <path
@@ -207,6 +221,8 @@ export function NotchProgress({
                 strokeLinecap="round"
                 strokeDasharray={dashArray}
                 strokeDashoffset={dashOffset}
+                className="nc-progress-stroke"
+                data-nc-anim
                 style={{ filter: 'blur(3.5px)', animation: 'ncGlow 2.1s ease-in-out infinite' }}
               />
             )}
@@ -219,6 +235,7 @@ export function NotchProgress({
               strokeLinecap="round"
               strokeDasharray={dashArray}
               strokeDashoffset={dashOffset}
+              className="nc-progress-stroke"
             />
             {hasFront && (
               <>
@@ -228,6 +245,7 @@ export function NotchProgress({
                   r={7}
                   fill={accent}
                   opacity={0.4}
+                  data-nc-anim
                   style={{
                     filter: 'blur(3px)',
                     transformBox: 'fill-box',
@@ -240,6 +258,7 @@ export function NotchProgress({
                   cy={front.y}
                   r={2.8}
                   fill={accentBright}
+                  data-nc-anim
                   style={{ animation: 'ncSheen 1.6s ease-in-out infinite' }}
                 />
               </>
@@ -260,6 +279,7 @@ export function NotchProgress({
               strokeLinecap="round"
               strokeDasharray={100}
               strokeDashoffset={twoOffset}
+              className="nc-progress-stroke"
             />
             <path
               d={rightPath}
@@ -270,6 +290,7 @@ export function NotchProgress({
               strokeLinecap="round"
               strokeDasharray={100}
               strokeDashoffset={twoOffset}
+              className="nc-progress-stroke"
             />
             <circle
               cx={130}
@@ -293,6 +314,7 @@ export function NotchProgress({
               strokeWidth={5}
               strokeLinecap="round"
               strokeDasharray="14 86"
+              data-nc-anim
               style={{ filter: 'blur(3px)', animation: 'ncComet 2.4s linear infinite' }}
             />
             <path
@@ -303,6 +325,7 @@ export function NotchProgress({
               strokeWidth={2.6}
               strokeLinecap="round"
               strokeDasharray="13 87"
+              data-nc-anim
               style={{ animation: 'ncComet 2.4s linear infinite' }}
             />
             <path
@@ -313,6 +336,7 @@ export function NotchProgress({
               strokeWidth={4}
               strokeLinecap="round"
               strokeDasharray="11 89"
+              data-nc-anim
               style={{ filter: 'blur(2px)', animation: 'ncComet 2.4s linear infinite', animationDelay: '-1.2s' }}
             />
             <path
@@ -323,6 +347,7 @@ export function NotchProgress({
               strokeWidth={2.2}
               strokeLinecap="round"
               strokeDasharray="10 90"
+              data-nc-anim
               style={{ animation: 'ncComet 2.4s linear infinite', animationDelay: '-1.2s' }}
             />
           </>
@@ -362,6 +387,7 @@ export function NotchProgress({
               strokeLinecap="round"
               strokeDasharray={ringCirc.toFixed(2)}
               strokeDashoffset={ringOffset}
+              className="nc-progress-stroke"
             />
           </svg>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, lineHeight: 1 }}>
