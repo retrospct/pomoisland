@@ -85,7 +85,16 @@ export function Island(props: IslandProps) {
   const showMenu = (props.present === 'expanded' || props.present === 'tasks') && props.menuOpen
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div
+      style={{
+        position: 'relative',
+        display: 'inline-block',
+        // Room for the inverse-rounded ears, which flare beyond the card's sides
+        // when snapped. Symmetric, so the card stays centered over the notch.
+        paddingLeft: props.notch ? EAR_SIZE : undefined,
+        paddingRight: props.notch ? EAR_SIZE : undefined,
+      }}
+    >
       {panel}
       {showMenu && (
         <>
@@ -135,6 +144,47 @@ const TRACE_BLEED = 22
 // when snapped, so the clusters flank the notch instead of sitting under it (MO-22).
 // Approximate MacBook notch width; calibrate against real hardware later.
 const NOTCH_GAP = 200
+
+// Size (px) of the inverse-rounded "ears" at the top corners of a snapped card.
+// Also the horizontal bleed the window needs so the ears aren't clipped.
+const EAR_SIZE = 13
+
+/**
+ * Dynamic-island / notch top corners. When a card is snapped flush against the
+ * screen's top edge, its top-left and top-right corners flare slightly *wider*
+ * than the body and curve back in with a concave (inverse) fillet — the SuperIsland
+ * shape, where the body looks like it grows out of the top bezel.
+ *
+ * Implemented as two absolutely-positioned boxes filled with the card background;
+ * a radial-gradient carves a concave quarter-circle out of each box's inner-bottom,
+ * leaving solid fill along the top edge (the wide flare) and the inner side (the
+ * join to the body). The parent must be position:relative, and the window needs
+ * EAR_SIZE of horizontal bleed (added on the Island wrapper when snapped) so the
+ * ears render instead of being clipped.
+ */
+function NotchEars() {
+  const base: CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    width: EAR_SIZE,
+    height: EAR_SIZE,
+    pointerEvents: 'none',
+  }
+  // transparent inside the radius, card bg outside → concave corner.
+  const fill = `transparent ${EAR_SIZE - 0.6}px, var(--il-bg) ${EAR_SIZE}px`
+  return (
+    <>
+      <div
+        aria-hidden
+        style={{ ...base, left: -EAR_SIZE, background: `radial-gradient(circle at 0 100%, ${fill})` }}
+      />
+      <div
+        aria-hidden
+        style={{ ...base, right: -EAR_SIZE, background: `radial-gradient(circle at 100% 100%, ${fill})` }}
+      />
+    </>
+  )
+}
 
 function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onToggleExpand }: IslandProps) {
   const rm = useReducedMotion()
@@ -334,6 +384,7 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               cursor: 'pointer',
             }}
           >
+            <NotchEars />
             {/* Left column — bare elements flanking the notch */}
             <div
               style={{
@@ -423,6 +474,7 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               boxSizing: 'border-box',
             }}
           >
+            <NotchEars />
             {[...leftVisible, ...belowVisible, ...rightVisible].map(renderElement)}
             {/* flushTop: the dock's squared top is flush with the screen edge,
                 so the trace skips the top edge (same rule as the real notch). */}
@@ -1097,10 +1149,10 @@ function OutlinedCard({
   )
 }
 
-function Peek({ view, notch, hasNotch, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
   const rm = useReducedMotion()
-  // Square the top only when wrapping a real notch; otherwise fully rounded.
-  const wrapNotch = notch && hasNotch
+  // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
+  // shape); floating → fully rounded card.
   return (
     <div
       style={{
@@ -1108,8 +1160,8 @@ function Peek({ view, notch, hasNotch, onToggleExpand, onPlayPause, onSkip }: Is
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
-        borderRadius: wrapNotch ? '0 0 22px 22px' : 22,
-        padding: `${wrapNotch ? 22 : 16}px 20px 17px`,
+        borderRadius: notch ? '0 0 22px 22px' : 22,
+        padding: `${notch ? 22 : 16}px 20px 17px`,
         boxShadow: 'none',
         fontFamily: SANS,
         position: 'relative',
@@ -1117,6 +1169,7 @@ function Peek({ view, notch, hasNotch, onToggleExpand, onPlayPause, onSkip }: Is
       }}
       onClick={onToggleExpand}
     >
+      {notch && <NotchEars />}
       <div
         style={{
           display: 'flex',
@@ -1250,11 +1303,11 @@ function Peek({ view, notch, hasNotch, onToggleExpand, onPlayPause, onSkip }: Is
 /** Shared body used by both Expanded and ExpandedWithTasks. */
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const rm = useReducedMotion()
-  const { view, notch, hasNotch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
+  const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
     props
   const br = bottomRadius ?? 26
-  // Square the top only when wrapping a real notch; otherwise fully rounded.
-  const wrapNotch = notch && hasNotch
+  // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
+  // shape); floating → fully rounded card.
   return (
     <div
       style={{
@@ -1262,8 +1315,8 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
-        borderRadius: `${wrapNotch ? '0 0' : '26px 26px'} ${br}px ${br}px`,
-        padding: `${wrapNotch ? 26 : 22}px 24px 20px`,
+        borderRadius: `${notch ? '0 0' : '26px 26px'} ${br}px ${br}px`,
+        padding: `${notch ? 26 : 22}px 24px 20px`,
         boxShadow: 'none',
         fontFamily: SANS,
         position: 'relative',
@@ -1271,6 +1324,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
       }}
       onClick={onToggleExpand}
     >
+      {notch && <NotchEars />}
       <div
         style={{
           display: 'flex',
@@ -1435,7 +1489,7 @@ function ExpandedWithTasks(props: IslandProps) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: props.notch && props.hasNotch ? '0 0 26px 26px' : 26,
+        borderRadius: props.notch ? '0 0 26px 26px' : 26,
         boxShadow: 'none',
         overflow: 'hidden',
       }}
