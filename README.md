@@ -58,7 +58,7 @@ locally launchable, unquarantined `.app`. A distributable, Gatekeeper-passing bu
 1. **Apple Developer Program** membership (Developer ID distribution).
 2. A **"Developer ID Application"** certificate available to the build, via either the login
    keychain or, for CI, `CSC_LINK` (base64 `.p12`) + `CSC_KEY_PASSWORD`.
-3. **Notarization credentials** in the environment — either an Apple ID:
+3. **Notarization credentials** in a `.env` file at the repo root (copy from `.env.example`) — loaded automatically by `pnpm run dist:mac`:
 
    ```bash
    export APPLE_ID="you@example.com"

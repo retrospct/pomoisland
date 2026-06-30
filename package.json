@@ -20,7 +20,7 @@
     "tick:check": "node scripts/tick-cadence-check.ts",
     "placement:check": "node scripts/placement-check.ts",
     "package": "electron-vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir",
-    "dist:mac": "electron-vite build && electron-builder --mac"
+    "dist:mac": "electron-vite build && node scripts/run-with-env.mjs electron-builder --mac"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -33,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
     "@vitejs/plugin-react": "^6.0.3",
+    "dotenv": "^17.4.2",
     "electron": "^42.5.1",
     "electron-builder": "^26.15.3",
     "electron-vite": "6.0.0-beta.1",
