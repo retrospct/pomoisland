@@ -21,9 +21,9 @@
     "placement:check": "node scripts/placement-check.ts",
     "notch:check": "node scripts/notch-check.ts",
     "package": "electron-vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir",
-    "dist:mac": "electron-vite build && node scripts/run-with-env.mjs electron-builder --mac",
+    "dist:mac": "electron-vite build && electron-builder --mac",
     "prerelease:mac": "node scripts/update-changelog.mjs",
-    "release:mac": "electron-vite build && node scripts/run-with-env.mjs electron-builder --mac --publish always"
+    "release:mac": "electron-vite build && electron-builder --mac --publish always"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

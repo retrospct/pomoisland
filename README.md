@@ -35,19 +35,27 @@ it; drag it away to float.
 
 ## Packaging & distribution
 
-`electron-builder.yml` builds a macOS **menu-bar utility** (`appId: com.pomoisland.app`,
+`electron-builder.js` builds a macOS **menu-bar utility** (`appId: dev.retro.pomoisland`,
 `LSUIElement` → no Dock icon). Only compiled output in `out/` is shipped; the app declares no
 production `dependencies`, so dev-only tools (e.g. `node-web-audio-api`, used solely by
 `npm run audio:check`) can never end up in the bundle.
+
+> The config is JS (not YAML) so it can `require('dotenv').config()` before exporting the
+> config object — this loads `.env` into `process.env` before electron-builder reads Apple/GH
+> credentials, regardless of whether `electron-builder` is invoked via an npm script, an IDE,
+> CI, or directly on the command line.
 
 ```bash
 npm run package    # unsigned .app at release/mac-<arch>/Pomoisland.app — for local testing
 npm run dist:mac   # signed + notarized .dmg / .zip at release/ — for distribution
 ```
 
-> **First launch starts fresh.** Preferences live in `~/Library/Application Support/<appId>/prefs.json`.
-> Because the appId moved to `com.pomoisland.app` during the rename, existing users get default
-> prefs on first launch of the renamed build (`store.ts` already tolerates the missing file).
+> **First launch starts fresh (past rename only).** Preferences live in
+> `~/Library/Application Support/<app name>/prefs.json`, keyed off the app's name
+> (`productName`/package `name`), not `appId` — so the `appId` change to `dev.retro.pomoisland`
+> (previously `com.pomoisland.app`) does not by itself reset existing users' prefs. A prior
+> product rename that also changed the app name did reset prefs once (`store.ts` already
+> tolerates the missing file going forward).
 
 ### Signing & notarization prerequisites
 
@@ -58,7 +66,7 @@ locally launchable, unquarantined `.app`. A distributable, Gatekeeper-passing bu
 1. **Apple Developer Program** membership (Developer ID distribution).
 2. A **"Developer ID Application"** certificate available to the build, via either the login
    keychain or, for CI, `CSC_LINK` (base64 `.p12`) + `CSC_KEY_PASSWORD`.
-3. **Notarization credentials** in a `.env` file at the repo root (copy from `.env.example`) — loaded automatically by `pnpm run dist:mac`:
+3. **Notarization credentials** in a `.env` file at the repo root (copy from `.env.example`) — loaded automatically by `electron-builder.js` (via `dotenv`) whenever `electron-builder --mac` runs:
 
    ```bash
    export APPLE_ID="you@example.com"

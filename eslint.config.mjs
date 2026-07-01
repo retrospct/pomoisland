@@ -4,7 +4,7 @@ import tsparser from '@typescript-eslint/parser'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
-  { ignores: ['out/**', 'dist/**', 'release/**', 'node_modules/**', 'design-reference/**', 'scripts/**'] },
+  { ignores: ['out/**', 'dist/**', 'release/**', 'node_modules/**', 'design-reference/**', 'scripts/**', 'electron-builder.js'] },
   js.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
