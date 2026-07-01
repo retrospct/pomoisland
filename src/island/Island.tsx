@@ -411,8 +411,11 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
             }}
           >
             <NotchEars />
-            {/* Left column — bare elements flanking the notch */}
+            {/* Left column — bare elements flanking the notch. Marked as its own
+                hover target (MO-45): the transparent notch spacer beside it must
+                stay a dead zone, not part of the peek-trigger region. */}
             <div
+              data-hover-target="1"
               style={{
                 alignSelf: 'center',
                 padding: '0 10px 0 14px',
@@ -424,7 +427,9 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               {leftVisible.map(renderElement)}
             </div>
 
-            {/* Center column — transparent notch spacer + below content */}
+            {/* Center column — transparent notch spacer + below content. Only the
+                below-content row (if any) is marked as a hover target; the spacer
+                above it stays a dead zone (MO-45). */}
             <div
               style={{
                 minWidth: spacerW,
@@ -436,6 +441,7 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               <div aria-hidden style={{ height: notchHeight, minWidth: spacerW, flexShrink: 0 }} />
               {belowVisible.length > 0 && (
                 <div
+                  data-hover-target="1"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -448,8 +454,10 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               )}
             </div>
 
-            {/* Right column — bare elements flanking the notch */}
+            {/* Right column — bare elements flanking the notch. Own hover target,
+                same reasoning as the left column (MO-45). */}
             <div
+              data-hover-target="1"
               style={{
                 alignSelf: 'center',
                 padding: '0 14px 0 10px',
@@ -485,6 +493,7 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
           <div
             ref={bodyRef}
             data-island="1"
+            data-hover-target="1"
             onClick={onToggleExpand}
             style={{
               position: 'relative',
@@ -900,6 +909,7 @@ function L3Card({
     <div
       ref={cardRef}
       data-island="1"
+      data-hover-target="1"
       onClick={onToggleExpand}
       style={{
         position: 'relative',
@@ -1033,6 +1043,7 @@ function CircleCard({ view, onToggleExpand }: { view: IslandView; onToggleExpand
   return (
     <div
       data-island="1"
+      data-hover-target="1"
       onClick={onToggleExpand}
       style={{
         position: 'relative',
@@ -1137,6 +1148,7 @@ function FloatingCard({
     return (
       <div
         data-island="1"
+        data-hover-target="1"
         onClick={onToggleExpand}
         style={{
           position: 'relative',
@@ -1220,6 +1232,7 @@ function OutlinedCard({
     <div
       ref={cardRef}
       data-island="1"
+      data-hover-target="1"
       onClick={onToggleExpand}
       style={{
         position: 'relative',
@@ -1271,6 +1284,7 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, 
   const width = wrapNotch ? Math.max(340, notchWidth + 170) : 272
   return (
     <div
+      data-hover-target="1"
       style={{
         width,
         boxSizing: 'border-box',
@@ -1440,6 +1454,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const cardWidth = wrapNotch ? Math.max(340, notchWidth + 160) : 320
   return (
     <div
+      data-hover-target="1"
       style={{
         width: cardWidth,
         boxSizing: 'border-box',

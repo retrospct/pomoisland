@@ -1,12 +1,15 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import { buildAppMenu } from './appMenu'
+import { startIdleWatcher, stopIdleWatcher } from './idle'
 import { registerIpc } from './ipc'
-import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
+import { initLaunchLogin } from './launchLogin'
+import { initNotifications } from './notify'
+import { configureShortcutHandlers, registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
 import { getPrefs, onPrefsChange } from './store'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
 import { initAutoUpdater } from './updater'
-import { createIslandWindow, createSnapOverlayWindow } from './windows'
+import { createIslandWindow, createSnapOverlayWindow, toggleIslandVisibility } from './windows'
 
 let timer: Timer | null = null
 
@@ -21,7 +24,14 @@ function applyDockVisibility(show: boolean): void {
 
 function bootstrap(): void {
   timer = new Timer(getPrefs)
+  configureShortcutHandlers({
+    showHide: toggleIslandVisibility,
+    playPause: () => timer!.action({ type: 'playPause' }),
+    next: () => timer!.action({ type: 'skip' }),
+  })
   registerIpc(timer)
+  initNotifications(timer)
+  startIdleWatcher(timer)
   createIslandWindow()
   createSnapOverlayWindow()
   createTray(timer)
@@ -40,6 +50,7 @@ app.whenReady().then(() => {
   // Keep dock visibility in sync with the pref.
   onPrefsChange((p) => applyDockVisibility(p.showDockIcon))
   registerGlobalShortcuts()
+  initLaunchLogin()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createIslandWindow()
@@ -54,6 +65,7 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   timer?.stop()
+  stopIdleWatcher()
   destroyTray()
   unregisterGlobalShortcuts()
 })

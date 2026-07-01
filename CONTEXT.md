@@ -27,6 +27,17 @@ Use these terms exactly; avoid the synonyms in parentheses.
 - **Total / remaining** — block duration and time left, in seconds.
 - **Preset** — a bundle of durations: `classic` (25/5/15), `focus` (50/10/20), `custom`.
 
+### Shortcuts
+
+- **Shortcut (binding)** — a user-rebindable global accelerator mapped to one action:
+  **show/hide** island, **play/pause**, **next** (skip to the next block). Defaults are the
+  ⌘⌥-arrow family (↑ / ↓ / →; ⌘⌥← is reserved for a future prev/reset).
+- **Unbound** — a shortcut with no accelerator assigned; that action has no global hotkey.
+- **Open Settings** — reached via the ⌘, app-menu item (Preferences), not a global shortcut.
+- **Trigger region** — the area whose hover expands the collapsed island to **Peek**. It is the
+  visible island ink only; the transparent scaffolding (notch spacer, ears, menu-room slack) is a
+  non-triggering dead zone, distinct from the larger window/layout box.
+
 ### Appearance domain
 
 - **Accent** — the user-chosen highlight color; drives the ring, dots, and Settings theming.

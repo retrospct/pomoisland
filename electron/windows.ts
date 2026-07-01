@@ -163,9 +163,15 @@ export function toggleIslandVisibility(): void {
   if (islandWin.isVisible()) {
     islandWin.hide()
   } else {
-    islandWin.show()
-    islandWin.focus()
+    revealIsland()
   }
+}
+
+/** Shows and focuses the island unconditionally (used by e.g. a clicked notification). */
+export function revealIsland(): void {
+  if (!islandWin) return
+  islandWin.show()
+  islandWin.focus()
 }
 
 /** Resize the island window to fit content, keeping its anchor (top-center if snapped). */

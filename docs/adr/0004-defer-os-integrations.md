@@ -29,8 +29,13 @@ Update (2026-06-26): the **ticking sound** is no longer deferred. It became a re
 `off` / `soft` / `crisp` per-second audio feature wired through the synthesized sound
 engine — see ADR-0005.
 
-Note: the show/hide accelerator is currently hard-coded. Making it user-configurable (key
-capture + persistence) is a follow-up.
+Update (2026-07-01): the global shortcut is no longer hard-coded — see ADR-0007 for
+user-rebindable shortcuts. Of the remaining deferred toggles, **launch-at-login**, **native
+notifications**, and **pause-when-idle** are no longer deferred (wired for real this pass).
+**Do-not-disturb** is dropped from the Settings UI entirely — macOS has no public API to toggle
+system Focus/DND, so a toggle that can't work isn't shown. **Hide-during-screen-sharing**
+remains deferred (capture detection is unreliable from Electron); so does the alternate
+`timerStyle` / notch-layout rendering (its own feature pass).
 
 Every deferred toggle is still stored and round-trips through Settings, so turning the behavior
 on later is a localized change in the main process, not a data-model change.

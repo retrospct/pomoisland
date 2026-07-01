@@ -12,6 +12,12 @@ import {
   presetNotchHeight,
 } from '@shared/notchHeight'
 import { RIPPLE_DEFS } from '@shared/ripple'
+import {
+  DEFAULT_SHORTCUTS,
+  humanizeAccelerator,
+  SHORTCUT_ACTIONS,
+  SHORTCUT_LABELS,
+} from '@shared/shortcuts'
 import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
 import { useReducedMotion } from '@shared/useReducedMotion'
 import type {
@@ -22,12 +28,14 @@ import type {
   Placement,
   Prefs,
   Ripple,
+  ShortcutAction,
   Sound,
   ThemeChoice,
   TickSound,
 } from '@shared/types'
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
+import { acceleratorFromEvent } from './keyCapture'
 
 /** Circular arrow — reset to default. */
 function ResetIcon() {
@@ -380,6 +388,209 @@ function NotchHeightSection({ prefs, set }: TabProps) {
   )
 }
 
+// ---- Keyboard shortcuts (ADR-0007) ----
+
+const SHORTCUT_DESCRIPTIONS: Record<ShortcutAction, string> = {
+  showHide: 'Toggle the island’s visibility.',
+  playPause: 'Start or pause the current block.',
+  next: 'Skip to the next block.',
+}
+
+/**
+ * One rebindable shortcut row. Click the chip to capture the next chord; Esc
+ * cancels. Validity and conflict checks happen in the main process (reject-and-
+ * revert, see ADR-0007) — this component just displays whatever error comes back.
+ */
+function ShortcutRow({
+  action,
+  value,
+  border,
+}: {
+  action: ShortcutAction
+  value: string | null
+  border: boolean
+}) {
+  const [recording, setRecording] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!recording) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.key === 'Escape') {
+        setRecording(false)
+        return
+      }
+      const accelerator = acceleratorFromEvent(e)
+      if (!accelerator) return // bare modifier — keep waiting for the real key
+      setRecording(false)
+      void window.api.shortcuts.set(action, accelerator).then((res) => {
+        if (!res.ok) {
+          setError(res.error ?? 'Could not set shortcut.')
+          window.setTimeout(() => setError(null), 2600)
+        }
+      })
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [recording, action])
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 16,
+        paddingTop: border ? 11 : 0,
+        borderTop: border ? '1px solid var(--sp-line)' : 'none',
+      }}
+    >
+      <div>
+        <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+          {SHORTCUT_LABELS[action]}
+        </div>
+        <div
+          style={{
+            fontFamily: SANS,
+            fontSize: 11.5,
+            color: error ? '#e5484d' : 'var(--sp-faint)',
+            marginTop: 2,
+          }}
+        >
+          {error ?? SHORTCUT_DESCRIPTIONS[action]}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '0 0 auto' }}>
+        <button
+          onClick={() => {
+            setError(null)
+            setRecording(true)
+          }}
+          style={{
+            fontFamily: MONO,
+            fontSize: 12,
+            minWidth: 90,
+            textAlign: 'center',
+            color: recording ? 'var(--sp-teal)' : value ? 'var(--sp-body)' : 'var(--sp-faint)',
+            background: recording ? 'var(--sp-tint)' : 'var(--sp-field)',
+            border: `1px solid ${recording ? 'var(--sp-teal)' : 'var(--sp-border)'}`,
+            borderRadius: 7,
+            padding: '5px 10px',
+            cursor: 'pointer',
+          }}
+        >
+          {recording ? 'Press keys…' : value ? humanizeAccelerator(value) : 'Add shortcut'}
+        </button>
+        {value && !recording && (
+          <button
+            title="Unbind"
+            onClick={() => void window.api.shortcuts.set(action, null)}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--sp-faint)',
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              padding: 0,
+              fontSize: 12,
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ReadOnlyShortcutRow({ label, desc, keys }: { label: string; desc: string; keys: string[] }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 16,
+        paddingTop: 11,
+        borderTop: '1px solid var(--sp-line)',
+      }}
+    >
+      <div>
+        <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>{label}</div>
+        <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
+          {desc}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: '0 0 auto' }}>
+        {keys.map((k) => (
+          <Kbd key={k}>{k}</Kbd>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function KeyboardShortcutsSection({ prefs }: { prefs: Prefs }) {
+  const [resetting, setResetting] = useState(false)
+  const isDefault = SHORTCUT_ACTIONS.every((a) => prefs.shortcuts[a] === DEFAULT_SHORTCUTS[a])
+
+  const reset = async () => {
+    setResetting(true)
+    try {
+      await window.api.shortcuts.reset()
+    } finally {
+      setResetting(false)
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 11,
+        }}
+      >
+        <SectionLabel>Keyboard shortcuts</SectionLabel>
+        <button
+          title="Reset to defaults"
+          onClick={() => void reset()}
+          disabled={resetting || isDefault}
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--sp-faint)',
+            cursor: isDefault ? 'default' : 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            padding: 0,
+            opacity: isDefault ? 0.35 : 1,
+          }}
+        >
+          <ResetIcon />
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+        {SHORTCUT_ACTIONS.map((action, i) => (
+          <ShortcutRow key={action} action={action} value={prefs.shortcuts[action]} border={i > 0} />
+        ))}
+        <ReadOnlyShortcutRow label="Open Settings" desc="From the app menu." keys={['⌘', ',']} />
+      </div>
+    </div>
+  )
+}
+
 // ---- General tab ----
 
 const PRESETS: [Prefs['preset'], string][] = [
@@ -394,7 +605,6 @@ const PRESET_VALS: Partial<Record<Prefs['preset'], Partial<Prefs>>> = {
 
 const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['autoStart', 'Auto-start next session', 'Begin the next focus or break automatically'],
-  ['dnd', 'Do Not Disturb in focus', 'Silence other notifications while the timer runs'],
   ['launchLogin', 'Launch at login', 'Open Pomodoro when your Mac starts up'],
   ['messages', 'Motivational messages', 'Show an encouraging line in the expanded panel'],
   ['hideShare', 'Hide during screen sharing', 'Auto-conceal while presenting or recording.'],
@@ -513,46 +723,16 @@ export function GeneralTab({ prefs, set }: TabProps) {
             ))}
           </div>
 
+          <KeyboardShortcutsSection prefs={prefs} />
+
           <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <SectionLabel>Shortcuts &amp; goal</SectionLabel>
+            <SectionLabel>Daily goal</SectionLabel>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 16,
-                paddingTop: 11,
-                borderTop: '1px solid var(--sp-line)',
-              }}
-            >
-              <div>
-                <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
-                  Global shortcut
-                </div>
-                <div
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 11.5,
-                    color: 'var(--sp-faint)',
-                    marginTop: 2,
-                  }}
-                >
-                  Start / pause from anywhere.
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: '0 0 auto' }}>
-                <Kbd>⌥</Kbd>
-                <Kbd>Space</Kbd>
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 16,
-                paddingTop: 11,
-                borderTop: '1px solid var(--sp-line)',
               }}
             >
               <div>

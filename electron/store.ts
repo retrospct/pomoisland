@@ -4,7 +4,15 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { IslandPlacement, IslandSlot, Prefs, TickSound, TimerStyle } from '../src/shared/types'
+import { DEFAULT_SHORTCUTS, SHORTCUT_ACTIONS } from '../src/shared/shortcuts'
+import type {
+  IslandPlacement,
+  IslandSlot,
+  Prefs,
+  Shortcuts,
+  TickSound,
+  TimerStyle,
+} from '../src/shared/types'
 
 type Layout = 'split' | 'minimal' | 'compact'
 
@@ -24,6 +32,7 @@ export const DEFAULT_PREFS: Prefs = {
   hideShare: false,
   pauseIdle: true,
   showDockIcon: true,
+  shortcuts: { ...DEFAULT_SHORTCUTS },
   // Preferences · Alarm & sound
   sound: 'chime',
   volume: 70,
@@ -126,6 +135,21 @@ function migrateIslandPlacement(raw: unknown, layout: unknown, showDots: unknown
   }
 }
 
+/**
+ * Shortcuts didn't exist before ADR-0007 (only a hard-coded, unpersisted show-hide
+ * accelerator). Fills in any missing/invalid per-action entry from the default so
+ * partial or pre-ADR-0007 prefs files still round-trip to a valid `Shortcuts`.
+ */
+function migrateShortcuts(raw: unknown): Shortcuts {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const result = {} as Shortcuts
+  for (const action of SHORTCUT_ACTIONS) {
+    const v = p[action]
+    result[action] = typeof v === 'string' || v === null ? v : DEFAULT_SHORTCUTS[action]
+  }
+  return result
+}
+
 function load(): Prefs {
   try {
     const raw = readFileSync(filePath(), 'utf8')
@@ -133,6 +157,7 @@ function load(): Prefs {
     const merged = { ...DEFAULT_PREFS, ...parsed } as Prefs
     merged.tick = migrateTick(parsed.tick)
     merged.timerStyle = migrateTimerStyle(parsed.timerStyle)
+    merged.shortcuts = migrateShortcuts(parsed.shortcuts)
     // Migrate old placement shape if `status` key is missing (pre-split schema).
     const rawPlacement = parsed.islandPlacement as Record<string, unknown> | undefined
     if (!rawPlacement || !('status' in rawPlacement)) {

@@ -1,6 +1,14 @@
 import { ipcMain } from 'electron'
 import { IPC } from '../src/shared/types'
-import type { IslandResizeSize, Prefs, SettingsControl, TaskMutation, TimerAction } from '../src/shared/types'
+import type {
+  IslandResizeSize,
+  Prefs,
+  SettingsControl,
+  ShortcutAction,
+  TaskMutation,
+  TimerAction,
+} from '../src/shared/types'
+import { resetShortcuts, trySetShortcut } from './shortcuts'
 import { getPrefs, onPrefsChange, setPrefs } from './store'
 import { checkForUpdatesInteractive } from './updater'
 import { activeTaskTitle, applyMutation, getTasks, onTasksChange, recordFocusComplete } from './taskStore'
@@ -75,4 +83,10 @@ export function registerIpc(timer: Timer): void {
 
   // Updates
   ipcMain.on(IPC.checkUpdates, () => checkForUpdatesInteractive())
+
+  // Shortcuts (ADR-0007) — request/response so the renderer can reject-and-revert.
+  ipcMain.handle(IPC.shortcutsSet, (_e, action: ShortcutAction, accelerator: string | null) =>
+    trySetShortcut(action, accelerator),
+  )
+  ipcMain.handle(IPC.shortcutsReset, () => resetShortcuts())
 }

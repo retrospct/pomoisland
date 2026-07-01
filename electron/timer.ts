@@ -2,7 +2,7 @@
 // design-reference/project/Dynamic Island Pomodoro.dc.html, but block lengths,
 // the long-break cadence, and auto-start come from persisted prefs (ADR-0002).
 
-import type { Prefs, TimerAction, TimerState } from '../src/shared/types'
+import type { Mode, Prefs, TimerAction, TimerState } from '../src/shared/types'
 
 const TICK_MS = 250
 const COMPLETE_HOLD_MS = 2600 // time for the completion flourish before advancing
@@ -12,11 +12,19 @@ type Listener = (s: TimerState) => void
 type FocusCompleteHook = () => void
 type TickHook = () => void
 
+/** What just finished, and whether the upcoming break (once `advance()` fires) is the long one. */
+export interface CompleteEvent {
+  finishedMode: Mode
+  nextIsLongBreak: boolean
+}
+type CompleteHook = (e: CompleteEvent) => void
+
 export class Timer {
   private state: TimerState
   private readonly getPrefs: Getter
   private readonly listeners = new Set<Listener>()
   private readonly focusCompleteHooks = new Set<FocusCompleteHook>()
+  private readonly completeHooks = new Set<CompleteHook>()
   private readonly tickHooks = new Set<TickHook>()
   private interval: ReturnType<typeof setInterval> | null = null
   private completeTimer: ReturnType<typeof setTimeout> | null = null
@@ -62,6 +70,12 @@ export class Timer {
   onFocusComplete(cb: FocusCompleteHook): () => void {
     this.focusCompleteHooks.add(cb)
     return () => this.focusCompleteHooks.delete(cb)
+  }
+
+  /** Register a hook fired whenever any block (focus or break) completes. */
+  onComplete(cb: CompleteHook): () => void {
+    this.completeHooks.add(cb)
+    return () => this.completeHooks.delete(cb)
   }
 
   /**
@@ -146,10 +160,13 @@ export class Timer {
   private complete(): void {
     if (this.completeTimer) clearTimeout(this.completeTimer)
     const wasFocus = this.state.mode === 'focus'
+    const p = this.getPrefs()
+    const nextIsLongBreak = wasFocus && (this.state.sessionIndex + 1) % p.cSessions === 0
     this.set({ remaining: 0, status: 'complete' })
     if (wasFocus) {
       for (const hook of this.focusCompleteHooks) hook()
     }
+    for (const hook of this.completeHooks) hook({ finishedMode: this.state.mode, nextIsLongBreak })
     this.completeTimer = setTimeout(() => this.advance(), COMPLETE_HOLD_MS)
   }
 

@@ -5,6 +5,7 @@ import type {
   Placement,
   Prefs,
   PomApi,
+  ShortcutAction,
   TaskMutation,
   TasksState,
   TimerAction,
@@ -49,6 +50,11 @@ const api: PomApi = {
   },
   updates: {
     check: () => ipcRenderer.send(IPC.checkUpdates),
+  },
+  shortcuts: {
+    set: (action: ShortcutAction, accelerator: string | null) =>
+      ipcRenderer.invoke(IPC.shortcutsSet, action, accelerator) as Promise<{ ok: boolean; error?: string }>,
+    reset: () => ipcRenderer.invoke(IPC.shortcutsReset) as ReturnType<PomApi['shortcuts']['reset']>,
   },
 }
 

@@ -67,6 +67,15 @@ export type Ripple = 'burst' | 'echo' | 'heartbeat' | 'bloom'
  */
 export type TickSound = 'off' | 'soft' | 'crisp'
 
+/**
+ * User-rebindable global shortcut actions — see ADR-0007. `showHide` toggles the
+ * island's visibility; `playPause`/`next` mirror the `playPause`/`skip` TimerActions.
+ * Opening Settings is a `⌘,` app-menu item, not a global shortcut, so it has no action here.
+ */
+export type ShortcutAction = 'showHide' | 'playPause' | 'next'
+/** Per-action Electron accelerator string (e.g. "CommandOrControl+Alt+Up"), or `null` when unbound. */
+export type Shortcuts = Record<ShortcutAction, string | null>
+
 /** Runtime timer state, owned by the main process and broadcast to renderers. */
 export interface TimerState {
   status: Status
@@ -102,7 +111,11 @@ export interface Prefs {
   // ---- General · Behavior ----
   /** Auto-start the next focus/break block when one ends. */
   autoStart: boolean
-  /** Do Not Disturb while focusing (persisted-only this pass — ADR-0004). */
+  /**
+   * Do Not Disturb while focusing. Persisted but dropped from the Settings UI
+   * (ADR-0004 update, 2026-07-01) — macOS has no public API to toggle system
+   * Focus/DND, so there's no toggle that could actually work.
+   */
   dnd: boolean
   launchLogin: boolean
   /** Motivational messages in the expanded panel. */
@@ -111,6 +124,8 @@ export interface Prefs {
   pauseIdle: boolean
   /** Show the PomoIsland icon in the macOS Dock. */
   showDockIcon: boolean
+  /** User-rebindable global shortcuts (show/hide, play/pause, next) — see ADR-0007. */
+  shortcuts: Shortcuts
   // ---- Preferences · Alarm & sound ----
   sound: Sound
   volume: number
@@ -257,6 +272,17 @@ export interface PomApi {
     /** Trigger an interactive update check; the main process drives its own dialogs. */
     check(): void
   }
+  shortcuts: {
+    /**
+     * Attempt to bind `action` to `accelerator` (or unbind when `accelerator` is
+     * `null`). Reject-and-revert: on failure the previous binding is left in
+     * place and `ok` is false with a human-readable `error`. On success the
+     * change is already persisted — the caller observes it via `prefs.onChange`.
+     */
+    set(action: ShortcutAction, accelerator: string | null): Promise<{ ok: boolean; error?: string }>
+    /** Restore all shortcuts to their defaults; returns the resulting map. */
+    reset(): Promise<Shortcuts>
+  }
 }
 
 export type SettingsControl = 'close' | 'minimize' | 'zoom'
@@ -281,4 +307,6 @@ export const IPC = {
   openSettings: 'windows:openSettings',
   settingsControl: 'windows:settingsControl',
   checkUpdates: 'updates:check',
+  shortcutsSet: 'shortcuts:set',
+  shortcutsReset: 'shortcuts:reset',
 } as const

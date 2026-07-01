@@ -1,7 +1,7 @@
 import { Menu, Tray } from 'electron'
 import { fmtTime } from '../src/shared/format'
-import type { TimerState } from '../src/shared/types'
-import { SHOW_HIDE_ACCELERATOR } from './shortcuts'
+import type { Shortcuts, TimerState } from '../src/shared/types'
+import { getPrefs, onPrefsChange } from './store'
 import type { Timer } from './timer'
 import { loadTrayIcon } from './tray-icon'
 import { checkForUpdatesInteractive } from './updater'
@@ -51,23 +51,43 @@ function applyTrayState(state: TimerState): void {
   tray.setToolTip(trayTooltip(state))
 }
 
-export function createTray(timer: Timer): Tray {
-  tray = new Tray(loadTrayIcon())
-  applyTrayState(timer.getState())
-  timer.subscribe(applyTrayState)
-
-  const menu = Menu.buildFromTemplate([
+/** Rebuilds the tray's context menu so its accelerator labels reflect `shortcuts`. */
+function buildMenu(timer: Timer, shortcuts: Shortcuts): Menu {
+  return Menu.buildFromTemplate([
     {
       label: 'Show / Hide Island',
-      accelerator: SHOW_HIDE_ACCELERATOR,
+      accelerator: shortcuts.showHide ?? undefined,
       click: () => toggleIslandVisibility(),
     },
+    {
+      label: 'Play / Pause',
+      accelerator: shortcuts.playPause ?? undefined,
+      click: () => timer.action({ type: 'playPause' }),
+    },
+    {
+      label: 'Next',
+      accelerator: shortcuts.next ?? undefined,
+      click: () => timer.action({ type: 'skip' }),
+    },
+    { type: 'separator' },
     { label: 'Settings…', click: () => createSettingsWindow() },
     { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
     { type: 'separator' },
     { label: 'Quit PomoIsland', role: 'quit' },
   ])
-  tray.setContextMenu(menu)
+}
+
+export function createTray(timer: Timer): Tray {
+  tray = new Tray(loadTrayIcon())
+  applyTrayState(timer.getState())
+  timer.subscribe(applyTrayState)
+
+  tray.setContextMenu(buildMenu(timer, getPrefs().shortcuts))
+  onPrefsChange((p) => {
+    if (!tray || tray.isDestroyed()) return
+    tray.setContextMenu(buildMenu(timer, p.shortcuts))
+  })
+
   return tray
 }
 

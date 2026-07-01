@@ -52,6 +52,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
 
   return (
     <div
+      data-hover-target="1"
       style={{
         width: 320,
         boxSizing: 'border-box',

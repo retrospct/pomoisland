@@ -207,23 +207,50 @@ export function IslandApp() {
 
   const closeTasks = () => setTasksOpen(false)
 
+  // --- Peek-trigger hover region (MO-45) ---
+  // The wrapper window is much larger than the visible island (it reserves
+  // transparent room for the notch spacer, notch "ears", and floating-menu
+  // slack — see Island.tsx). Triggering peek on `onMouseEnter` of that whole
+  // window meant passing near the notch (e.g. closing a browser tab) could
+  // clip through the dead zone and expand the island unintentionally.
+  //
+  // Fix: delegate via the bubbling mouseover/mouseout events (unlike
+  // mouseenter/mouseleave, these bubble) and scope the trigger to whichever
+  // `[data-hover-target]` element — the actual visible ink — the pointer is
+  // over. Every presentation (collapsed clusters, peek/expanded panels, the
+  // task list) marks its own visible root with that attribute; the
+  // transparent scaffolding between them is left unmarked, so it stays a
+  // dead zone. Boundary checks via relatedTarget avoid re-firing while the
+  // pointer moves between children of the same hover target.
+  const onIslandMouseOver = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-hover-target="1"]')
+    if (!target) return
+    const from = e.relatedTarget as HTMLElement | null
+    if (from && target.contains(from)) return // still within the same hover target
+    clearRetract()
+    if (!expanded && !placement.dragging) setPeek(true)
+  }
+
+  const onIslandMouseOut = (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-hover-target="1"]')
+    if (!target) return
+    const to = e.relatedTarget as HTMLElement | null
+    if (to && target.contains(to)) return // still within the same hover target
+    const delay = expanded ? (prefs?.expandRetractMs ?? 1000) : (prefs?.hoverRetractMs ?? 200)
+    retractTimer.current = setTimeout(() => {
+      retractTimer.current = null
+      setExpanded(false)
+      setPeek(false)
+    }, delay)
+  }
+
   return (
     <div
       ref={measureRef}
       style={{ display: 'inline-block', ...(prefs ? islandPaletteVars(prefs.theme) : {}) }}
       onMouseDown={onMouseDown}
-      onMouseEnter={() => {
-        clearRetract()
-        if (!expanded && !placement.dragging) setPeek(true)
-      }}
-      onMouseLeave={() => {
-        const delay = expanded ? (prefs?.expandRetractMs ?? 1000) : (prefs?.hoverRetractMs ?? 200)
-        retractTimer.current = setTimeout(() => {
-          retractTimer.current = null
-          setExpanded(false)
-          setPeek(false)
-        }, delay)
-      }}
+      onMouseOver={onIslandMouseOver}
+      onMouseOut={onIslandMouseOut}
     >
       {view && state && prefs && (
         <Island
