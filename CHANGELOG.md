@@ -5,6 +5,18 @@ All notable changes to PomoIsland will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/retrospct/pomoisland/compare/v0.2.4...v0.3.0) (2026-07-01)
+
+
+### Features
+
+* rebindable global shortcuts, real OS integrations, and hover-region fix ([#35](https://github.com/retrospct/pomoisland/issues/35)) ([b602df2](https://github.com/retrospct/pomoisland/commit/b602df239fa1ec1243657c97284685045aef0bdb))
+
+
+### Bug Fixes
+
+* move shortcut unbind to a corner badge, add per-row reset ([#37](https://github.com/retrospct/pomoisland/issues/37)) ([6aa2ed3](https://github.com/retrospct/pomoisland/commit/6aa2ed35cc019497dd7ceb095e23386f184d56eb))
+
 ## [0.2.4](https://github.com/retrospct/pomoisland/compare/v0.2.3...v0.2.4) (2026-07-01)
 
 
