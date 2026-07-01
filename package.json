@@ -22,7 +22,6 @@
     "notch:check": "node scripts/notch-check.ts",
     "package": "electron-vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir",
     "dist:mac": "electron-vite build && electron-builder --mac",
-    "prerelease:mac": "node scripts/update-changelog.mjs",
     "release:mac": "electron-vite build && electron-builder --mac --publish always"
   },
   "devDependencies": {

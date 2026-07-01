@@ -77,7 +77,7 @@ locally launchable, unquarantined `.app`. A distributable, Gatekeeper-passing bu
    …or an App Store Connect API key (recommended for CI):
 
    ```bash
-   export APPLE_API_KEY="$(base64 -i AuthKey_XXXX.p8)"
+   export APPLE_API_KEY="/path/to/AuthKey_XXXX.p8"   # notarytool wants a file path, not the key contents
    export APPLE_API_KEY_ID="KEYID"
    export APPLE_API_ISSUER="issuer-uuid"
    export APPLE_TEAM_ID="ABCDE12345"
@@ -95,6 +95,23 @@ only *plays* synthesized audio). Verify a finished build with `spctl --assess --
 > **Menu-bar tray icon.** Uses the Variant D iconset exports in `build/tray/` (16 pt + 22 pt,
 > @1x/@2x). While a focus/break block is active the tray also shows a live `mm:ss` title beside
 > the icon. Source PNGs: `design-reference/project/icons/PomodoroFocus-D.iconset/`.
+
+## Releasing
+
+Versioning and the changelog are managed by [release-please](https://github.com/googleapis/release-please):
+
+1. Write PR titles as [Conventional Commits](https://www.conventionalcommits.org/) (`feat: ...`,
+   `fix: ...`, `chore: ...`) — PRs are squash-merged, so the PR title is what release-please
+   parses to decide the next version bump.
+2. On every push to `main`, the "Release Please" GitHub Action opens/updates a **Release PR**
+   that bumps `package.json`'s `version` and finalizes `CHANGELOG.md`'s `[Unreleased]` section.
+3. Merging that Release PR is what ships: release-please tags `vX.Y.Z` and creates a **draft**
+   GitHub Release, then a gated `publish` job builds, signs, and notarizes the app on a
+   `macos-latest` runner and uploads the `.dmg`/`.zip`/`latest-mac.yml` to that same draft.
+4. Once you've smoke-tested the uploaded build, publish the draft release on GitHub.
+
+`pnpm run release:mac` also still works locally (using your `.env` credentials) if you want to
+build a release manually instead of waiting on CI.
 
 ## Architecture
 
