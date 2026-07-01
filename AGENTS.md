@@ -46,3 +46,11 @@ Single-context repo: one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agent
 - Product name is "PomoIsland" (capital I); the git repo/remote and npm package name stay all-lowercase (`pomisland`/`pomoisland`) — the rename is display-name-only and in-repo.
 - Multi-option settings use a three-button segmented control matching the Theme/color-picker pattern (e.g. Ticking sound Off/Soft/Crisp), not a binary toggle.
 - Linear is now used to track outstanding work items/tickets (alongside the local `.scratch/` markdown convention).
+
+## Cursor Cloud specific instructions
+
+- Node/pnpm: the base image ships `/exec-daemon/node` (v22), which shadows the required Node 24 on `PATH`. A login shell auto-selects Node 24 via nvm (wired into `~/.bashrc`); in a non-login shell run `. "$HOME/.nvm/nvm.sh" && nvm use 24` first. `pnpm` (pinned `pnpm@11.9.0`) is provided by corepack under Node 24, not a global — `corepack enable pnpm` if `pnpm: command not found`.
+- Electron binary: pnpm's build gating can skip electron's postinstall, leaving `node_modules/electron/dist/electron` missing (so `dev`/`preview` fail). The startup update script fetches it; if it's ever absent, run `node node_modules/electron/install.js`.
+- This is a macOS app but it DOES run here for dev/manual testing under Electron on X11. Launch the GUI with `DISPLAY=:1 pnpm dev` (renders on the desktop the computerUse tooling sees). Standard scripts (`dev`/`build`/`typecheck`/`lint`, plus `audio:check`/`tick:check`/`placement:check`/`notch:check`) are in `package.json` / README.
+- Benign on this headless Linux VM: startup logs `Failed to connect to the bus` (no dbus), `Add _NET_WM_WINDOW_TYPE_PANEL` (macOS `type:'panel'` window), and `Gtk: gtk_widget_add_accelerator ... assertion failed`. The app still launches and works.
+- macOS-only behaviors are inert on Linux: notch detection reports `hasNotch=false` so the island snaps to the top-center of the screen instead of wrapping a notch; dock/menu-bar-float/panel semantics don't apply. The island (collapsed/peek/expanded), timer state machine, and Settings still render and are testable.
