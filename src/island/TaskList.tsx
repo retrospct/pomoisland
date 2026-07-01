@@ -313,8 +313,16 @@ function TaskRow({
         )}
       </button>
 
-      {/* Title */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Title + edit pencil grouped so the pencil sits just after the title text */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          minWidth: 0,
+          flex: isEditing ? 1 : '0 1 auto',
+        }}
+      >
         {isEditing ? (
           <input
             value={editText}
@@ -340,43 +348,44 @@ function TaskRow({
             }}
           />
         ) : (
-          <span
-            title={task.title}
-            style={{
-              display: 'block',
-              fontSize: 12.5,
-              color: task.done ? 'var(--il-muted)' : isActive ? accent : 'var(--il-text)',
-              fontWeight: isActive && !task.done ? 500 : 'normal',
-              textDecoration: task.done ? 'line-through' : 'none',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              letterSpacing: '-0.005em',
-            }}
-          >
-            {task.title}
-          </span>
+          <>
+            <span
+              title={task.title}
+              style={{
+                minWidth: 0,
+                fontSize: 12.5,
+                color: task.done ? 'var(--il-muted)' : isActive ? accent : 'var(--il-text)',
+                fontWeight: isActive && !task.done ? 500 : 'normal',
+                textDecoration: task.done ? 'line-through' : 'none',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                letterSpacing: '-0.005em',
+              }}
+            >
+              {task.title}
+            </span>
+            <button
+              aria-label="Edit task title"
+              onClick={(e) => { e.stopPropagation(); onStartEdit(task) }}
+              style={iconActionBtn}
+            >
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <path
+                  d="M8.5 1.5L10.5 3.5L4 10L1 11L2 8L8.5 1.5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </>
         )}
       </div>
 
-      {/* Edit — immediately after title, not shown while editing */}
-      {!isEditing && (
-        <button
-          aria-label="Edit task title"
-          onClick={(e) => { e.stopPropagation(); onStartEdit(task) }}
-          style={iconActionBtn}
-        >
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M8.5 1.5L10.5 3.5L4 10L1 11L2 8L8.5 1.5Z"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      )}
+      {/* Spacer pushes the session controls + delete to the right */}
+      {!isEditing && <div style={{ flex: 1 }} />}
 
       {/* Session controls: − + only for incomplete tasks */}
       {!isEditing && !task.done && (
@@ -411,7 +420,7 @@ function TaskRow({
       <button
         aria-label="Delete task"
         onClick={(e) => { e.stopPropagation(); onDelete() }}
-        style={iconActionBtn}
+        style={{ ...iconActionBtn, color: '#ff6b6b' }}
       >
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
           <path d="M2 3h8M5 3V2h2v1M4.5 3v6.5h3V3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
