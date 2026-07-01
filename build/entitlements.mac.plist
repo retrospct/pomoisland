@@ -6,7 +6,7 @@
     Minimal hardened-runtime entitlements for an Electron app.
     Chromium/V8 require a writable+executable JIT region and load unsigned
     helper frameworks, so these three are mandatory for the app to launch
-    under hardenedRuntime. Pomoisland only *plays* synthesized audio (Web
+    under hardenedRuntime. PomoIsland only *plays* synthesized audio (Web
     Audio) and makes no network calls, so no microphone, camera, or network
     entitlements are requested.
   -->

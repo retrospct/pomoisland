@@ -1,4 +1,4 @@
-# Context: Pomoisland
+# Context: PomoIsland
 
 A macOS notch-aware Pomodoro timer. The UI lives as a "dynamic island" that hugs the
 MacBook camera notch (or floats freely on external displays), glances small, and expands

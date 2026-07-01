@@ -399,7 +399,7 @@ const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['messages', 'Motivational messages', 'Show an encouraging line in the expanded panel'],
   ['hideShare', 'Hide during screen sharing', 'Auto-conceal while presenting or recording.'],
   ['pauseIdle', 'Pause when Mac is idle', 'Stop the clock if you step away or lock the screen.'],
-  ['showDockIcon', 'Show app in Dock', 'Display the Pomisland icon in the macOS Dock.'],
+  ['showDockIcon', 'Show app in Dock', 'Display the PomoIsland icon in the macOS Dock.'],
 ]
 
 export function GeneralTab({ prefs, set }: TabProps) {

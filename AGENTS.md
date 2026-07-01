@@ -1,4 +1,4 @@
-# Pomoisland — Dynamic Island Pomodoro
+# PomoIsland — Dynamic Island Pomodoro
 
 A macOS notch-aware Pomodoro timer built with Electron + React + TypeScript (Vite).
 
@@ -39,7 +39,7 @@ Single-context repo: one `CONTEXT.md` + `docs/adr/` at the root. See `docs/agent
 - The repo uses multiple linked git worktrees for parallel `cursor/` branches; push the branch to origin first, then use `move_agent_to_root` so file edits land in the correct tree. If `move_agent_to_root` fails (e.g. because `main` is already locked by the primary worktree), skip the root switch and work directly at the worktree path — point all Shell commands and file edits at the absolute worktree path.
 - Use `pnpm run <script>` (not `npm run`) inside worktrees; `npm run` may report "tsc: command not found" because the shell PATH doesn't include pnpm's local `.bin` without pnpm invoking the script.
 - Electron UA stylesheet bleeds through `<button>` elements on hover: keep `background: transparent` as an inline style AND use `!important` on CSS hover rules, or the browser UA background shows through.
-- Product name is "Pomoisland" (double "o"); the git repo/remote stays `pomisland` (single "o") — the rename is product-name-only and in-repo.
+- Product name is "PomoIsland" (capital I); the git repo/remote and npm package name stay all-lowercase (`pomisland`/`pomoisland`) — the rename is display-name-only and in-repo.
 - Multi-option settings use a three-button segmented control matching the Theme/color-picker pattern (e.g. Ticking sound Off/Soft/Crisp), not a binary toggle.
 - New work goes on a `cursor/`-prefixed branch; never commit or push directly to the default branch (`main`).
 - Linear is now used to track outstanding work items/tickets (alongside the local `.scratch/` markdown convention).

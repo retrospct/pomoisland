@@ -1,7 +1,7 @@
 // Native macOS application menu bar.
 //
 // This is a menu-bar utility (LSUIElement), so the menu bar only appears while a
-// Pomoisland window is focused. We keep it minimal but standard: the app menu hosts
+// PomoIsland window is focused. We keep it minimal but standard: the app menu hosts
 // "Check for Updates…" — the macOS-conventional home for it — plus About/Hide/Quit;
 // Edit gives the Settings window native copy/paste/undo shortcuts; Window is the
 // usual minimize/zoom/close.

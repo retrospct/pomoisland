@@ -20,8 +20,8 @@ require('dotenv').config()
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId: 'dev.retro.pomoisland',
-  productName: 'Pomoisland',
-  copyright: '© 2026 Pomoisland',
+  productName: 'PomoIsland',
+  copyright: '© 2026 PomoIsland',
 
   directories: {
     output: 'release',

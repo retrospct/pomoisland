@@ -1,4 +1,4 @@
-# Pomoisland
+# PomoIsland
 
 A macOS notch-aware Pomodoro timer that lives in a "dynamic island" hugging the camera
 notch. It glances small, expands on tap, and can be dragged free to float anywhere.
@@ -84,7 +84,7 @@ locally launchable, unquarantined `.app`. A distributable, Gatekeeper-passing bu
    ```
 
 Hardened runtime is on, with entitlements in `build/entitlements.mac.plist` (the minimal
-JIT/unsigned-memory/library-validation set Electron needs; no mic/camera/network — Pomoisland
+JIT/unsigned-memory/library-validation set Electron needs; no mic/camera/network — PomoIsland
 only *plays* synthesized audio). Verify a finished build with `spctl --assess --type execute -vv`.
 
 > **App icon.** Ships from the design handoff (`design-reference/project/Icon Export.dc.html` →

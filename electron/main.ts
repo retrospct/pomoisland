@@ -33,7 +33,7 @@ app.whenReady().then(() => {
 
   bootstrap()
 
-  // Native app menu bar (shows when a Pomoisland window is focused) + auto-updater.
+  // Native app menu bar (shows when a PomoIsland window is focused) + auto-updater.
   Menu.setApplicationMenu(buildAppMenu())
   initAutoUpdater()
 

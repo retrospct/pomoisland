@@ -109,7 +109,7 @@ export interface Prefs {
   messages: boolean
   hideShare: boolean
   pauseIdle: boolean
-  /** Show the Pomisland icon in the macOS Dock. */
+  /** Show the PomoIsland icon in the macOS Dock. */
   showDockIcon: boolean
   // ---- Preferences · Alarm & sound ----
   sound: Sound

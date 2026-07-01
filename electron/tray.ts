@@ -23,7 +23,7 @@ function trayTitle(state: TimerState): string {
 
 function trayTooltip(state: TimerState): string {
   const mode = state.mode === 'focus' ? 'Focus' : 'Break'
-  const parts = ['Pomoisland']
+  const parts = ['PomoIsland']
 
   switch (state.status) {
     case 'running':
@@ -65,7 +65,7 @@ export function createTray(timer: Timer): Tray {
     { label: 'Settings…', click: () => createSettingsWindow() },
     { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
     { type: 'separator' },
-    { label: 'Quit Pomoisland', role: 'quit' },
+    { label: 'Quit PomoIsland', role: 'quit' },
   ])
   tray.setContextMenu(menu)
   return tray

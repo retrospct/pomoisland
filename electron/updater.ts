@@ -27,7 +27,7 @@ function focusedWindow(): BrowserWindow | undefined {
 function info(message: string, detail?: string): void {
   void dialog.showMessageBox(focusedWindow() ?? (undefined as never), {
     type: 'info',
-    title: 'Pomoisland',
+    title: 'PomoIsland',
     message,
     detail,
     buttons: ['OK'],
@@ -43,7 +43,7 @@ export function initAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('update-not-available', () => {
-    if (interactive) info("You're up to date", `Pomoisland ${app.getVersion()} is the latest version.`)
+    if (interactive) info("You're up to date", `PomoIsland ${app.getVersion()} is the latest version.`)
     interactive = false
     checking = false
   })
@@ -51,7 +51,7 @@ export function initAutoUpdater(): void {
   autoUpdater.on('update-available', (i) => {
     // autoDownload is on, so the download starts automatically; just acknowledge.
     if (interactive) {
-      info('Downloading update…', `Pomoisland ${i?.version ?? ''} is downloading. You'll be prompted to restart when it's ready.`)
+      info('Downloading update…', `PomoIsland ${i?.version ?? ''} is downloading. You'll be prompted to restart when it's ready.`)
       interactive = false
     }
   })
@@ -62,9 +62,9 @@ export function initAutoUpdater(): void {
     void dialog
       .showMessageBox(focusedWindow() ?? (undefined as never), {
         type: 'info',
-        title: 'Pomoisland',
+        title: 'PomoIsland',
         message: 'Update ready to install',
-        detail: `Pomoisland ${i?.version ?? ''} has been downloaded. Restart now to update, or it will install the next time you quit.`,
+        detail: `PomoIsland ${i?.version ?? ''} has been downloaded. Restart now to update, or it will install the next time you quit.`,
         buttons: ['Restart now', 'Later'],
         defaultId: 0,
         cancelId: 1,
