@@ -225,23 +225,6 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
     setBodyDims(prev => (prev.w === w && prev.h === h) ? prev : { w, h })
   })
 
-  // On a real notch, the window is centered on the true notch position (see
-  // snappedTopLeft in windows.ts) — so if one side has more elements slotted
-  // than the other, the transparent notch spacer would drift off from the
-  // physical notch unless both side columns share the wider side's width.
-  // Measure each side's natural (unconstrained) content width via inner refs
-  // and pad the narrower side to match, widening the bar outward instead of
-  // shifting elements between slots.
-  const leftContentRef = useRef<HTMLDivElement>(null)
-  const rightContentRef = useRef<HTMLDivElement>(null)
-  const [sideW, setSideW] = useState({ left: 0, right: 0 })
-  useLayoutEffect(() => {
-    if (!notch || !hasNotch) return  // only the real-notch wrap needs side balancing
-    const l = leftContentRef.current?.getBoundingClientRect().width ?? 0
-    const r = rightContentRef.current?.getBoundingClientRect().width ?? 0
-    setSideW((prev) => (prev.left === l && prev.right === r ? prev : { left: l, right: r }))
-  })
-  const matchedSideW = Math.max(sideW.left, sideW.right) || undefined
 
   useEffect(() => {
     if (view.isComplete) {
@@ -425,22 +408,17 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
             }}
           >
             <NotchEars />
-            {/* Left column — bare elements flanking the notch. Outer div is padded to
-                matchedSideW so an uneven element count doesn't push the spacer (and
-                thus the real notch) off-center; content hugs the spacer via flex-end. */}
+            {/* Left column — bare elements flanking the notch */}
             <div
               style={{
                 alignSelf: 'center',
-                width: matchedSideW,
                 padding: '0 10px 0 14px',
                 display: 'flex',
-                justifyContent: 'flex-end',
                 alignItems: 'center',
+                gap: 13,
               }}
             >
-              <div ref={leftContentRef} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-                {leftVisible.map(renderElement)}
-              </div>
+              {leftVisible.map(renderElement)}
             </div>
 
             {/* Center column — transparent notch spacer + below content */}
@@ -467,21 +445,17 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               )}
             </div>
 
-            {/* Right column — bare elements flanking the notch. Mirrors the left column's
-                matchedSideW padding, hugging the spacer via flex-start. */}
+            {/* Right column — bare elements flanking the notch */}
             <div
               style={{
                 alignSelf: 'center',
-                width: matchedSideW,
                 padding: '0 14px 0 10px',
                 display: 'flex',
-                justifyContent: 'flex-start',
                 alignItems: 'center',
+                gap: 13,
               }}
             >
-              <div ref={rightContentRef} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-                {rightVisible.map(renderElement)}
-              </div>
+              {rightVisible.map(renderElement)}
             </div>
 
             {/* CardOutline overlay — variant-aware progress trace for non-'below' styles.
