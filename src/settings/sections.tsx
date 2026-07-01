@@ -5,6 +5,12 @@
 
 import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
 import { NotchProgress, TIMER_STYLE_META } from '@shared/NotchProgress'
+import {
+  NOTCH_HEIGHT_CUSTOM_MAX,
+  NOTCH_HEIGHT_STEP,
+  REAL_NOTCH_STD,
+  presetNotchHeight,
+} from '@shared/notchHeight'
 import { RIPPLE_DEFS } from '@shared/ripple'
 import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
 import { useReducedMotion } from '@shared/useReducedMotion'
@@ -13,6 +19,7 @@ import type {
   FloatingLayout,
   IslandElement,
   IslandSlot,
+  Placement,
   Prefs,
   Ripple,
   Sound,
@@ -20,6 +27,7 @@ import type {
   TickSound,
 } from '@shared/types'
 import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 
 /** Circular arrow — reset to default. */
 function ResetIcon() {
@@ -275,6 +283,98 @@ function RetractControl({
           {fmt(value)}
         </span>
         <StepButton onClick={() => onChange(Math.min(max, value + 100))}>+</StepButton>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * "Docked height" mode picker + custom-height stepper. Fetches live placement
+ * (via the same IPC the island window uses) so the custom bounds and the
+ * default-on-switch value track the actual current display, not a guess.
+ */
+function NotchHeightSection({ prefs, set }: TabProps) {
+  const [placement, setPlacement] = useState<Placement | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    void window.api.island.getPlacement().then((p) => alive && setPlacement(p))
+    const off = window.api.island.onPlacement((p) => alive && setPlacement(p))
+    return () => {
+      alive = false
+      off()
+    }
+  }, [])
+
+  // Fall back to the standard notch height until placement arrives, so the
+  // control isn't unusable (NaN) on first paint.
+  const menubarHeight = placement?.notchHeight ?? REAL_NOTCH_STD
+  const hasNotch = placement?.hasNotch ?? false
+  const min = menubarHeight
+  const max = NOTCH_HEIGHT_CUSTOM_MAX
+  const custom = Math.min(max, Math.max(min, prefs.notchHeightCustom ?? min))
+
+  return (
+    <div style={{ marginTop: 22 }}>
+      <SectionLabel>Notch height</SectionLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>Docked height</span>
+          <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
+            {(
+              [
+                { k: 'menubar', label: 'Menu bar' },
+                { k: 'realNotch', label: 'Real notch' },
+                { k: 'custom', label: 'Custom' },
+              ] as const
+            ).map((m) => {
+              const on = prefs.notchHeightMode === m.k
+              return (
+                <button
+                  key={m.k}
+                  onClick={() => {
+                    if (m.k === 'custom' && prefs.notchHeightMode !== 'custom') {
+                      // Default the custom value to whatever the outgoing preset
+                      // was showing, so switching to Custom doesn't jump the height.
+                      const seed = presetNotchHeight(prefs.notchHeightMode, menubarHeight, hasNotch)
+                      set({ notchHeightMode: 'custom', notchHeightCustom: seed })
+                    } else {
+                      set({ notchHeightMode: m.k })
+                    }
+                  }}
+                  style={{
+                    height: 30, minWidth: 34, padding: '0 12px', border: 'none', cursor: 'pointer',
+                    borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                    color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
+                  }}
+                >
+                  {m.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {prefs.notchHeightMode === 'custom' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Custom height</div>
+              <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
+                Snapped island band height, {min}–{max}px (min is the menu bar)
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: '0 0 auto' }}>
+              <StepButton onClick={() => set({ notchHeightCustom: Math.max(min, custom - NOTCH_HEIGHT_STEP) })}>
+                &minus;
+              </StepButton>
+              <span style={{ fontFamily: MONO, fontSize: 13, color: 'var(--sp-teal)', minWidth: 44, textAlign: 'center' }}>
+                {custom}px
+              </span>
+              <StepButton onClick={() => set({ notchHeightCustom: Math.min(max, custom + NOTCH_HEIGHT_STEP) })}>
+                +
+              </StepButton>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -919,59 +1019,7 @@ export function PreferencesTab({ prefs, set }: TabProps) {
           </div>
         </div>
 
-        <div style={{ marginTop: 22 }}>
-          <SectionLabel>Notch height</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-              <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>Docked height</span>
-              <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
-                {(
-                  [
-                    { k: 'menubar', label: 'Menu bar' },
-                    { k: 'realNotch', label: 'Real notch' },
-                    { k: 'custom', label: 'Custom' },
-                  ] as const
-                ).map((m) => {
-                  const on = prefs.notchHeightMode === m.k
-                  return (
-                    <button
-                      key={m.k}
-                      onClick={() => set({ notchHeightMode: m.k })}
-                      style={{
-                        height: 30, minWidth: 34, padding: '0 12px', border: 'none', cursor: 'pointer',
-                        borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
-                        color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
-                      }}
-                    >
-                      {m.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            {prefs.notchHeightMode === 'custom' && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                <div>
-                  <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Custom height</div>
-                  <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
-                    Snapped island band height in pixels
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: '0 0 auto' }}>
-                  <StepButton onClick={() => set({ notchHeightCustom: Math.max(20, prefs.notchHeightCustom - 2) })}>
-                    &minus;
-                  </StepButton>
-                  <span style={{ fontFamily: MONO, fontSize: 13, color: 'var(--sp-teal)', minWidth: 44, textAlign: 'center' }}>
-                    {prefs.notchHeightCustom}px
-                  </span>
-                  <StepButton onClick={() => set({ notchHeightCustom: Math.min(80, prefs.notchHeightCustom + 2) })}>
-                    +
-                  </StepButton>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <NotchHeightSection prefs={prefs} set={set} />
 
         <div style={{ marginTop: 24 }}>
           <SectionLabel>Auto-retract</SectionLabel>

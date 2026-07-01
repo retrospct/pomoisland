@@ -1,3 +1,4 @@
+import { resolveNotchHeight } from '@shared/notchHeight'
 import { playSound, playTick } from '@shared/sound'
 import type { Placement, Prefs, TasksState, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -153,19 +154,16 @@ export function IslandApp() {
   const view =
     state && prefs ? deriveIsland(state, prefs, resolvedTheme, tasks?.completedToday ?? 0) : null
 
-  // Notch band height honoring the user's setting: 'menubar' uses the measured
-  // menu-bar band; 'realNotch' uses the measured notch on a notched display or a
-  // standard ~38px elsewhere; 'custom' uses the configured value.
-  const REAL_NOTCH_STD = 38
+  // Notch band height honoring the user's setting — see resolveNotchHeight for
+  // the mode → height mapping (shared with the settings custom-height stepper).
   const effectiveNotchHeight = !prefs
     ? placement.notchHeight
-    : prefs.notchHeightMode === 'custom'
-      ? prefs.notchHeightCustom
-      : prefs.notchHeightMode === 'realNotch'
-        ? placement.hasNotch
-          ? placement.notchHeight
-          : REAL_NOTCH_STD
-        : placement.notchHeight
+    : resolveNotchHeight({
+        mode: prefs.notchHeightMode,
+        menubarHeight: placement.notchHeight,
+        hasNotch: placement.hasNotch,
+        custom: prefs.notchHeightCustom,
+      })
 
   // Determine presentation
   let present: Present = 'collapsed'
