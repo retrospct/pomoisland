@@ -27,6 +27,10 @@ const placement: Placement = {
   notchCenterX: 0,
 }
 let islandSize: IslandSize = { width: 240, height: 60 }
+// Footprint of the island when docked (collapsed dock). This is the same shape
+// regardless of the floating layout (L1–L4), so the snap drop-zone is sized from
+// it — the drop zone shows where the island will LAND, not the current floating card.
+let dockedSize: IslandSize = { width: 240, height: 60 }
 
 interface DragCtx {
   startCursorX: number
@@ -172,6 +176,9 @@ export function resizeIsland(size: IslandSize): void {
   islandSize = { width, height }
 
   if (placement.snapped) {
+    // Remember the docked footprint so the snap drop-zone stays consistent across
+    // floating layouts (it reflects the landing shape, not the current float card).
+    dockedSize = { width, height }
     const b = islandWin.getBounds()
     const d = displayAtPoint(b.x + b.width / 2, b.y + b.height / 2)
     const tl = snappedTopLeft(width, d)
@@ -325,13 +332,13 @@ const OVERLAY_PADDING_Y = 20
 export function createSnapOverlayWindow(): BrowserWindow {
   if (snapOverlayWin) return snapOverlayWin
 
-  const { x, y } = snappedTopLeft(islandSize.width)
+  const { x, y } = snappedTopLeft(dockedSize.width)
 
   snapOverlayWin = new BrowserWindow({
-    width: islandSize.width + OVERLAY_PADDING_X * 2,
+    width: dockedSize.width + OVERLAY_PADDING_X * 2,
     // No top padding: window sits flush at y=0 (the screen top). Extra height
     // below lets the glow bleed without being clipped — see SnapOverlayApp.tsx.
-    height: islandSize.height + OVERLAY_PADDING_Y,
+    height: dockedSize.height + OVERLAY_PADDING_Y,
     x: x - OVERLAY_PADDING_X,
     y,
     frame: false,
@@ -383,10 +390,12 @@ function updateSnapOverlay(): void {
   const cursorX = drag?.lastCursorX ?? (islandWin?.getBounds().x ?? 0)
   const cursorY = drag?.lastCursorY ?? (islandWin?.getBounds().y ?? 0)
   const d = displayAtPoint(cursorX, cursorY)
-  const snap = snappedTopLeft(islandSize.width, d)
+  // Size + center the drop-zone from the docked footprint so it's identical for
+  // every floating layout (L1–L4) and matches where the island will land.
+  const snap = snappedTopLeft(dockedSize.width, d)
 
-  const w = islandSize.width + OVERLAY_PADDING_X * 2
-  const h = islandSize.height + OVERLAY_PADDING_Y
+  const w = dockedSize.width + OVERLAY_PADDING_X * 2
+  const h = dockedSize.height + OVERLAY_PADDING_Y
   snapOverlayWin.setBounds({
     x: snap.x - OVERLAY_PADDING_X,
     y: snap.y, // flush at the screen top — no negative-y offset
