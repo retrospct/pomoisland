@@ -47,6 +47,9 @@ const api: PomApi = {
     openSettings: () => ipcRenderer.send(IPC.openSettings),
     settingsControl: (action) => ipcRenderer.send(IPC.settingsControl, action),
   },
+  updates: {
+    check: () => ipcRenderer.send(IPC.checkUpdates),
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -10,6 +10,7 @@ interface TriggerProps {
 interface DropdownProps {
   onTasks: (e: React.MouseEvent) => void
   onSettings: (e: React.MouseEvent) => void
+  onCheckUpdates: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
 }
 
@@ -25,7 +26,7 @@ export function Menu({ onToggleMenu }: TriggerProps) {
   )
 }
 
-export function MenuDropdown({ onTasks, onSettings, onQuit }: DropdownProps) {
+export function MenuDropdown({ onTasks, onSettings, onCheckUpdates, onQuit }: DropdownProps) {
   return (
     <div style={popover}>
       <button className="island-menu-item" onClick={onTasks} style={menuItem}>
@@ -75,6 +76,26 @@ export function MenuDropdown({ onTasks, onSettings, onQuit }: DropdownProps) {
           <circle cx="7.5" cy="7.5" r="2" stroke="var(--il-icon)" strokeWidth="1.3" />
         </svg>
         Settings
+      </button>
+      <button className="island-menu-item" onClick={onCheckUpdates} style={menuItem}>
+        {/* Refresh / update arrows — a circular pair suggesting "check again". */}
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path
+            d="M12.5 6a5 5 0 1 0 .3 3"
+            stroke="var(--il-icon)"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12.7 2.3v3.4H9.3"
+            stroke="var(--il-icon)"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Check for updates
       </button>
       <div style={{ height: 1, background: 'var(--il-line)', margin: '5px 9px' }} />
       <button className="island-menu-item" onClick={onQuit} style={menuItem}>

@@ -253,6 +253,10 @@ export interface PomApi {
     openSettings(): void
     settingsControl(action: SettingsControl): void
   }
+  updates: {
+    /** Trigger an interactive update check; the main process drives its own dialogs. */
+    check(): void
+  }
 }
 
 export type SettingsControl = 'close' | 'minimize' | 'zoom'
@@ -276,4 +280,5 @@ export const IPC = {
   islandDragEnd: 'island:dragEnd',
   openSettings: 'windows:openSettings',
   settingsControl: 'windows:settingsControl',
+  checkUpdates: 'updates:check',
 } as const

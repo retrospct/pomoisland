@@ -4,6 +4,7 @@ import type { TimerState } from '../src/shared/types'
 import { SHOW_HIDE_ACCELERATOR } from './shortcuts'
 import type { Timer } from './timer'
 import { loadTrayIcon } from './tray-icon'
+import { checkForUpdatesInteractive } from './updater'
 import { createSettingsWindow, toggleIslandVisibility } from './windows'
 
 let tray: Tray | null = null
@@ -62,6 +63,7 @@ export function createTray(timer: Timer): Tray {
       click: () => toggleIslandVisibility(),
     },
     { label: 'Settings…', click: () => createSettingsWindow() },
+    { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
     { type: 'separator' },
     { label: 'Quit Pomoisland', role: 'quit' },
   ])

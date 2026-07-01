@@ -1,9 +1,11 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
+import { buildAppMenu } from './appMenu'
 import { registerIpc } from './ipc'
 import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
 import { getPrefs, onPrefsChange } from './store'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
+import { initAutoUpdater } from './updater'
 import { createIslandWindow, createSnapOverlayWindow } from './windows'
 
 let timer: Timer | null = null
@@ -30,6 +32,10 @@ app.whenReady().then(() => {
   applyDockVisibility(getPrefs().showDockIcon)
 
   bootstrap()
+
+  // Native app menu bar (shows when a Pomoisland window is focused) + auto-updater.
+  Menu.setApplicationMenu(buildAppMenu())
+  initAutoUpdater()
 
   // Keep dock visibility in sync with the pref.
   onPrefsChange((p) => applyDockVisibility(p.showDockIcon))

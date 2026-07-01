@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { IPC } from '../src/shared/types'
 import type { IslandResizeSize, Prefs, SettingsControl, TaskMutation, TimerAction } from '../src/shared/types'
 import { getPrefs, onPrefsChange, setPrefs } from './store'
+import { checkForUpdatesInteractive } from './updater'
 import { activeTaskTitle, applyMutation, getTasks, onTasksChange, recordFocusComplete } from './taskStore'
 import {
   applyAlwaysOnTop,
@@ -71,4 +72,7 @@ export function registerIpc(timer: Timer): void {
         return win.isMaximized() ? win.unmaximize() : win.maximize()
     }
   })
+
+  // Updates
+  ipcMain.on(IPC.checkUpdates, () => checkForUpdatesInteractive())
 }
