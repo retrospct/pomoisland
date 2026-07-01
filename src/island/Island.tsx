@@ -502,14 +502,19 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
   }
 
   // ── Floating mode: FloatingCard (Fix 6) ──────────────────────────────────
+  // A floating card is rounded on all sides, so its progress-trace glow bleeds
+  // outward in every direction. Reserve transparent bleed on all four sides (when
+  // the trace is active) so the window grows to fit it instead of clipping it.
+  const floatBleed = view.timerStyle !== 'below' ? TRACE_BLEED : 0
   return (
     <div
       style={{
         position: 'relative',
         display: 'inline-flex',
-        paddingLeft: fxActive ? FX_PAD : undefined,
-        paddingRight: fxActive ? FX_PAD : undefined,
-        paddingBottom: fxActive ? FX_PAD : undefined,
+        paddingTop: fxActive ? undefined : floatBleed,
+        paddingLeft: fxActive ? FX_PAD : floatBleed,
+        paddingRight: fxActive ? FX_PAD : floatBleed,
+        paddingBottom: fxActive ? FX_PAD : floatBleed,
       }}
     >
       {fxActive && (
