@@ -31,6 +31,7 @@ interface Handlers {
   onOpenTasks: (e: React.MouseEvent) => void
   onCloseTasks: () => void
   onSettings: (e: React.MouseEvent) => void
+  onCheckUpdates: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
 }
 
@@ -63,7 +64,8 @@ function stop(e: React.MouseEvent) {
 
 // Height allowance added below the panel when the menu is open, so the
 // Electron window auto-grows to reveal the absolutely-positioned dropdown.
-const MENU_ALLOWANCE = 156
+// Sized for the 4 items (Tasks, Settings, Check for updates, Quit) + separator.
+const MENU_ALLOWANCE = 200
 
 export function Island(props: IslandProps) {
   let panel: React.ReactNode
@@ -123,6 +125,7 @@ export function Island(props: IslandProps) {
             <MenuDropdown
               onTasks={props.onOpenTasks}
               onSettings={props.onSettings}
+              onCheckUpdates={props.onCheckUpdates}
               onQuit={props.onQuit}
             />
           </div>

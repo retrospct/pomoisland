@@ -1,6 +1,6 @@
 {
   "name": "pomoisland",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Dynamic Island Pomodoro — a macOS notch-aware focus timer",
   "author": "",
   "license": "MIT",
@@ -21,7 +21,8 @@
     "placement:check": "node scripts/placement-check.ts",
     "notch:check": "node scripts/notch-check.ts",
     "package": "electron-vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir",
-    "dist:mac": "electron-vite build && node scripts/run-with-env.mjs electron-builder --mac"
+    "dist:mac": "electron-vite build && node scripts/run-with-env.mjs electron-builder --mac",
+    "release:mac": "electron-vite build && node scripts/run-with-env.mjs electron-builder --mac --publish always"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -37,6 +38,7 @@
     "dotenv": "^17.4.2",
     "electron": "^42.5.1",
     "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
     "electron-vite": "6.0.0-beta.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",

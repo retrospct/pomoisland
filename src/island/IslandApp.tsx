@@ -253,6 +253,11 @@ export function IslandApp() {
             setMenuOpen(false)
             window.api.windows.openSettings()
           }}
+          onCheckUpdates={(e) => {
+            e.stopPropagation()
+            setMenuOpen(false)
+            window.api.updates.check()
+          }}
           onQuit={(e) => {
             e.stopPropagation()
             setMenuOpen(false)
