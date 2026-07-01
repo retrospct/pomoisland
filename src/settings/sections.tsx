@@ -4,22 +4,21 @@
 // Every control writes straight through to prefs (optimistic in SettingsApp).
 
 import { ACCENT_HEX, accentHex, hexToRgba, lighten } from '@shared/accent'
-import { NotchProgress, TIMER_STYLE_META } from '@shared/NotchProgress'
 import {
   NOTCH_HEIGHT_CUSTOM_MAX,
   NOTCH_HEIGHT_STEP,
   REAL_NOTCH_STD,
   presetNotchHeight,
 } from '@shared/notchHeight'
+import { NotchProgress, TIMER_STYLE_META } from '@shared/NotchProgress'
 import { RIPPLE_DEFS } from '@shared/ripple'
 import {
   DEFAULT_SHORTCUTS,
-  humanizeAccelerator,
   SHORTCUT_ACTIONS,
   SHORTCUT_LABELS,
+  humanizeAccelerator,
 } from '@shared/shortcuts'
 import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
-import { useReducedMotion } from '@shared/useReducedMotion'
 import type {
   AccentKey,
   FloatingLayout,
@@ -33,6 +32,7 @@ import type {
   ThemeChoice,
   TickSound,
 } from '@shared/types'
+import { useReducedMotion } from '@shared/useReducedMotion'
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { acceleratorFromEvent } from './keyCapture'
@@ -326,9 +326,27 @@ function NotchHeightSection({ prefs, set }: TabProps) {
     <div style={{ marginTop: 22 }}>
       <SectionLabel>Notch height</SectionLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>Docked height</span>
-          <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+          }}
+        >
+          <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>
+            Docked height
+          </span>
+          <div
+            style={{
+              display: 'flex',
+              gap: 3,
+              background: 'var(--sp-field)',
+              border: '1px solid var(--sp-border)',
+              borderRadius: 11,
+              padding: 3,
+            }}
+          >
             {(
               [
                 { k: 'menubar', label: 'Menu bar' },
@@ -351,9 +369,17 @@ function NotchHeightSection({ prefs, set }: TabProps) {
                     }
                   }}
                   style={{
-                    height: 30, minWidth: 34, padding: '0 12px', border: 'none', cursor: 'pointer',
-                    borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
-                    color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
+                    height: 30,
+                    minWidth: 34,
+                    padding: '0 12px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    borderRadius: 8,
+                    background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                    color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                    fontFamily: SANS,
+                    fontSize: 12.5,
+                    fontWeight: 500,
                   }}
                 >
                   {m.label}
@@ -363,21 +389,48 @@ function NotchHeightSection({ prefs, set }: TabProps) {
           </div>
         </div>
         {prefs.notchHeightMode === 'custom' && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+            }}
+          >
             <div>
-              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>Custom height</div>
-              <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+                Custom height
+              </div>
+              <div
+                style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}
+              >
                 Snapped island band height, {min}–{max}px (min is the menu bar)
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: '0 0 auto' }}>
-              <StepButton onClick={() => set({ notchHeightCustom: Math.max(min, custom - NOTCH_HEIGHT_STEP) })}>
+              <StepButton
+                onClick={() =>
+                  set({ notchHeightCustom: Math.max(min, custom - NOTCH_HEIGHT_STEP) })
+                }
+              >
                 &minus;
               </StepButton>
-              <span style={{ fontFamily: MONO, fontSize: 13, color: 'var(--sp-teal)', minWidth: 44, textAlign: 'center' }}>
+              <span
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 13,
+                  color: 'var(--sp-teal)',
+                  minWidth: 44,
+                  textAlign: 'center',
+                }}
+              >
                 {custom}px
               </span>
-              <StepButton onClick={() => set({ notchHeightCustom: Math.min(max, custom + NOTCH_HEIGHT_STEP) })}>
+              <StepButton
+                onClick={() =>
+                  set({ notchHeightCustom: Math.min(max, custom + NOTCH_HEIGHT_STEP) })
+                }
+              >
                 +
               </StepButton>
             </div>
@@ -436,6 +489,8 @@ function ShortcutRow({
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [recording, action])
 
+  const isRowDefault = value === DEFAULT_SHORTCUTS[action]
+
   return (
     <div
       style={{
@@ -462,54 +517,88 @@ function ShortcutRow({
           {error ?? SHORTCUT_DESCRIPTIONS[action]}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '0 0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '0 0 auto' }}>
         <button
-          onClick={() => {
-            setError(null)
-            setRecording(true)
-          }}
+          title="Reset to default"
+          onClick={() => void window.api.shortcuts.set(action, DEFAULT_SHORTCUTS[action])}
+          disabled={isRowDefault || recording}
           style={{
-            fontFamily: MONO,
-            fontSize: 12,
-            minWidth: 90,
-            textAlign: 'center',
-            color: recording ? 'var(--sp-teal)' : value ? 'var(--sp-body)' : 'var(--sp-faint)',
-            background: recording ? 'var(--sp-tint)' : 'var(--sp-field)',
-            border: `1px solid ${recording ? 'var(--sp-teal)' : 'var(--sp-border)'}`,
-            borderRadius: 7,
-            padding: '5px 10px',
-            cursor: 'pointer',
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--sp-faint)',
+            cursor: isRowDefault || recording ? 'default' : 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            padding: 0,
+            opacity: isRowDefault || recording ? 0.35 : 1,
           }}
         >
-          {recording ? 'Press keys…' : value ? humanizeAccelerator(value) : 'Add shortcut'}
+          <ResetIcon />
         </button>
-        {value && !recording && (
+        <div style={{ position: 'relative' }}>
           <button
-            title="Unbind"
-            onClick={() => void window.api.shortcuts.set(action, null)}
+            onClick={() => {
+              setError(null)
+              setRecording(true)
+            }}
             style={{
-              width: 22,
-              height: 22,
-              borderRadius: 6,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--sp-faint)',
-              cursor: 'pointer',
-              display: 'grid',
-              placeItems: 'center',
-              padding: 0,
+              fontFamily: MONO,
               fontSize: 12,
+              minWidth: 90,
+              textAlign: 'center',
+              color: recording ? 'var(--sp-teal)' : value ? 'var(--sp-body)' : 'var(--sp-faint)',
+              background: recording ? 'var(--sp-tint)' : 'var(--sp-field)',
+              border: `1px solid ${recording ? 'var(--sp-teal)' : 'var(--sp-border)'}`,
+              borderRadius: 7,
+              padding: '5px 10px',
+              cursor: 'pointer',
             }}
           >
-            ✕
+            {recording ? 'Press keys…' : value ? humanizeAccelerator(value) : 'Add shortcut'}
           </button>
-        )}
+          {value && !recording && (
+            <button
+              title="Unbind"
+              onClick={() => void window.api.shortcuts.set(action, null)}
+              style={{
+                position: 'absolute',
+                top: -7,
+                right: -7,
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                border: '2px solid var(--sp-surface)',
+                background: 'var(--sp-border)',
+                color: 'var(--sp-body)',
+                cursor: 'pointer',
+                display: 'grid',
+                placeItems: 'center',
+                padding: 0,
+                fontSize: 8,
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function ReadOnlyShortcutRow({ label, desc, keys }: { label: string; desc: string; keys: string[] }) {
+function ReadOnlyShortcutRow({
+  label,
+  desc,
+  keys,
+}: {
+  label: string
+  desc: string
+  keys: string[]
+}) {
   return (
     <div
       style={{
@@ -537,53 +626,17 @@ function ReadOnlyShortcutRow({ label, desc, keys }: { label: string; desc: strin
 }
 
 function KeyboardShortcutsSection({ prefs }: { prefs: Prefs }) {
-  const [resetting, setResetting] = useState(false)
-  const isDefault = SHORTCUT_ACTIONS.every((a) => prefs.shortcuts[a] === DEFAULT_SHORTCUTS[a])
-
-  const reset = async () => {
-    setResetting(true)
-    try {
-      await window.api.shortcuts.reset()
-    } finally {
-      setResetting(false)
-    }
-  }
-
   return (
     <div style={{ marginTop: 20 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 11,
-        }}
-      >
-        <SectionLabel>Keyboard shortcuts</SectionLabel>
-        <button
-          title="Reset to defaults"
-          onClick={() => void reset()}
-          disabled={resetting || isDefault}
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--sp-faint)',
-            cursor: isDefault ? 'default' : 'pointer',
-            display: 'grid',
-            placeItems: 'center',
-            padding: 0,
-            opacity: isDefault ? 0.35 : 1,
-          }}
-        >
-          <ResetIcon />
-        </button>
-      </div>
+      <SectionLabel>Keyboard shortcuts</SectionLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
         {SHORTCUT_ACTIONS.map((action, i) => (
-          <ShortcutRow key={action} action={action} value={prefs.shortcuts[action]} border={i > 0} />
+          <ShortcutRow
+            key={action}
+            action={action}
+            value={prefs.shortcuts[action]}
+            border={i > 0}
+          />
         ))}
         <ReadOnlyShortcutRow label="Open Settings" desc="From the app menu." keys={['⌘', ',']} />
       </div>
@@ -806,7 +859,7 @@ function Kbd({ children }: { children: ReactNode }) {
       style={{
         fontFamily: MONO,
         fontSize: 12,
-        color: 'var(--sp-teal)',
+        color: 'var(--sp-body)',
         background: 'var(--sp-field)',
         border: '1px solid var(--sp-border)',
         borderRadius: 7,
@@ -1121,7 +1174,9 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
                 Notch background
               </div>
-              <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
+              <div
+                style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}
+              >
                 Snapped island surface — pure black or the theme color
               </div>
             </div>
@@ -1148,9 +1203,17 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                     key={o.k}
                     onClick={() => set({ notchBackground: o.k })}
                     style={{
-                      height: 30, minWidth: 34, padding: '0 12px', border: 'none', cursor: 'pointer',
-                      borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
-                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
+                      height: 30,
+                      minWidth: 34,
+                      padding: '0 12px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: 8,
+                      background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                      fontFamily: SANS,
+                      fontSize: 12.5,
+                      fontWeight: 500,
                     }}
                   >
                     {o.label}
@@ -1164,9 +1227,8 @@ export function PreferencesTab({ prefs, set }: TabProps) {
         <div>
           <SectionLabel>Element placement</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-            {PLACEMENT_ELEMENTS
-              .filter(({ k }) => k !== 'ring' || prefs.timerStyle === 'below')
-              .map(({ k, label }) => (
+            {PLACEMENT_ELEMENTS.filter(({ k }) => k !== 'ring' || prefs.timerStyle === 'below').map(
+              ({ k, label }) => (
                 <div
                   key={k}
                   style={{
@@ -1218,16 +1280,35 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                     })}
                   </div>
                 </div>
-              ))}
+              ),
+            )}
           </div>
         </div>
 
         <div style={{ marginTop: 22 }}>
           <SectionLabel>Floating card</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-              <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>Layout</span>
-              <div style={{ display: 'flex', gap: 3, background: 'var(--sp-field)', border: '1px solid var(--sp-border)', borderRadius: 11, padding: 3 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+              }}
+            >
+              <span style={{ fontFamily: SANS, fontSize: 13, color: 'var(--sp-body)' }}>
+                Layout
+              </span>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 3,
+                  background: 'var(--sp-field)',
+                  border: '1px solid var(--sp-border)',
+                  borderRadius: 11,
+                  padding: 3,
+                }}
+              >
                 {FLOATING_LAYOUTS.map((l) => {
                   const on = prefs.floatingLayout === l.k
                   return (
@@ -1236,9 +1317,17 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                       title={l.label}
                       onClick={() => set({ floatingLayout: l.k })}
                       style={{
-                        height: 30, minWidth: 34, padding: '0 10px', border: 'none', cursor: 'pointer',
-                        borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
-                        color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
+                        height: 30,
+                        minWidth: 34,
+                        padding: '0 10px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: 8,
+                        background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                        color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
+                        fontFamily: SANS,
+                        fontSize: 12.5,
+                        fontWeight: 500,
                       }}
                     >
                       {l.k}
@@ -1470,7 +1559,9 @@ function RipplePreview({ variant, accent }: { variant: Ripple; accent: AccentKey
             ...cssVar('--sc', r.sc),
             // With reduced-motion: show only the first ring at resting opacity; hide the rest.
             opacity: rm ? (i === 0 ? r.op : 0) : undefined,
-            animation: rm ? undefined : `rcExpand ${r.dur}s cubic-bezier(.16,.6,.3,1) ${r.delay}s infinite`,
+            animation: rm
+              ? undefined
+              : `rcExpand ${r.dur}s cubic-bezier(.16,.6,.3,1) ${r.delay}s infinite`,
           }}
         />
       ))}
