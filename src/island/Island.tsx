@@ -780,6 +780,15 @@ function CardOutline({ width: W, height: H, rxTop, rxBottom, variant, progress, 
   )
 }
 
+// deps
+const TRACE_INSET = 3
+interface CardGeom {
+  fullPath: string
+  leftPath: string
+  rightPath: string
+  meetPoint: { x: number; y: number }
+}
+
 // ── TimerPet — animated SVG character for Layout 3 (Fix 6) ──────────────────
 function TimerPet({
   isRunning,
@@ -794,7 +803,7 @@ function TimerPet({
 }) {
   const expression = isComplete ? 'complete' : isBreak ? 'break' : isRunning ? 'running' : 'paused'
   return (
-    <svg width={32} height={32} viewBox="0 0 32 32">
+    <svg width={48} height={48} viewBox="0 0 32 32">
       <style>{`
         @keyframes petBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
         @keyframes petIdle   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1px)} }
@@ -866,11 +875,11 @@ function L3Card({
         position: 'relative',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 12,
+        gap: 8,
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
         borderRadius: rx,
-        padding: '10px 16px 10px 12px',
+        padding: '7px 14px 7px 10px',
         cursor: 'pointer',
       }}
     >
@@ -905,7 +914,147 @@ function L3Card({
   )
 }
 
-// ── FloatingCard — floating island layouts L1–L4 (Fix 6) ────────────────────
+// ── Circle geometry + outline for L4 ────────────────────────────────────────
+let cachedCircleLen = 0
+
+function circleGeometry(cx: number, cy: number, R: number, variant: TimerStyle): CardGeom {
+  const isSplit = variant === 'split'
+  // Full CCW circle (sweep=0 = CCW on screen): top → left → bottom → right → top
+  const fullPath = `M ${cx} ${cy - R} A ${R} ${R} 0 0 0 ${cx} ${cy + R} A ${R} ${R} 0 0 0 ${cx} ${cy - R} Z`
+  // converge: both halves start at top, meet at bottom
+  const leftConverge  = `M ${cx} ${cy - R} A ${R} ${R} 0 0 0 ${cx} ${cy + R}` // CCW → left side
+  const rightConverge = `M ${cx} ${cy - R} A ${R} ${R} 0 0 1 ${cx} ${cy + R}` // CW  → right side
+  // split: reversed (start at bottom, fill outward)
+  const leftSplit  = `M ${cx} ${cy + R} A ${R} ${R} 0 0 0 ${cx} ${cy - R}` // CCW from bottom → left → top
+  const rightSplit = `M ${cx} ${cy + R} A ${R} ${R} 0 0 1 ${cx} ${cy - R}` // CW  from bottom → right → top
+  return {
+    fullPath,
+    leftPath:  isSplit ? leftSplit  : leftConverge,
+    rightPath: isSplit ? rightSplit : rightConverge,
+    meetPoint: { x: cx, y: cy + R },
+  }
+}
+
+function CircleOutline({ size, variant, progress, accent, accentBright }: {
+  size: number
+  variant: TimerStyle
+  progress: number
+  accent: string
+  accentBright: string
+}) {
+  const pathRef = useRef<SVGPathElement>(null)
+  const cx = size / 2, cy = size / 2
+  const R = size / 2 - TRACE_INSET
+  const [len, setLen] = useState(cachedCircleLen)
+  const clampedP = Math.min(1, Math.max(0, progress))
+  const [front, setFront] = useState({ x: cx, y: cy - R })
+
+  const { fullPath, leftPath, rightPath, meetPoint } = circleGeometry(cx, cy, R, variant)
+
+  useLayoutEffect(() => {
+    const el = pathRef.current
+    if (!el) return
+    const l = el.getTotalLength()
+    cachedCircleLen = l
+    setLen(l)
+    if (variant === 'front' && l > 0) {
+      const pt = el.getPointAtLength(l * clampedP)
+      setFront({ x: +pt.x.toFixed(2), y: +pt.y.toFixed(2) })
+    }
+  }, [size, variant, clampedP])
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}
+    >
+      {renderProgressTrace({
+        variant,
+        p: clampedP,
+        accent,
+        accentBright,
+        fullPath,
+        leftPath,
+        rightPath,
+        meetPoint,
+        len,
+        front,
+        pathRef,
+        underlightEllipses:
+          variant === 'underlight'
+            ? [
+                { cx: meetPoint.x, cy: meetPoint.y, rx: R * 0.65, ry: R * 0.4, fill: accent, delay: undefined },
+                { cx: meetPoint.x, cy: meetPoint.y, rx: R * 0.45, ry: R * 0.28, fill: accentBright, opacity: 0.55, delay: '0.25s' },
+              ]
+            : undefined,
+      })}
+    </svg>
+  )
+}
+
+function CircleCard({ view, onToggleExpand }: { view: IslandView; onToggleExpand: () => void }) {
+  const sz = 116
+  const isRing = view.timerStyle === 'below'
+  const R = sz / 2 - TRACE_INSET
+  const circ = 2 * Math.PI * R
+  const off = (circ * (1 - Math.min(1, view.frac))).toFixed(2)
+  return (
+    <div
+      data-island="1"
+      onClick={onToggleExpand}
+      style={{
+        position: 'relative',
+        width: sz,
+        height: sz,
+        borderRadius: '50%',
+        background: 'var(--il-bg)',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 3,
+        color: 'var(--il-text)',
+      }}
+    >
+      {isRing ? (
+        <svg
+          width={sz}
+          height={sz}
+          viewBox={`0 0 ${sz} ${sz}`}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transform: 'rotate(-90deg)' }}
+        >
+          <circle cx={sz / 2} cy={sz / 2} r={R} fill="none" stroke="var(--il-track)" strokeWidth={2.5} />
+          <circle
+            cx={sz / 2} cy={sz / 2} r={R}
+            fill="none" stroke={view.accent} strokeWidth={2.5} strokeLinecap="round"
+            strokeDasharray={circ.toFixed(2)} strokeDashoffset={off}
+            className="nc-progress-stroke"
+          />
+        </svg>
+      ) : (
+        <CircleOutline
+          size={sz}
+          variant={view.timerStyle}
+          progress={view.frac}
+          accent={view.accent}
+          accentBright={view.accentBright}
+        />
+      )}
+      <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: view.accent, fontWeight: 500 }}>
+        {view.statusLabel}
+      </span>
+      <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em' }}>
+        {view.timeStr}
+      </span>
+      {view.dots.length > 0 && <SessionDots dots={view.dots} />}
+    </div>
+  )
+}
+
+// ── FloatingCard — floating island layouts L1–L4 ─────────────────────────────
 function FloatingCard({
   view,
   onToggleExpand,
@@ -921,75 +1070,7 @@ function FloatingCard({
   const isRing = view.timerStyle === 'below'
   const { left, below, right } = view.clusters
 
-  if (layout === 'L4') {
-    // Badge: near-square card. Ring border when isRing, CardOutline otherwise.
-    const sz = 100
-    const rx4 = 24
-    const ringR = 44
-    const ringCirc = 2 * Math.PI * ringR
-    const ringOffset = (ringCirc * (1 - Math.min(1, view.frac))).toFixed(2)
-    return (
-      <div
-        data-island="1"
-        onClick={onToggleExpand}
-        style={{
-          position: 'relative',
-          width: sz,
-          height: sz,
-          background: 'var(--il-bg)',
-          borderRadius: rx4,
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-          color: 'var(--il-text)',
-        }}
-      >
-        {isRing ? (
-          <svg
-            width={sz}
-            height={sz}
-            viewBox={`0 0 ${sz} ${sz}`}
-            style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transform: 'rotate(-90deg)' }}
-          >
-            <circle cx={50} cy={50} r={ringR} fill="none" stroke="var(--il-track)" strokeWidth={3} />
-            <circle
-              cx={50}
-              cy={50}
-              r={ringR}
-              fill="none"
-              stroke={view.accent}
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeDasharray={ringCirc.toFixed(2)}
-              strokeDashoffset={ringOffset}
-              className="nc-progress-stroke"
-            />
-          </svg>
-        ) : (
-          <CardOutline
-            width={sz}
-            height={sz}
-            rxTop={rx4}
-            rxBottom={rx4}
-            variant={view.timerStyle}
-            progress={view.frac}
-            accent={view.accent}
-            accentBright={view.accentBright}
-          />
-        )}
-        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: view.accent, fontWeight: 500 }}>
-          {view.statusLabel}
-        </span>
-        <span style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em' }}>
-          {view.timeStr}
-        </span>
-        {view.dots.length > 0 && <SessionDots dots={view.dots} />}
-      </div>
-    )
-  }
+  if (layout === 'L4') return <CircleCard view={view} onToggleExpand={onToggleExpand} />
 
   if (layout === 'L3') {
     // Companion: pet | focus+timer stacked | dots.
@@ -1015,7 +1096,7 @@ function FloatingCard({
   // L2 adds the task name as a second row
   const showTask = layout === 'L2'
 
-  const cardPad = { paddingTop: 8, paddingBottom: showTask ? 10 : 9, paddingLeft: 10, paddingRight: 20 }
+  const cardPad = { paddingTop: 12, paddingBottom: 12, paddingLeft: 16, paddingRight: 16 }
   const cardH = showTask ? undefined : 44
 
   if (isRing) {
@@ -1051,7 +1132,7 @@ function FloatingCard({
             {allKeys.map(renderElement)}
           </div>
           {showTask && (
-            <span style={{ fontFamily: MONO, fontSize: 11.5, color: view.accent, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+            <span style={{ fontFamily: MONO, fontSize: 11.5, color: view.taskColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
               {view.displayTask}
             </span>
           )}
@@ -1114,7 +1195,7 @@ function OutlinedCard({
         position: 'relative',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 13,
+        gap: showTask ? 3 : 12,
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
         borderRadius: rx,
@@ -1123,15 +1204,13 @@ function OutlinedCard({
         cursor: 'pointer',
         boxSizing: 'border-box',
         flexDirection: showTask ? 'column' : 'row',
-        minWidth: 210,
-        justifyContent: 'space-between',
       }}
     >
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 13 }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
         {allKeys.map(renderElement)}
       </div>
       {showTask && (
-        <span style={{ fontFamily: MONO, fontSize: 11.5, color: view.accent, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+        <span style={{ fontFamily: MONO, fontSize: 11.5, color: view.taskColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
           {view.displayTask}
         </span>
       )}
