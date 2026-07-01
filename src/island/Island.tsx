@@ -1356,8 +1356,10 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         />
       </div>
 
-      {/* Task text — clicking opens the task list (non-drag hotspot per MO-6) */}
+      {/* Task text — clicking opens the task list (non-drag hotspot per MO-6).
+          Hover underlines + brightens it to signal it's clickable. */}
       <div
+        className="il-task-open"
         role="button"
         tabIndex={0}
         aria-label="Open task list"
@@ -1370,6 +1372,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
             props.onOpenTasks(e as unknown as React.MouseEvent)
         }}
         style={{
+          display: 'inline-block',
           fontSize: 13.5,
           color: view.taskColor,
           fontStyle: 'normal',

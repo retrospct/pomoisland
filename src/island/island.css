@@ -60,3 +60,21 @@ body.island-body {
     transition: none;
   }
 }
+
+/* Active-task label in the expanded view. It opens the task list on click, so a
+   hover cue (underline + slight brighten) signals it's interactive. */
+.il-task-open {
+  text-decoration-color: transparent;
+  transition: filter 0.15s ease, text-decoration-color 0.15s ease;
+}
+.il-task-open:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  filter: brightness(1.28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-open {
+    transition: none;
+  }
+}
