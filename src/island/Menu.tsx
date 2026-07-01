@@ -77,20 +77,18 @@ export function MenuDropdown({ onTasks, onSettings, onQuit }: DropdownProps) {
         Settings
       </button>
       <div style={{ height: 1, background: 'var(--il-line)', margin: '5px 9px' }} />
-      <button
-        className="island-menu-item island-menu-item--danger"
-        onClick={onQuit}
-        style={{ ...menuItem, color: '#E2A24A' }}
-      >
-        <svg width="15" height="15" viewBox="0 0 14 14">
+      <button className="island-menu-item" onClick={onQuit} style={menuItem}>
+        {/* Power icon — reads as "quit" more clearly than a logout arrow. Same
+            icon color as Tasks/Settings, no orange. */}
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
           <path
-            d="M5.4 2 H2.4 a0.6 0.6 0 0 0 -0.6 0.6 v8.8 a0.6 0.6 0 0 0 0.6 0.6 H5.4 M8.4 4.4 L11.6 7 L8.4 9.6 M11.6 7 H5"
-            fill="none"
-            stroke="#E2A24A"
-            strokeWidth="1.4"
+            d="M18.36 6.64a9 9 0 1 1-12.73 0"
+            stroke="var(--il-icon)"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          <path d="M12 2v10" stroke="var(--il-icon)" strokeWidth="2.2" strokeLinecap="round" />
         </svg>
         Quit
       </button>

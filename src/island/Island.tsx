@@ -276,7 +276,14 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
           </span>
         )
       case 'dots':
-        return <SessionDots key="dots" dots={view.dots} />
+        return (
+          <SessionDots
+            key="dots"
+            dots={view.dots}
+            completedToday={view.completedToday}
+            dailyGoal={view.dailyGoal}
+          />
+        )
       default: {
         const _exhaustive: never = key
         return _exhaustive
@@ -902,7 +909,9 @@ function L3Card({
           {view.timeStr}
         </span>
       </div>
-      {view.dots.length > 0 && <SessionDots dots={view.dots} />}
+      {view.dots.length > 0 && (
+        <SessionDots dots={view.dots} completedToday={view.completedToday} dailyGoal={view.dailyGoal} />
+      )}
       {!isRing && dims.w > 0 && (
         <CardOutline
           width={dims.w}
@@ -1054,7 +1063,9 @@ function CircleCard({ view, onToggleExpand }: { view: IslandView; onToggleExpand
       <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 500, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.01em' }}>
         {view.timeStr}
       </span>
-      {view.dots.length > 0 && <SessionDots dots={view.dots} />}
+      {view.dots.length > 0 && (
+        <SessionDots dots={view.dots} completedToday={view.completedToday} dailyGoal={view.dailyGoal} />
+      )}
     </div>
   )
 }
@@ -1277,7 +1288,7 @@ function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps)
         >
           {view.statusLabel}
         </span>
-        <SessionDots dots={view.dots} />
+        <SessionDots dots={view.dots} completedToday={view.completedToday} dailyGoal={view.dailyGoal} />
       </div>
       <div
         style={{
@@ -1392,6 +1403,10 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const { view, notch, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
     props
   const br = bottomRadius ?? 26
+  // The task list's active task (for the completed/planned session hint below) —
+  // distinct from view.displayTask, which is the free-text timer label and isn't
+  // always backed by a task-list entry.
+  const activeTask = props.tasks?.tasks.find((t) => t.id === props.tasks?.activeTaskId) ?? null
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card.
   return (
@@ -1467,6 +1482,12 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         }}
       >
         {view.displayTask}
+        {activeTask && (
+          <span className="il-task-progress-hint">
+            {' '}
+            &middot; {activeTask.completedPomodoros}/{activeTask.estimatePomodoros} sessions
+          </span>
+        )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
