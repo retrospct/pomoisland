@@ -928,6 +928,57 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               })}
             </div>
           </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: 11,
+              borderTop: '1px solid var(--sp-line)',
+            }}
+          >
+            <div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+                Notch background
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}>
+                Snapped island surface — pure black or the theme color
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 3,
+                background: 'var(--sp-field)',
+                border: '1px solid var(--sp-border)',
+                borderRadius: 11,
+                padding: 3,
+                flex: '0 0 auto',
+              }}
+            >
+              {(
+                [
+                  { k: 'black', label: 'Black' },
+                  { k: 'theme', label: 'Theme' },
+                ] as const
+              ).map((o) => {
+                const on = prefs.notchBackground === o.k
+                return (
+                  <button
+                    key={o.k}
+                    onClick={() => set({ notchBackground: o.k })}
+                    style={{
+                      height: 30, minWidth: 34, padding: '0 12px', border: 'none', cursor: 'pointer',
+                      borderRadius: 8, background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
+                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)', fontFamily: SANS, fontSize: 12.5, fontWeight: 500,
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         <div>

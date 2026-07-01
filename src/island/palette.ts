@@ -6,7 +6,7 @@
 // different visual weight. Accent colors are handled separately by `resolveAccent` in derive.ts.
 
 import type { CSSProperties } from 'react'
-import type { ThemeChoice } from '@shared/types'
+import type { NotchBackgroundMode, ThemeChoice } from '@shared/types'
 
 type Tokens = Record<string, string>
 
@@ -65,4 +65,14 @@ export function resolveTheme(theme: ThemeChoice): 'light' | 'dark' {
 export function islandPaletteVars(theme: ThemeChoice): CSSProperties {
   const resolved = resolveTheme(theme)
   return { ...(resolved === 'dark' ? DARK : LIGHT) } as CSSProperties
+}
+
+/**
+ * Surface color for the SNAPPED island. `'black'` returns pure black
+ * regardless of theme (the Dynamic Island look); `'theme'` returns the same
+ * `--il-bg` the rest of the app uses. See NotchBackgroundMode.
+ */
+export function notchBackgroundColor(theme: ThemeChoice, mode: NotchBackgroundMode): string {
+  if (mode === 'black') return '#000000'
+  return resolveTheme(theme) === 'dark' ? DARK['--il-bg'] : LIGHT['--il-bg']
 }

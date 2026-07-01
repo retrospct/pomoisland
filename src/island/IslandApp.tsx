@@ -4,7 +4,7 @@ import type { Placement, Prefs, TasksState, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
 import { Island, type Present } from './Island'
-import { islandPaletteVars, resolveTheme } from './palette'
+import { islandPaletteVars, notchBackgroundColor, resolveTheme } from './palette'
 import { useDrag } from './useDrag'
 
 export function IslandApp() {
@@ -165,6 +165,10 @@ export function IslandApp() {
         custom: prefs.notchHeightCustom,
       })
 
+  // Snapped-island surface color: pure black (Dynamic Island look, default) or
+  // the theme's normal surface — only applied to the snapped presentation.
+  const notchBg = prefs ? notchBackgroundColor(prefs.theme, prefs.notchBackground) : '#000000'
+
   // Determine presentation
   let present: Present = 'collapsed'
   if (tasksOpen && expanded) present = 'tasks'
@@ -218,6 +222,7 @@ export function IslandApp() {
           hasNotch={placement.hasNotch}
           notchHeight={effectiveNotchHeight}
           notchWidth={placement.notchWidth}
+          notchBg={notchBg}
           ripple={prefs.ripple}
           messagesOn={prefs.messages}
           tasks={tasks}

@@ -43,6 +43,13 @@ export type FloatingLayout = 'L1' | 'L2' | 'L3' | 'L4'
  */
 export type NotchHeightMode = 'realNotch' | 'menubar' | 'custom'
 /**
+ * Snapped-island surface color. `black` = pure black (`#000`), matching the
+ * physical notch/Dynamic Island bezel regardless of theme; `theme` = the
+ * normal light/dark surface color. Only affects the snapped presentation —
+ * the floating card always follows the theme.
+ */
+export type NotchBackgroundMode = 'black' | 'theme'
+/**
  * Completion alarm voices — synthesized in the renderer via Web Audio (see
  * src/shared/sound.ts and ADR-0005). `chime/bell/marimba/digital` are the clean
  * built-ins; `halcyon/spice/pocket/koto` are the cinematic/pocket-synth set;
@@ -113,6 +120,8 @@ export interface Prefs {
   // ---- Preferences · Appearance ----
   accent: AccentKey
   theme: ThemeChoice
+  /** Snapped-island surface color: pure black vs the theme's surface color. See NotchBackgroundMode. */
+  notchBackground: NotchBackgroundMode
   /** Notch-native progress treatment (A–H). See TimerStyle + NotchProgress.tsx. */
   timerStyle: TimerStyle
   /**

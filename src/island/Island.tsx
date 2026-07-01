@@ -44,6 +44,10 @@ interface IslandProps extends Handlers {
   notchHeight: number
   /** Notch width (px) used to size the wrap spacer; 0 on non-notch displays. */
   notchWidth: number
+  /** Snapped-island surface color (resolved from Prefs.notchBackground). Applied
+   *  as a local `--il-bg` override on the Island root when `notch` is true, so
+   *  every descendant that reads var(--il-bg) picks it up automatically. */
+  notchBg: string
   ripple: Ripple
   messagesOn: boolean
   tasks: TasksState | null
@@ -94,6 +98,11 @@ export function Island(props: IslandProps) {
         // clipped flush at the window edge. Symmetric, so the card stays centered.
         paddingLeft: props.notch ? EAR_SIZE + 8 : undefined,
         paddingRight: props.notch ? EAR_SIZE + 8 : undefined,
+        // Override --il-bg for the whole snapped subtree (menu popover, task
+        // list, ears — everything reads var(--il-bg)) so Prefs.notchBackground
+        // controls the notch's surface color without touching every consumer.
+        // Not applied while floating: the floating card always follows the theme.
+        ...(props.notch ? { ['--il-bg' as string]: props.notchBg } : {}),
       }}
     >
       {panel}
