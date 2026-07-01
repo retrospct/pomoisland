@@ -11,6 +11,7 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
+      sha: ${{ steps.release.outputs.sha }}
     steps:
       - uses: googleapis/release-please-action@v5
         id: release
@@ -24,13 +25,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      # Check out by commit SHA, not tag_name: release-please's release is a
+      # draft (see release-please-config.json), and GitHub doesn't materialize
+      # the underlying git tag ref for a draft release until it's published —
+      # `ref: tag_name` has nothing to fetch until then. The commit itself
+      # exists on `main` immediately, so SHA checkout isn't affected.
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.release-please.outputs.sha }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: pnpm
