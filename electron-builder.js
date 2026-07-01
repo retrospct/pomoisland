@@ -77,12 +77,18 @@ module.exports = {
   // Auto-update feed + upload target. electron-builder generates `app-update.yml` into
   // the packaged app's resources from this block (electron-updater reads it at runtime),
   // and `--publish` uploads the dmg/zip/latest-mac.yml + blockmaps here. Requires GH_TOKEN
-  // (a repo-scoped PAT) in the environment when publishing. Releases are created as drafts
-  // so they can be smoke-tested before being made live.
+  // (a repo-scoped PAT) in the environment when publishing.
+  //
+  // release-please owns creating the GitHub Release now (as a draft — see
+  // release-please-config.json), and the CI publish job un-drafts it as its very
+  // first step, before this ever runs (see .github/workflows/release-please.yml).
+  // So by the time electron-builder gets here the release already exists and is
+  // already published — releaseType must say 'release' to match, or electron-builder
+  // refuses to upload with "existing type not compatible with publishing type".
   publish: {
     provider: 'github',
     owner: 'retrospct',
     repo: 'pomoisland',
-    releaseType: 'draft',
+    releaseType: 'release',
   },
 }
