@@ -5,6 +5,13 @@ All notable changes to PomoIsland will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4](https://github.com/retrospct/pomoisland/compare/v0.2.3...v0.2.4) (2026-07-01)
+
+
+### Bug Fixes
+
+* match electron-builder releaseType to the now-published release ([#32](https://github.com/retrospct/pomoisland/issues/32)) ([7c0ee57](https://github.com/retrospct/pomoisland/commit/7c0ee57f90732eef52765568e971751baf511ecb))
+
 ## [0.2.3](https://github.com/retrospct/pomoisland/compare/v0.2.2...v0.2.3) (2026-07-01)
 
 
