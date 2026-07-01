@@ -155,6 +155,17 @@ const TRACE_BLEED = 22
 // Approximate MacBook notch width; calibrate against real hardware later.
 const NOTCH_GAP = 200
 
+/**
+ * Extra buffer (px) added on top of the estimated notch width when reserving
+ * the flanking spacer. `notchWidth` comes from EstimateNotchProvider's
+ * display-width fraction (see electron/notch.ts), not a per-model hardware
+ * measurement, so it can run a bit narrow on some MacBook models — without
+ * this margin, flanking content (e.g. combined status + time text) can
+ * overflow into the real notch's footprint and get visually clipped by the
+ * physical camera housing.
+ */
+const NOTCH_WIDTH_SAFETY = 28
+
 // Size (px) of the inverse-rounded "ears" at the top corners of a snapped card.
 // Also the horizontal bleed the window needs so the ears aren't clipped.
 const EAR_SIZE = 13
@@ -213,6 +224,24 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
     const w = Math.round(width), h = Math.round(height)
     setBodyDims(prev => (prev.w === w && prev.h === h) ? prev : { w, h })
   })
+
+  // On a real notch, the window is centered on the true notch position (see
+  // snappedTopLeft in windows.ts) — so if one side has more elements slotted
+  // than the other, the transparent notch spacer would drift off from the
+  // physical notch unless both side columns share the wider side's width.
+  // Measure each side's natural (unconstrained) content width via inner refs
+  // and pad the narrower side to match, widening the bar outward instead of
+  // shifting elements between slots.
+  const leftContentRef = useRef<HTMLDivElement>(null)
+  const rightContentRef = useRef<HTMLDivElement>(null)
+  const [sideW, setSideW] = useState({ left: 0, right: 0 })
+  useLayoutEffect(() => {
+    if (!notch || !hasNotch) return  // only the real-notch wrap needs side balancing
+    const l = leftContentRef.current?.getBoundingClientRect().width ?? 0
+    const r = rightContentRef.current?.getBoundingClientRect().width ?? 0
+    setSideW((prev) => (prev.left === l && prev.right === r ? prev : { left: l, right: r }))
+  })
+  const matchedSideW = Math.max(sideW.left, sideW.right) || undefined
 
   useEffect(() => {
     if (view.isComplete) {
@@ -334,9 +363,10 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
     const leftVisible = leftKeys.filter(hasContent)
     const rightVisible = rightKeys.filter(hasContent)
 
-    // Effective notch width — provider estimate, falling back to the legacy
+    // Effective notch width — provider estimate (+ safety buffer, since the
+    // estimate isn't pixel-exact per model), falling back to the legacy
     // constant if metrics haven't arrived yet.
-    const spacerW = notchWidth > 0 ? notchWidth : NOTCH_GAP
+    const spacerW = (notchWidth > 0 ? notchWidth : NOTCH_GAP) + NOTCH_WIDTH_SAFETY
 
     // Transparent bleed beside + below the body (never above — the top stays
     // flush at y=0) so the progress trace's blur/comet/front-dot halo isn't
@@ -395,17 +425,22 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
             }}
           >
             <NotchEars />
-            {/* Left column — bare elements flanking the notch */}
+            {/* Left column — bare elements flanking the notch. Outer div is padded to
+                matchedSideW so an uneven element count doesn't push the spacer (and
+                thus the real notch) off-center; content hugs the spacer via flex-end. */}
             <div
               style={{
                 alignSelf: 'center',
+                width: matchedSideW,
                 padding: '0 10px 0 14px',
                 display: 'flex',
+                justifyContent: 'flex-end',
                 alignItems: 'center',
-                gap: 13,
               }}
             >
-              {leftVisible.map(renderElement)}
+              <div ref={leftContentRef} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                {leftVisible.map(renderElement)}
+              </div>
             </div>
 
             {/* Center column — transparent notch spacer + below content */}
@@ -432,17 +467,21 @@ function Collapsed({ view, notch, hasNotch, notchHeight, notchWidth, ripple, onT
               )}
             </div>
 
-            {/* Right column — bare elements flanking the notch */}
+            {/* Right column — bare elements flanking the notch. Mirrors the left column's
+                matchedSideW padding, hugging the spacer via flex-start. */}
             <div
               style={{
                 alignSelf: 'center',
+                width: matchedSideW,
                 padding: '0 14px 0 10px',
                 display: 'flex',
+                justifyContent: 'flex-start',
                 alignItems: 'center',
-                gap: 13,
               }}
             >
-              {rightVisible.map(renderElement)}
+              <div ref={rightContentRef} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                {rightVisible.map(renderElement)}
+              </div>
             </div>
 
             {/* CardOutline overlay — variant-aware progress trace for non-'below' styles.
@@ -1244,19 +1283,24 @@ function OutlinedCard({
   )
 }
 
-function Peek({ view, notch, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
   const rm = useReducedMotion()
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
-  // shape); floating → fully rounded card.
+  // shape); floating → fully rounded card. On a real-notch display, widen and
+  // clear the physical notch height/width — same fix as ExpandedBody — so the
+  // status/dots row doesn't render under the opaque camera housing.
+  const wrapNotch = notch && hasNotch
+  const topPad = notch ? (wrapNotch ? Math.max(30, notchHeight + 16) : 22) : 16
+  const width = wrapNotch ? Math.max(340, notchWidth + 170) : 272
   return (
     <div
       style={{
-        width: 272,
+        width,
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
         borderRadius: notch ? '0 0 22px 22px' : 22,
-        padding: `${notch ? 22 : 16}px 20px 17px`,
+        padding: `${topPad}px 20px 17px`,
         boxShadow: 'none',
         fontFamily: SANS,
         position: 'relative',
