@@ -91,12 +91,25 @@ export function renderProgressTrace(props: ProgressTraceProps): ReactNode {
     return (
       <>
         <path d={fullPath} fill="none" stroke={TRACK} strokeWidth={2.5} />
+        {/* Soft blurred under-layer so the progress line is easy to spot even
+            against a busy desktop behind the transparent window. */}
+        <path
+          d={fullPath}
+          fill="none"
+          stroke={accent}
+          strokeWidth={5}
+          strokeLinecap="round"
+          strokeDasharray={dashArray}
+          strokeDashoffset={dashOffset}
+          className="nc-progress-stroke"
+          style={{ filter: 'blur(3px)', opacity: 0.55 }}
+        />
         <path
           ref={pathRef}
           d={fullPath}
           fill="none"
           stroke={accent}
-          strokeWidth={2.5}
+          strokeWidth={3.4}
           strokeLinecap="round"
           strokeDasharray={dashArray}
           strokeDashoffset={dashOffset}
@@ -142,11 +155,22 @@ export function renderProgressTrace(props: ProgressTraceProps): ReactNode {
       <>
         <path d={fullPath} fill="none" stroke={TRACK} strokeWidth={2.5} />
         <path
+          d={fullPath}
+          fill="none"
+          stroke={accent}
+          strokeWidth={5}
+          strokeLinecap="round"
+          strokeDasharray={dashArray}
+          strokeDashoffset={dashOffset}
+          className="nc-progress-stroke"
+          style={{ filter: 'blur(3px)', opacity: 0.55 }}
+        />
+        <path
           ref={pathRef}
           d={fullPath}
           fill="none"
           stroke={accent}
-          strokeWidth={2.5}
+          strokeWidth={3.4}
           strokeLinecap="round"
           strokeDasharray={dashArray}
           strokeDashoffset={dashOffset}
@@ -192,7 +216,7 @@ export function renderProgressTrace(props: ProgressTraceProps): ReactNode {
           pathLength={100}
           fill="none"
           stroke={accent}
-          strokeWidth={2.8}
+          strokeWidth={3.4}
           strokeLinecap="round"
           strokeDasharray={100}
           strokeDashoffset={twoOffset}
@@ -204,7 +228,7 @@ export function renderProgressTrace(props: ProgressTraceProps): ReactNode {
           pathLength={100}
           fill="none"
           stroke={accent}
-          strokeWidth={2.8}
+          strokeWidth={3.4}
           strokeLinecap="round"
           strokeDasharray={100}
           strokeDashoffset={twoOffset}

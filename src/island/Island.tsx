@@ -90,9 +90,10 @@ export function Island(props: IslandProps) {
         position: 'relative',
         display: 'inline-block',
         // Room for the inverse-rounded ears, which flare beyond the card's sides
-        // when snapped. Symmetric, so the card stays centered over the notch.
-        paddingLeft: props.notch ? EAR_SIZE : undefined,
-        paddingRight: props.notch ? EAR_SIZE : undefined,
+        // when snapped — plus a few px clearance so the ear (and its trace) isn't
+        // clipped flush at the window edge. Symmetric, so the card stays centered.
+        paddingLeft: props.notch ? EAR_SIZE + 8 : undefined,
+        paddingRight: props.notch ? EAR_SIZE + 8 : undefined,
       }}
     >
       {panel}
@@ -618,76 +619,74 @@ function cardRightSplit(W: number, H: number, rxT: number, rxB: number): string 
 }
 
 // ── Topless variants ────────────────────────────────────────────────────────
-// When the body is snapped flush against the screen's top edge (real-notch wrap
-// or non-notch dock), the top edge sits against the bezel/notch surface and must
-// NOT carry the progress trace. These mirror the functions above with the top
-// edge omitted, so the stroke starts/ends at the two top corners.
+// When the body is snapped flush against the screen's top edge, the flat top edge
+// sits against the bezel/notch surface and must NOT carry the progress trace. The
+// stroke instead runs up each side and follows the inverse-rounded ear out to its
+// tip at the top corner (matching NotchEars), so the trace hugs the actual card
+// outline. E is the ear size; the ear tips sit at x=-E and x=W+E (SVG overflow is
+// visible, so drawing outside [0,W] is fine).
+const E = EAR_SIZE
 
-/** Open perimeter minus the top edge: top-left corner → left → bottom → right → top-right corner. */
-function cardPathTopless(W: number, H: number, rxT: number, rxB: number): string {
-  const rT = Math.min(rxT, W / 2, H / 2)
+/** Open perimeter minus the top edge: left ear tip → left → bottom → right → right ear tip. */
+function cardPathTopless(W: number, H: number, rxB: number): string {
   const rB = Math.min(rxB, W / 2, H / 2)
   return [
-    `M ${rT} 0`,
-    `Q 0 0 0 ${rT}`,
+    `M ${-E} 0`,
+    `Q 0 0 0 ${E}`,
     `L 0 ${H - rB}`,
     `Q 0 ${H} ${rB} ${H}`,
     `L ${W - rB} ${H}`,
     `Q ${W} ${H} ${W} ${H - rB}`,
-    `L ${W} ${rT}`,
-    `Q ${W} 0 ${W - rT} 0`,
+    `L ${W} ${E}`,
+    `Q ${W} 0 ${W + E} 0`,
   ].join(' ')
 }
 
-/** Left converge, topless: top-left corner → left → bottom-center (no top edge). */
-function cardLeftConvergeTopless(W: number, H: number, rxT: number, rxB: number): string {
-  const rT = Math.min(rxT, W / 2, H / 2)
+/** Left converge, topless: left ear tip → left → bottom-center. */
+function cardLeftConvergeTopless(W: number, H: number, rxB: number): string {
   const rB = Math.min(rxB, W / 2, H / 2)
   return [
-    `M ${rT} 0`,
-    `Q 0 0 0 ${rT}`,
+    `M ${-E} 0`,
+    `Q 0 0 0 ${E}`,
     `L 0 ${H - rB}`,
     `Q 0 ${H} ${rB} ${H}`,
     `L ${W / 2} ${H}`,
   ].join(' ')
 }
 
-/** Right converge, topless: top-right corner → right → bottom-center (no top edge). */
-function cardRightConvergeTopless(W: number, H: number, rxT: number, rxB: number): string {
-  const rT = Math.min(rxT, W / 2, H / 2)
+/** Right converge, topless: right ear tip → right → bottom-center. */
+function cardRightConvergeTopless(W: number, H: number, rxB: number): string {
   const rB = Math.min(rxB, W / 2, H / 2)
   return [
-    `M ${W - rT} 0`,
-    `Q ${W} 0 ${W} ${rT}`,
+    `M ${W + E} 0`,
+    `Q ${W} 0 ${W} ${E}`,
     `L ${W} ${H - rB}`,
     `Q ${W} ${H} ${W - rB} ${H}`,
     `L ${W / 2} ${H}`,
   ].join(' ')
 }
 
-/** Left split, topless: bottom-center → left → top-left corner (no top edge). */
-function cardLeftSplitTopless(W: number, H: number, rxT: number, rxB: number): string {
-  const rT = Math.min(rxT, W / 2, H / 2)
+/** Left split, topless: bottom-center → left → left ear tip. */
+function cardLeftSplitTopless(W: number, H: number, rxB: number): string {
   const rB = Math.min(rxB, W / 2, H / 2)
   return [
     `M ${W / 2} ${H}`,
     `L ${rB} ${H}`,
     `Q 0 ${H} 0 ${H - rB}`,
-    `L 0 ${rT}`,
-    `Q 0 0 ${rT} 0`,
+    `L 0 ${E}`,
+    `Q 0 0 ${-E} 0`,
   ].join(' ')
 }
 
-/** Right split, topless: bottom-center → right → top-right corner (no top edge). */
-function cardRightSplitTopless(W: number, H: number, rxT: number, rxB: number): string {
-  const rT = Math.min(rxT, W / 2, H / 2)
+/** Right split, topless: bottom-center → right → right ear tip. */
+function cardRightSplitTopless(W: number, H: number, rxB: number): string {
   const rB = Math.min(rxB, W / 2, H / 2)
   return [
     `M ${W / 2} ${H}`,
     `L ${W - rB} ${H}`,
     `Q ${W} ${H} ${W} ${H - rB}`,
-    `L ${W} ${rT}`,
-    `Q ${W} 0 ${W - rT} 0`,
+    `L ${W} ${E}`,
+    `Q ${W} 0 ${W + E} 0`,
   ].join(' ')
 }
 
@@ -719,19 +718,19 @@ function CardOutline({ width: W, height: H, rxTop, rxBottom, variant, progress, 
   const isSplit = variant === 'split'
 
   const fullPath = flushTop
-    ? cardPathTopless(W, H, rxTop, rxBottom)
+    ? cardPathTopless(W, H, rxBottom)
     : cardPath(W, H, rxTop, rxBottom)
   const leftPath = flushTop
     ? isSplit
-      ? cardLeftSplitTopless(W, H, rxTop, rxBottom)
-      : cardLeftConvergeTopless(W, H, rxTop, rxBottom)
+      ? cardLeftSplitTopless(W, H, rxBottom)
+      : cardLeftConvergeTopless(W, H, rxBottom)
     : isSplit
       ? cardLeftSplit(W, H, rxTop, rxBottom)
       : cardLeftConverge(W, H, rxTop, rxBottom)
   const rightPath = flushTop
     ? isSplit
-      ? cardRightSplitTopless(W, H, rxTop, rxBottom)
-      : cardRightConvergeTopless(W, H, rxTop, rxBottom)
+      ? cardRightSplitTopless(W, H, rxBottom)
+      : cardRightConvergeTopless(W, H, rxBottom)
     : isSplit
       ? cardRightSplit(W, H, rxTop, rxBottom)
       : cardRightConverge(W, H, rxTop, rxBottom)
