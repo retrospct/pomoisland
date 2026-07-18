@@ -88,12 +88,13 @@ export function Island(props: IslandProps) {
     }
   }
 
-  // The popover itself is rendered next to its trigger inside ExpandedBody. When
-  // Tasks is closed the card is short, so the button-anchored dropdown overlaps
-  // the card and extends below it — reserve room so the transparent Electron
-  // window grows to reveal it. Tasks mode drops the popover over the tall list
-  // and needs no reservation.
-  const reserveMenuRoom = props.present === 'expanded' && props.menuOpen
+  // The popover is rendered next to its trigger inside ExpandedBody and drops
+  // below it. Reserve room whenever the menu is open so the transparent Electron
+  // window grows to reveal it — needed both when Tasks is closed (short card) and
+  // when Tasks is open but the list is shorter than the dropdown. (ExpandedWithTasks
+  // uses overflow:visible so the dropdown can extend past a short list.)
+  const reserveMenuRoom =
+    (props.present === 'expanded' || props.present === 'tasks') && props.menuOpen
 
   return (
     <div
@@ -1689,7 +1690,10 @@ function ExpandedWithTasks(props: IslandProps) {
         flexDirection: 'column',
         borderRadius: props.notch ? '0 0 26px 26px' : 26,
         boxShadow: 'none',
-        overflow: 'hidden',
+        // visible (not hidden) so the button-anchored popover can extend past a
+        // short task list. Corners still round via each child's own radius
+        // (ExpandedBody top, TaskList bottom).
+        overflow: 'visible',
       }}
     >
       <ExpandedBody {...props} bottomRadius={0} />
