@@ -128,8 +128,6 @@ export class Timer {
         return this.skip()
       case 'switchMode':
         return this.switchMode()
-      case 'quit':
-        return this.quit()
       case 'setTask':
         return this.set({ task: action.task })
       default: {
@@ -236,19 +234,5 @@ export class Timer {
       const total = this.focusSeconds()
       this.set({ mode: 'focus', isLongBreak: false, total, remaining: total, status: 'idle' })
     }
-  }
-
-  private quit(): void {
-    if (this.completeTimer) clearTimeout(this.completeTimer)
-    this.completeTimer = null
-    const total = this.focusSeconds()
-    this.set({
-      status: 'idle',
-      mode: 'focus',
-      isLongBreak: false,
-      total,
-      remaining: total,
-      sessionIndex: 0,
-    })
   }
 }

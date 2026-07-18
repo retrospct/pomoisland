@@ -114,6 +114,7 @@ export function Island(props: IslandProps) {
           <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
           {/* Absolutely-positioned menu — floats over task list and any other content */}
           <div
+            data-hover-target="1"
             style={{
               position: 'absolute',
               right: 0,
@@ -1431,6 +1432,16 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, 
 }
 
 /** Shared body used by both Expanded and ExpandedWithTasks. */
+/**
+ * Width (px) of the expanded timer body. Widened on a real notch so the status
+ * label / session dots flanking the camera housing keep clear of its horizontal
+ * footprint. Shared with the Tasks panel so both edges line up (falls back to a
+ * sane default before notch metrics arrive).
+ */
+function expandedCardWidth(notch: boolean, hasNotch: boolean, notchWidth: number): number {
+  return notch && hasNotch ? Math.max(340, notchWidth + 160) : 320
+}
+
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const rm = useReducedMotion()
   const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
@@ -1451,7 +1462,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   // Widen using the real measured notch width (falling back to a sane default
   // if metrics haven't arrived yet) so the status label / session dots flanking
   // it keep clear of its horizontal footprint too, not just its height.
-  const cardWidth = wrapNotch ? Math.max(340, notchWidth + 160) : 320
+  const cardWidth = expandedCardWidth(notch, hasNotch, notchWidth)
   return (
     <div
       data-hover-target="1"
@@ -1650,7 +1661,12 @@ function ExpandedWithTasks(props: IslandProps) {
     >
       <ExpandedBody {...props} bottomRadius={0} />
       {props.tasks && (
-        <TaskList tasks={props.tasks} accent={props.view.accent} onClose={props.onCloseTasks} />
+        <TaskList
+          tasks={props.tasks}
+          accent={props.view.accent}
+          width={expandedCardWidth(props.notch, props.hasNotch, props.notchWidth)}
+          onClose={props.onCloseTasks}
+        />
       )}
     </div>
   )

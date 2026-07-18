@@ -11,10 +11,12 @@ const MONO = "'IBM Plex Mono', monospace"
 interface TaskListProps {
   tasks: TasksState
   accent: string
+  /** Panel width (px) — matched to the expanded timer body so their edges line up. */
+  width?: number
   onClose: () => void
 }
 
-export function TaskList({ tasks, accent, onClose }: TaskListProps) {
+export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps) {
   const [addText, setAddText] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -54,7 +56,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
     <div
       data-hover-target="1"
       style={{
-        width: 320,
+        width,
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
@@ -106,7 +108,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
       </div>
 
       {/* Task rows */}
-      <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+      <div className="il-task-scroll" style={{ maxHeight: 220, overflowY: 'auto' }}>
         {active.length === 0 && done.length === 0 && (
           <p
             style={{

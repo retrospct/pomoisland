@@ -25,6 +25,21 @@ body.island-body {
   background: var(--il-hover) !important;
 }
 
+/* Themed, thin scrollbar for the task list — inherits light/dark via --il-* */
+.il-task-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.il-task-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.il-task-scroll::-webkit-scrollbar-thumb {
+  background: var(--il-border);
+  border-radius: 999px;
+}
+.il-task-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--il-muted);
+}
+
 .island-pill {
   transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
 }

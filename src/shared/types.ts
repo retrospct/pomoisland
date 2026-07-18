@@ -161,7 +161,7 @@ export interface Prefs {
   expandRetractMs: number
 }
 
-export type TimerActionType = 'playPause' | 'reset' | 'skip' | 'switchMode' | 'quit'
+export type TimerActionType = 'playPause' | 'reset' | 'skip' | 'switchMode'
 
 export interface SetTaskAction {
   type: 'setTask'
@@ -268,6 +268,10 @@ export interface PomApi {
     openSettings(): void
     settingsControl(action: SettingsControl): void
   }
+  app: {
+    /** Quit the whole application (matches the tray's "Quit PomoIsland"). */
+    quit(): void
+  }
   updates: {
     /** Trigger an interactive update check; the main process drives its own dialogs. */
     check(): void
@@ -306,6 +310,7 @@ export const IPC = {
   islandDragEnd: 'island:dragEnd',
   openSettings: 'windows:openSettings',
   settingsControl: 'windows:settingsControl',
+  appQuit: 'app:quit',
   checkUpdates: 'updates:check',
   shortcutsSet: 'shortcuts:set',
   shortcutsReset: 'shortcuts:reset',

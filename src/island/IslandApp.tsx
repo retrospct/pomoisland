@@ -232,6 +232,10 @@ export function IslandApp() {
   }
 
   const onIslandMouseOut = (e: React.MouseEvent) => {
+    // Never collapse while the popover menu is open — its items float below the
+    // expanded panel outside any hover-target, so a naive mouseout there would
+    // schedule a retract and shrink the island out from under the open menu.
+    if (menuOpen) return
     const target = (e.target as HTMLElement).closest<HTMLElement>('[data-hover-target="1"]')
     if (!target) return
     const to = e.relatedTarget as HTMLElement | null
@@ -288,7 +292,7 @@ export function IslandApp() {
           onQuit={(e) => {
             e.stopPropagation()
             setMenuOpen(false)
-            window.api.timer.action({ type: 'quit' })
+            window.api.app.quit()
           }}
         />
       )}

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import { IPC } from '../src/shared/types'
 import type {
   IslandResizeSize,
@@ -80,6 +80,9 @@ export function registerIpc(timer: Timer): void {
         return win.isMaximized() ? win.unmaximize() : win.maximize()
     }
   })
+
+  // App lifecycle
+  ipcMain.on(IPC.appQuit, () => app.quit())
 
   // Updates
   ipcMain.on(IPC.checkUpdates, () => checkForUpdatesInteractive())

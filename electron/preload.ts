@@ -48,6 +48,9 @@ const api: PomApi = {
     openSettings: () => ipcRenderer.send(IPC.openSettings),
     settingsControl: (action) => ipcRenderer.send(IPC.settingsControl, action),
   },
+  app: {
+    quit: () => ipcRenderer.send(IPC.appQuit),
+  },
   updates: {
     check: () => ipcRenderer.send(IPC.checkUpdates),
   },
