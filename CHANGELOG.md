@@ -5,6 +5,13 @@ All notable changes to PomoIsland will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1](https://github.com/retrospct/pomoisland/compare/v0.3.0...v0.3.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* island UX — popover menu, tasks panel, light mode, session-count hover ([#39](https://github.com/retrospct/pomoisland/issues/39)) ([f664751](https://github.com/retrospct/pomoisland/commit/f664751d9bc6f4723637311424dd0ff594d8f5f1))
+
 ## [0.3.0](https://github.com/retrospct/pomoisland/compare/v0.2.4...v0.3.0) (2026-07-01)
 
 
