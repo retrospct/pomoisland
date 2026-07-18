@@ -712,19 +712,35 @@ const vCountIn: Voice = (eng, t0) => {
 }
 
 /**
- * F1 start: the five red lights come on one at a time — five identical bright
- * beeps — then "lights out" resolves to a fuller, lower GO tone. (~3 kHz beeps
- * match the reference recording; compressed from the real 1 s spacing.)
+ * F1 start: a weighty "boomp — boomp — BEEEP" countdown. Two low, heavy thuds
+ * (each with a short downward pitch punch) spaced ~1 s apart, then a higher,
+ * emphatic sustained beep. Total ~2.8 s.
  */
 const vF1: Voice = (eng, t0) => {
   const { ctx } = eng
-  const gap = 0.19
-  for (let i = 0; i < 5; i++) {
-    route(eng, note(ctx, t0 + i * gap, 'triangle', 3000, 0.1, 0.003, 0.22), 0.9, 0)
+  // "boomp": a heavy low tone with a brief downward pitch punch for weight.
+  const boomp = (t: number) => {
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(240, t)
+    o.frequency.exponentialRampToValueAtTime(165, t + 0.1)
+    const g = envGain(ctx, t, { attack: 0.006, dur: 0.42, peak: 0.34 })
+    o.connect(g)
+    o.start(t)
+    o.stop(t + 0.47)
+    route(eng, g, 0.9, 0.06)
+    route(eng, note(ctx, t, 'sine', 120, 0.4, 0.008, 0.14), 0.9, 0) // low weight
+    route(eng, note(ctx, t, 'triangle', 330, 0.14, 0.004, 0.07), 0.8, 0) // body/definition
   }
-  const go = t0 + 5 * gap + 0.14
-  route(eng, note(ctx, go, 'triangle', 1046.5, 0.36, 0.004, 0.26), 0.9, 0.1) // C6 GO
-  route(eng, note(ctx, go, 'sine', 523.25, 0.34, 0.004, 0.12), 0.85, 0.06) // C5 body
+  // "BEEEP": a higher, emphatic sustained tone.
+  const beeep = (t: number) => {
+    route(eng, note(ctx, t, 'triangle', 988, 0.85, 0.01, 0.3), 0.9, 0.14) // B5
+    route(eng, note(ctx, t, 'sine', 494, 0.85, 0.01, 0.14), 0.85, 0.07) // B4 body
+    route(eng, note(ctx, t, 'sine', 1976, 0.1, 0.003, 0.05), 0.8, 0.05) // bright attack
+  }
+  boomp(t0)
+  boomp(t0 + 0.98)
+  beeep(t0 + 1.96)
 }
 
 /** Woosh: an upward filtered sweep resolving on a bright ping — an energetic "go". */
