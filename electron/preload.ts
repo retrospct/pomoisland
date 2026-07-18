@@ -10,6 +10,7 @@ import type {
   TasksState,
   TimerAction,
   TimerState,
+  UpdateStatus,
 } from '../src/shared/types'
 
 function on<T>(channel: string, cb: (payload: T) => void): () => void {
@@ -53,6 +54,9 @@ const api: PomApi = {
   },
   updates: {
     check: () => ipcRenderer.send(IPC.checkUpdates),
+    getStatus: () => ipcRenderer.invoke(IPC.updateGet) as Promise<UpdateStatus>,
+    onStatus: (cb) => on<UpdateStatus>(IPC.updateStatus, cb),
+    installRestart: () => ipcRenderer.send(IPC.installUpdate),
   },
   shortcuts: {
     set: (action: ShortcutAction, accelerator: string | null) =>

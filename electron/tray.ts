@@ -1,10 +1,11 @@
 import { Menu, Tray } from 'electron'
 import { fmtTime } from '../src/shared/format'
 import type { Shortcuts, TimerState } from '../src/shared/types'
+import { updateMenuItem } from './appMenu'
 import { getPrefs, onPrefsChange } from './store'
 import type { Timer } from './timer'
 import { loadTrayIcon } from './tray-icon'
-import { checkForUpdatesInteractive } from './updater'
+import { onUpdateReady } from './updater'
 import { createSettingsWindow, toggleIslandVisibility } from './windows'
 
 let tray: Tray | null = null
@@ -71,7 +72,7 @@ function buildMenu(timer: Timer, shortcuts: Shortcuts): Menu {
     },
     { type: 'separator' },
     { label: 'Settings…', click: () => createSettingsWindow() },
-    { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
+    updateMenuItem(),
     { type: 'separator' },
     { label: 'Quit PomoIsland', role: 'quit' },
   ])
@@ -86,6 +87,11 @@ export function createTray(timer: Timer): Tray {
   onPrefsChange((p) => {
     if (!tray || tray.isDestroyed()) return
     tray.setContextMenu(buildMenu(timer, p.shortcuts))
+  })
+  // Rebuild so "Check for Updates…" becomes "Restart to Update" when one is ready.
+  onUpdateReady(() => {
+    if (!tray || tray.isDestroyed()) return
+    tray.setContextMenu(buildMenu(timer, getPrefs().shortcuts))
   })
 
   return tray

@@ -9,7 +9,7 @@
 // `buildEngine`, which runs on any BaseAudioContext — including an OfflineAudioContext, so
 // `scripts/audio-check.ts` can render + measure every voice silently before you ever hear it.
 
-import type { Sound, TickSound } from './types'
+import type { Sound, StartCue, TickSound } from './types'
 
 export const SOUND_LABELS: Record<Sound, string> = {
   chime: 'Chime',
@@ -686,4 +686,95 @@ export function previewTick(style: TickSound, volume: number, count = 5, gapMs =
   for (let i = 0; i < count; i++) {
     tickPreviewTimers.push(setTimeout(() => playTick(style, volume), i * gapMs))
   }
+}
+
+// ---- start-of-session cues (MO-58) ----
+//
+// Played when a focus block begins (break-end / session start), distinct from the
+// completion alarm. Short and mostly dry (a little wet for sparkle) so they read as a
+// crisp "go" rather than a lingering chime — and stay clear of the ~1.8s reverb tail.
+
+type StartCueStyle = Exclude<StartCue, 'off'>
+
+/** Count-in: three low woodblock ticks, then a bright "go" note a fourth up. */
+const vCountIn: Voice = (eng, t0) => {
+  const { ctx } = eng
+  const tick = (t: number) => {
+    route(eng, note(ctx, t, 'sine', 200, 0.07, 0.001, 0.18), 0.9, 0)
+    route(eng, note(ctx, t, 'sine', 400, 0.03, 0.0008, 0.06), 0.7, 0)
+  }
+  tick(t0)
+  tick(t0 + 0.16)
+  tick(t0 + 0.32)
+  const go = t0 + 0.5
+  route(eng, note(ctx, go, 'sine', 587.33, 0.5, 0.004, 0.3), 0.9, 0.12) // D5 marimba body
+  route(eng, note(ctx, go, 'sine', 587.33 * 4, 0.16, 0.002, 0.12), 0.85, 0.08) // mallet attack
+}
+
+/** Ascend: a quick rising C–E–G triad — an upbeat "start" flourish. */
+const vAscend: Voice = (eng, t0) => {
+  const { ctx } = eng
+  ;[523.25, 659.25, 783.99].forEach((f, i) => {
+    const t = t0 + i * 0.09
+    route(eng, note(ctx, t, 'triangle', f, 0.32, 0.004, 0.26), 0.9, 0.12)
+    route(eng, note(ctx, t, 'sine', f * 2, 0.1, 0.002, 0.08), 0.8, 0.06)
+  })
+}
+
+/** Woosh: an upward filtered sweep resolving on a bright ping — an energetic "go". */
+const vWoosh: Voice = (eng, t0) => {
+  const { ctx } = eng
+  const o = ctx.createOscillator()
+  o.type = 'sawtooth'
+  o.frequency.setValueAtTime(220, t0)
+  o.frequency.exponentialRampToValueAtTime(880, t0 + 0.22)
+  const bp = ctx.createBiquadFilter()
+  bp.type = 'bandpass'
+  bp.frequency.setValueAtTime(600, t0)
+  bp.frequency.exponentialRampToValueAtTime(2400, t0 + 0.22)
+  bp.Q.value = 0.8
+  const g = envGain(ctx, t0, { attack: 0.02, dur: 0.26, peak: 0.16 })
+  o.connect(bp)
+  bp.connect(g)
+  o.start(t0)
+  o.stop(t0 + 0.3)
+  route(eng, g, 0.7, 0.2)
+  route(eng, note(ctx, t0 + 0.22, 'sine', 1174.66, 0.4, 0.003, 0.22), 0.85, 0.18) // D6 ping
+}
+
+export const START_CUE_VOICES: Record<StartCueStyle, Voice> = {
+  countin: vCountIn,
+  ascend: vAscend,
+  woosh: vWoosh,
+}
+
+export const START_CUE_LABELS: Record<StartCue, string> = {
+  off: 'Off',
+  countin: 'Count-in',
+  ascend: 'Ascend',
+  woosh: 'Woosh',
+}
+
+/** Play the start-of-session cue. `'off'` / `volume <= 0` is silent. Best-effort. */
+export function playStartCue(key: StartCue, volume: number): void {
+  if (key === 'off' || volume <= 0) return
+  stopSound()
+  try {
+    const eng = ensureEngine()
+    if (!eng) return
+    const ctx = eng.ctx as AudioContext
+    if (ctx.state === 'suspended') void ctx.resume()
+    eng.master.gain.setValueAtTime((Math.min(100, Math.max(0, volume)) / 100) * 0.9, ctx.currentTime)
+    capturingVoice = true
+    START_CUE_VOICES[key](eng, ctx.currentTime + 0.03)
+    capturingVoice = false
+  } catch {
+    capturingVoice = false
+    // Audio is best-effort (e.g. before any user gesture); ignore failures.
+  }
+}
+
+/** Settings preview — plays the cue once (stops any prior voice first, via playStartCue). */
+export function previewStartCue(key: StartCue, volume: number): void {
+  playStartCue(key, volume)
 }

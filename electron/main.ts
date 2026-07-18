@@ -8,7 +8,7 @@ import { configureShortcutHandlers, registerGlobalShortcuts, unregisterGlobalSho
 import { getPrefs, onPrefsChange } from './store'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
-import { initAutoUpdater } from './updater'
+import { initAutoUpdater, onUpdateReady } from './updater'
 import { createIslandWindow, createSnapOverlayWindow, toggleIslandVisibility } from './windows'
 
 let timer: Timer | null = null
@@ -46,6 +46,8 @@ app.whenReady().then(() => {
   // Native app menu bar (shows when a PomoIsland window is focused) + auto-updater.
   Menu.setApplicationMenu(buildAppMenu())
   initAutoUpdater()
+  // Rebuild the app menu so "Check for Updates…" becomes "Restart to Update".
+  onUpdateReady(() => Menu.setApplicationMenu(buildAppMenu()))
 
   // Keep dock visibility in sync with the pref.
   onPrefsChange((p) => applyDockVisibility(p.showDockIcon))

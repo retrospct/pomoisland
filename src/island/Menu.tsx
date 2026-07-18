@@ -5,6 +5,10 @@
 
 interface TriggerProps {
   onToggleMenu: (e: React.MouseEvent) => void
+  /** Show a notification dot when a downloaded update is waiting to install. */
+  updateReady?: boolean
+  /** Accent color for the dot (falls back to a neutral blue). */
+  accent?: string
 }
 
 interface DropdownProps {
@@ -12,21 +16,52 @@ interface DropdownProps {
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
+  /** When set, the "Check for updates" item becomes "Restart to Update". */
+  updateReady?: boolean
+  onInstallRestart?: (e: React.MouseEvent) => void
 }
 
-export function Menu({ onToggleMenu }: TriggerProps) {
+export function Menu({ onToggleMenu, updateReady, accent }: TriggerProps) {
   return (
-    <button className="island-icon-btn" onClick={onToggleMenu} aria-label="More" style={iconBtn}>
+    <button
+      className="island-icon-btn"
+      onClick={onToggleMenu}
+      aria-label={updateReady ? 'More — update ready' : 'More'}
+      style={iconBtn}
+    >
       <svg width="18" height="6" viewBox="0 0 18 6">
         <circle cx="2.6" cy="3" r="1.7" fill="currentColor" />
         <circle cx="9" cy="3" r="1.7" fill="currentColor" />
         <circle cx="15.4" cy="3" r="1.7" fill="currentColor" />
       </svg>
+      {updateReady && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 9,
+            right: 9,
+            width: 7,
+            height: 7,
+            borderRadius: '50%',
+            background: accent ?? '#6F9CEB',
+            // Ring in the surface color so the dot reads cleanly over the icon.
+            boxShadow: '0 0 0 2px var(--il-bg)',
+          }}
+        />
+      )}
     </button>
   )
 }
 
-export function MenuDropdown({ onTasks, onSettings, onCheckUpdates, onQuit }: DropdownProps) {
+export function MenuDropdown({
+  onTasks,
+  onSettings,
+  onCheckUpdates,
+  onQuit,
+  updateReady,
+  onInstallRestart,
+}: DropdownProps) {
   return (
     <div style={popover}>
       <button className="island-menu-item" onClick={onTasks} style={menuItem}>
@@ -77,7 +112,11 @@ export function MenuDropdown({ onTasks, onSettings, onCheckUpdates, onQuit }: Dr
         </svg>
         Settings
       </button>
-      <button className="island-menu-item" onClick={onCheckUpdates} style={menuItem}>
+      <button
+        className="island-menu-item"
+        onClick={updateReady && onInstallRestart ? onInstallRestart : onCheckUpdates}
+        style={menuItem}
+      >
         {/* Refresh / update arrows — a circular pair suggesting "check again". */}
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
           <path
@@ -95,7 +134,7 @@ export function MenuDropdown({ onTasks, onSettings, onCheckUpdates, onQuit }: Dr
             strokeLinejoin="round"
           />
         </svg>
-        Check for updates
+        {updateReady ? 'Restart to Update' : 'Check for updates'}
       </button>
       <div style={{ height: 1, background: 'var(--il-line)', margin: '5px 9px' }} />
       <button className="island-menu-item" onClick={onQuit} style={menuItem}>
@@ -118,6 +157,7 @@ export function MenuDropdown({ onTasks, onSettings, onCheckUpdates, onQuit }: Dr
 }
 
 const iconBtn: React.CSSProperties = {
+  position: 'relative',
   width: 42,
   height: 42,
   borderRadius: '50%',

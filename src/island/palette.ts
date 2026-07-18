@@ -6,7 +6,7 @@
 // different visual weight. Accent colors are handled separately by `resolveAccent` in derive.ts.
 
 import type { CSSProperties } from 'react'
-import type { NotchBackgroundMode, ThemeChoice } from '@shared/types'
+import type { ThemeChoice } from '@shared/types'
 
 type Tokens = Record<string, string>
 
@@ -61,20 +61,19 @@ export function resolveTheme(theme: ThemeChoice): 'light' | 'dark' {
   return theme
 }
 
-/** CSS custom properties applied to the island window root. */
-export function islandPaletteVars(theme: ThemeChoice): CSSProperties {
-  const resolved = resolveTheme(theme)
+/** CSS custom properties applied to the island window root, for a resolved theme. */
+export function islandPaletteVars(resolved: 'light' | 'dark'): CSSProperties {
   return { ...(resolved === 'dark' ? DARK : LIGHT) } as CSSProperties
 }
 
 /**
- * Surface color for the SNAPPED island. The pure-black "notch bezel" look only
- * applies in dark modes — in light / system-light the island always uses the
- * light surface, so the setting never leaves dark ink on a black card (MO-51).
- * In dark modes, `'black'` returns pure black (the Dynamic Island look) and
- * `'theme'` returns the same `--il-bg` the rest of the app uses.
+ * Surface color for the SNAPPED island. When the notch-background setting is on
+ * and the island is docked, the caller passes `forceBlack` and a `'dark'`
+ * effective theme, so the docked card is pure black with a readable dark
+ * foreground in any app theme (MO-51). Otherwise it's the effective theme's
+ * normal surface (a floating light card stays light, a dark card stays dark).
  */
-export function notchBackgroundColor(theme: ThemeChoice, mode: NotchBackgroundMode): string {
-  if (resolveTheme(theme) === 'light') return LIGHT['--il-bg']
-  return mode === 'black' ? '#000000' : DARK['--il-bg']
+export function notchSurfaceColor(resolved: 'light' | 'dark', forceBlack: boolean): string {
+  if (forceBlack) return '#000000'
+  return (resolved === 'dark' ? DARK : LIGHT)['--il-bg']
 }

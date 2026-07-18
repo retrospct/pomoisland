@@ -108,6 +108,22 @@ function NotchGhost({ nearSnap, accent }: { nearSnap: boolean; accent: string })
     userSelect: 'none',
   }
 
+  // Frosted "liquid glass" plate so the label stays legible over busy backgrounds.
+  // The overlay window is transparent with no vibrancy, so backdrop-filter can't
+  // blur the real desktop — the translucent plate is what guarantees contrast;
+  // the blur is progressive enhancement where the compositor honors it.
+  const labelPill: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 12px',
+    borderRadius: 999,
+    background: 'rgba(20,20,22,0.72)',
+    border: '1px solid rgba(255,255,255,0.14)',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+    backdropFilter: 'blur(14px) saturate(1.4)',
+    WebkitBackdropFilter: 'blur(14px) saturate(1.4)',
+  }
+
   return (
     <div className="snap-ghost" style={shape}>
       {nearSnap && (
@@ -127,7 +143,9 @@ function NotchGhost({ nearSnap, accent }: { nearSnap: boolean; accent: string })
           }}
         />
       )}
-      <span style={labelStyle}>DROP TO SNAP</span>
+      <div style={labelPill}>
+        <span style={labelStyle}>DROP TO SNAP</span>
+      </div>
     </div>
   )
 }

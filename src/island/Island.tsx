@@ -32,7 +32,10 @@ interface Handlers {
   onCloseTasks: () => void
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
+  onInstallRestart: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
+  /** A downloaded update is waiting to install (drives the 3-dot dot + relabel). */
+  updateReady: boolean
 }
 
 interface IslandProps extends Handlers {
@@ -1656,7 +1659,11 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         </button>
         <div style={{ flex: 1 }} />
         <div style={{ position: 'relative' }}>
-          <Menu onToggleMenu={props.onToggleMenu} />
+          <Menu
+            onToggleMenu={props.onToggleMenu}
+            updateReady={props.updateReady}
+            accent={view.accent}
+          />
           {props.menuOpen && (
             <div
               data-hover-target="1"
@@ -1668,6 +1675,8 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
                 onSettings={props.onSettings}
                 onCheckUpdates={props.onCheckUpdates}
                 onQuit={props.onQuit}
+                updateReady={props.updateReady}
+                onInstallRestart={props.onInstallRestart}
               />
             </div>
           )}
