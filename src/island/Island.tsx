@@ -88,7 +88,12 @@ export function Island(props: IslandProps) {
     }
   }
 
-  const showMenu = (props.present === 'expanded' || props.present === 'tasks') && props.menuOpen
+  // The popover itself is rendered next to its trigger inside ExpandedBody. When
+  // Tasks is closed the card is short, so the button-anchored dropdown overlaps
+  // the card and extends below it — reserve room so the transparent Electron
+  // window grows to reveal it. Tasks mode drops the popover over the tall list
+  // and needs no reservation.
+  const reserveMenuRoom = props.present === 'expanded' && props.menuOpen
 
   return (
     <div
@@ -108,29 +113,9 @@ export function Island(props: IslandProps) {
       }}
     >
       {panel}
-      {showMenu && (
-        <>
-          {/* Invisible spacer keeps the Electron window tall enough for the floating menu */}
-          <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
-          {/* Absolutely-positioned menu — floats over task list and any other content */}
-          <div
-            data-hover-target="1"
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: `calc(100% - ${MENU_ALLOWANCE}px + 4px)`,
-              zIndex: 100,
-            }}
-            onClick={stop}
-          >
-            <MenuDropdown
-              onTasks={props.onOpenTasks}
-              onSettings={props.onSettings}
-              onCheckUpdates={props.onCheckUpdates}
-              onQuit={props.onQuit}
-            />
-          </div>
-        </>
+      {reserveMenuRoom && (
+        /* Invisible spacer grows the window so the button-anchored popover isn't clipped */
+        <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
       )}
     </div>
   )
@@ -1669,7 +1654,23 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           <SkipLarge />
         </button>
         <div style={{ flex: 1 }} />
-        <Menu onToggleMenu={props.onToggleMenu} />
+        <div style={{ position: 'relative' }}>
+          <Menu onToggleMenu={props.onToggleMenu} />
+          {props.menuOpen && (
+            <div
+              data-hover-target="1"
+              onClick={stop}
+              style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 100 }}
+            >
+              <MenuDropdown
+                onTasks={props.onOpenTasks}
+                onSettings={props.onSettings}
+                onCheckUpdates={props.onCheckUpdates}
+                onQuit={props.onQuit}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
