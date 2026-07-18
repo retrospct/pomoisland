@@ -1465,10 +1465,10 @@ function TaskSessions({
   accent: string
 }) {
   return (
-    <span style={{ whiteSpace: 'nowrap' }}>
+    <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
       {' '}
-      <span style={{ color: accent, fontWeight: 600 }}>{completed}</span>
-      <span style={{ opacity: 0.6 }}>/{estimate}</span>
+      <span style={{ color: accent }}>{completed}</span>
+      <span>/{estimate}</span>
     </span>
   )
 }
