@@ -29,6 +29,10 @@ body.island-body {
 .il-completed-toggle:hover {
   background: var(--il-hover) !important;
 }
+/* Clear-all button (MO-54) — muted at rest, red on hover like the row delete. */
+.il-completed-clear:hover {
+  color: #ff6b6b !important;
+}
 .il-completed-chevron {
   transition: transform 0.15s ease;
 }

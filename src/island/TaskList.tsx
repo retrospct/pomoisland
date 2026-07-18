@@ -21,6 +21,9 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
+  // Session estimate for the next task; seeded from the persisted default (the
+  // last value used) and kept as the running default within the session (MO-53).
+  const [addEstimate, setAddEstimate] = useState(() => tasks.defaultEstimate ?? 1)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function mutate(m: Parameters<typeof window.api.tasks.mutate>[0]) {
@@ -31,7 +34,7 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
     e.preventDefault()
     const title = addText.trim()
     if (!title) return
-    mutate({ type: 'add', title })
+    mutate({ type: 'add', title, estimate: addEstimate })
     setAddText('')
   }
 
@@ -150,45 +153,65 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
         {done.length > 0 && (
           <>
             <div style={{ height: 1, background: 'var(--il-border)', margin: '4px 20px' }} />
-            <button
-              className="il-completed-toggle"
-              aria-expanded={showCompleted}
-              onClick={(e) => { e.stopPropagation(); setShowCompleted((v) => !v) }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                width: 'calc(100% - 8px)',
-                margin: '1px 4px',
-                padding: '5px 12px',
-                background: 'transparent',
-                border: 'none',
-                borderRadius: 8,
-                color: 'var(--il-muted)',
-                fontFamily: SANS,
-                fontSize: 12,
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <svg
-                className="il-completed-chevron"
-                width="10"
-                height="10"
-                viewBox="0 0 12 12"
-                fill="none"
-                style={{ transform: showCompleted ? 'rotate(90deg)' : 'none', flexShrink: 0 }}
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1px 4px' }}>
+              <button
+                className="il-completed-toggle"
+                aria-expanded={showCompleted}
+                onClick={(e) => { e.stopPropagation(); setShowCompleted((v) => !v) }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flex: 1,
+                  padding: '5px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: 'var(--il-muted)',
+                  fontFamily: SANS,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
               >
-                <path
-                  d="M4.5 3L8 6.5L4.5 10"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {showCompleted ? 'Hide completed' : `Show completed (${done.length})`}
-            </button>
+                <svg
+                  className="il-completed-chevron"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  style={{ transform: showCompleted ? 'rotate(90deg)' : 'none', flexShrink: 0 }}
+                >
+                  <path
+                    d="M4.5 3L8 6.5L4.5 10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {showCompleted ? 'Hide completed' : `Show completed (${done.length})`}
+              </button>
+              <button
+                className="il-completed-clear"
+                aria-label="Clear all completed tasks"
+                onClick={(e) => { e.stopPropagation(); mutate({ type: 'clearCompleted' }) }}
+                style={{
+                  flexShrink: 0,
+                  padding: '5px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: 'var(--il-muted)',
+                  fontFamily: SANS,
+                  fontSize: 11.5,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Clear all
+              </button>
+            </div>
             {showCompleted && done.map((task) => (
               <TaskRow
                 key={task.id}
@@ -246,6 +269,40 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
             caretColor: accent,
           }}
         />
+        {addText.trim() && (
+          <div
+            title="Sessions for this task"
+            style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
+          >
+            <button
+              type="button"
+              aria-label="Fewer sessions"
+              onClick={() => setAddEstimate((n) => Math.max(1, n - 1))}
+              style={pipBtn}
+            >
+              −
+            </button>
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--il-body)',
+                minWidth: 12,
+                textAlign: 'center',
+              }}
+            >
+              {addEstimate}
+            </span>
+            <button
+              type="button"
+              aria-label="More sessions"
+              onClick={() => setAddEstimate((n) => n + 1)}
+              style={pipBtn}
+            >
+              +
+            </button>
+          </div>
+        )}
         <button
           type="submit"
           disabled={!addText.trim()}

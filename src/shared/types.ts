@@ -224,10 +224,14 @@ export interface TasksState {
   completedToday: number
   /** ISO date string (YYYY-MM-DD) tracking when completedToday was last reset. */
   completedDate: string
+  /** Session estimate applied to the next added task — the last value chosen in
+   *  the add form, remembered across restarts (MO-53). */
+  defaultEstimate: number
 }
 
 export type TaskMutation =
-  | { type: 'add'; title: string }
+  | { type: 'add'; title: string; estimate?: number }
+  | { type: 'clearCompleted' }
   | {
       type: 'update'
       id: string

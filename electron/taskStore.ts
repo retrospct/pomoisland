@@ -30,6 +30,7 @@ function load(): TasksState {
       activeTaskId: null,
       completedToday: 0,
       completedDate: todayString(),
+      defaultEstimate: 1,
     }
     return {
       ...base,
@@ -38,7 +39,13 @@ function load(): TasksState {
       tasks: Array.isArray(parsed.tasks) ? (parsed.tasks as Task[]) : [],
     }
   } catch {
-    return { tasks: [], activeTaskId: null, completedToday: 0, completedDate: todayString() }
+    return {
+      tasks: [],
+      activeTaskId: null,
+      completedToday: 0,
+      completedDate: todayString(),
+      defaultEstimate: 1,
+    }
   }
 }
 
@@ -112,17 +119,20 @@ export function applyMutation(m: TaskMutation): void {
   const s = getTasks()
   switch (m.type) {
     case 'add': {
+      // Estimate comes from the add form; remember it as the default for the
+      // next added task (MO-53).
+      const estimate = Math.max(1, Math.round(m.estimate ?? s.defaultEstimate ?? 1))
       const task: Task = {
         id: randomUUID(),
         title: m.title.trim() || 'Untitled task',
-        estimatePomodoros: 1,
+        estimatePomodoros: estimate,
         completedPomodoros: 0,
         done: false,
       }
       const tasks = [...s.tasks, task]
       // Auto-activate the first task added when nothing is active yet.
       const activeTaskId = s.activeTaskId ?? task.id
-      commit({ ...s, tasks, activeTaskId })
+      commit({ ...s, tasks, activeTaskId, defaultEstimate: estimate })
       break
     }
     case 'update': {
@@ -149,6 +159,16 @@ export function applyMutation(m: TaskMutation): void {
       // Fall back to the first remaining incomplete task if the active one was deleted.
       const activeTaskId =
         s.activeTaskId === m.id ? (tasks.find((t) => !t.done)?.id ?? null) : s.activeTaskId
+      commit({ ...s, tasks, activeTaskId })
+      break
+    }
+    case 'clearCompleted': {
+      const tasks = s.tasks.filter((t) => !t.done)
+      // If the active task was among those cleared, fall back to the first
+      // remaining incomplete task (same pattern as 'delete').
+      const activeTaskId = tasks.some((t) => t.id === s.activeTaskId)
+        ? s.activeTaskId
+        : (tasks.find((t) => !t.done)?.id ?? null)
       commit({ ...s, tasks, activeTaskId })
       break
     }
