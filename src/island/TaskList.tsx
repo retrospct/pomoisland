@@ -247,85 +247,62 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
       {/* Add task */}
       <form
         onSubmit={handleAdd}
-        style={{ display: 'flex', gap: 8, padding: '9px 20px 0', alignItems: 'center' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '9px 20px 0' }}
       >
-        <input
-          ref={inputRef}
-          value={addText}
-          onChange={(e) => setAddText(e.target.value)}
-          onKeyDown={stopProp}
-          onClick={stopProp}
-          placeholder="Add task…"
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: '1px solid var(--il-border)',
-            borderRadius: 8,
-            color: 'var(--il-text)',
-            fontFamily: SANS,
-            fontSize: 12.5,
-            padding: '7px 10px',
-            outline: 'none',
-            caretColor: accent,
-          }}
-        />
-        {addText.trim() && (
-          <div
-            title="Sessions for this task"
-            style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            ref={inputRef}
+            value={addText}
+            onChange={(e) => setAddText(e.target.value)}
+            onKeyDown={stopProp}
+            onClick={stopProp}
+            placeholder="Add task…"
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: '1px solid var(--il-border)',
+              borderRadius: 8,
+              color: 'var(--il-text)',
+              fontFamily: SANS,
+              fontSize: 12.5,
+              padding: '7px 10px',
+              outline: 'none',
+              caretColor: accent,
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!addText.trim()}
+            aria-label="Add task"
+            style={{
+              flexShrink: 0,
+              width: 30,
+              height: 30,
+              background: addText.trim() ? accent : 'var(--il-track)',
+              border: 'none',
+              borderRadius: 8,
+              color: addText.trim() ? 'var(--il-bg)' : 'var(--il-muted)',
+              fontFamily: SANS,
+              fontSize: 20,
+              cursor: addText.trim() ? 'pointer' : 'default',
+              display: 'grid',
+              placeItems: 'center',
+              lineHeight: 1,
+              transition: 'background .15s, color .15s',
+            }}
           >
-            <button
-              type="button"
-              aria-label="Fewer sessions"
-              onClick={() => setAddEstimate((n) => Math.max(1, n - 1))}
-              style={pipBtn}
-            >
-              −
-            </button>
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 12,
-                color: 'var(--il-body)',
-                minWidth: 12,
-                textAlign: 'center',
-              }}
-            >
-              {addEstimate}
-            </span>
-            <button
-              type="button"
-              aria-label="More sessions"
-              onClick={() => setAddEstimate((n) => n + 1)}
-              style={pipBtn}
-            >
-              +
-            </button>
-          </div>
+            +
+          </button>
+        </div>
+        {/* Session picker for the task about to be added — only while typing. */}
+        {addText.trim() && (
+          <SessionStepper
+            estimate={addEstimate}
+            accent={accent}
+            onDec={() => setAddEstimate((n) => Math.max(1, n - 1))}
+            onInc={() => setAddEstimate((n) => n + 1)}
+          />
         )}
-        <button
-          type="submit"
-          disabled={!addText.trim()}
-          aria-label="Add task"
-          style={{
-            flexShrink: 0,
-            width: 30,
-            height: 30,
-            background: addText.trim() ? accent : 'var(--il-track)',
-            border: 'none',
-            borderRadius: 8,
-            color: addText.trim() ? 'var(--il-bg)' : 'var(--il-muted)',
-            fontFamily: SANS,
-            fontSize: 20,
-            cursor: addText.trim() ? 'pointer' : 'default',
-            display: 'grid',
-            placeItems: 'center',
-            lineHeight: 1,
-            transition: 'background .15s, color .15s',
-          }}
-        >
-          +
-        </button>
       </form>
     </div>
   )
@@ -487,34 +464,24 @@ function TaskRow({
       {/* Spacer pushes the session controls + delete to the right */}
       {!isEditing && <div style={{ flex: 1 }} />}
 
-      {/* Session controls: − + only for incomplete tasks */}
-      {!isEditing && !task.done && (
-        <>
-          <button
-            aria-label="Fewer sessions"
-            onClick={(e) => { e.stopPropagation(); onAdjustEstimate(-1) }}
-            style={pipBtn}
-          >
-            −
-          </button>
-          <button
-            aria-label="More sessions"
-            onClick={(e) => { e.stopPropagation(); onAdjustEstimate(1) }}
-            style={pipBtn}
-          >
-            +
-          </button>
-        </>
-      )}
-
-      {/* Session pips — always visible unless editing */}
-      {!isEditing && (
-        <Pips
-          completed={task.completedPomodoros}
-          estimate={task.estimatePomodoros}
-          accent={accent}
-        />
-      )}
+      {/* Session count: interactive − / + stepper for active tasks, read-only
+          "c/e sessions" for done tasks. Fixed-ish width keeps rows aligned. */}
+      {!isEditing &&
+        (task.done ? (
+          <SessionCount
+            completed={task.completedPomodoros}
+            estimate={task.estimatePomodoros}
+            accent={accent}
+          />
+        ) : (
+          <SessionStepper
+            completed={task.completedPomodoros}
+            estimate={task.estimatePomodoros}
+            accent={accent}
+            onDec={() => onAdjustEstimate(-1)}
+            onInc={() => onAdjustEstimate(1)}
+          />
+        ))}
 
       {/* Delete */}
       <button
@@ -530,30 +497,72 @@ function TaskRow({
   )
 }
 
-function Pips({
+/**
+ * "N sessions" (add form — just the estimate) or "C/E sessions" (task rows —
+ * completed/estimate). The leading number is the theme accent; "session(s)" is
+ * smaller and faded as secondary info. Singular when the estimate is 1.
+ */
+function SessionCount({
   completed,
   estimate,
   accent,
 }: {
-  completed: number
+  /** When provided, renders "completed/estimate"; otherwise just the estimate. */
+  completed?: number
   estimate: number
   accent: string
 }) {
-  const total = Math.min(Math.max(estimate, completed), 8)
+  const label = estimate === 1 ? 'session' : 'sessions'
   return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          key={i}
-          style={{
-            width: 5,
-            height: 5,
-            borderRadius: '50%',
-            background: i < completed ? accent : 'var(--il-icon)',
-            flexShrink: 0,
-          }}
-        />
-      ))}
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3, whiteSpace: 'nowrap' }}>
+      <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: accent, lineHeight: 1 }}>
+        {completed ?? estimate}
+      </span>
+      {completed !== undefined && (
+        <span style={{ fontFamily: MONO, fontSize: 12, color: 'var(--il-body)', lineHeight: 1 }}>
+          /{estimate}
+        </span>
+      )}
+      <span style={{ fontFamily: SANS, fontSize: 10, color: 'var(--il-muted)', lineHeight: 1 }}>
+        {label}
+      </span>
+    </span>
+  )
+}
+
+/** SessionCount flanked by − / + estimate steppers. */
+function SessionStepper({
+  completed,
+  estimate,
+  accent,
+  onDec,
+  onInc,
+}: {
+  completed?: number
+  estimate: number
+  accent: string
+  onDec: () => void
+  onInc: () => void
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <button
+        type="button"
+        aria-label="Fewer sessions"
+        onClick={(e) => { e.stopPropagation(); onDec() }}
+        style={pipBtn}
+      >
+        −
+      </button>
+      <SessionCount completed={completed} estimate={estimate} accent={accent} />
+      <button
+        type="button"
+        aria-label="More sessions"
+        onClick={(e) => { e.stopPropagation(); onInc() }}
+        style={pipBtn}
+      >
+        +
+      </button>
     </div>
   )
 }
