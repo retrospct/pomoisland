@@ -209,7 +209,7 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
                   whiteSpace: 'nowrap',
                 }}
               >
-                Clear all
+                Clear
               </button>
             </div>
             {showCompleted && done.map((task) => (
