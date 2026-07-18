@@ -106,26 +106,32 @@ function NotchGhost({ nearSnap, accent }: { nearSnap: boolean; accent: string })
     fontWeight: 700,
     color: accent,
     userSelect: 'none',
+    position: 'relative',
+    zIndex: 2,
+    // Keep the label legible over the light glass on any desktop.
+    textShadow: '0 1px 3px rgba(0,0,0,0.45)',
   }
 
-  // Frosted "liquid glass" plate so the label stays legible over busy backgrounds.
-  // The overlay window is transparent with no vibrancy, so backdrop-filter can't
-  // blur the real desktop — the translucent plate is what guarantees contrast;
-  // the blur is progressive enhancement where the compositor honors it.
-  const labelPill: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '4px 12px',
-    borderRadius: 999,
-    background: 'rgba(20,20,22,0.72)',
-    border: '1px solid rgba(255,255,255,0.14)',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
-    backdropFilter: 'blur(14px) saturate(1.4)',
-    WebkitBackdropFilter: 'blur(14px) saturate(1.4)',
+  // Light "liquid glass" fill for the whole drop zone (like the macOS Dock). The
+  // overlay window is transparent with no vibrancy, so backdrop-filter can't blur
+  // the real desktop — the translucent light gradient is what reads as glass; a
+  // slight blur on the fill feathers its edges so it blends into the dashed line
+  // instead of ending in a hard rectangle.
+  const glassFill: CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: '0 0 15px 15px',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0.12))',
+    backdropFilter: 'blur(20px) saturate(1.6)',
+    WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
+    filter: 'blur(3px)',
+    pointerEvents: 'none',
+    zIndex: 0,
   }
 
   return (
     <div className="snap-ghost" style={shape}>
+      <div style={glassFill} />
       {nearSnap && (
         // Solid glowing ring that animates in outside the dashed outline,
         // tracing the same shape offset outward — never replaces the dashed line.
@@ -143,9 +149,7 @@ function NotchGhost({ nearSnap, accent }: { nearSnap: boolean; accent: string })
           }}
         />
       )}
-      <div style={labelPill}>
-        <span style={labelStyle}>DROP TO SNAP</span>
-      </div>
+      <span style={labelStyle}>DROP TO SNAP</span>
     </div>
   )
 }
