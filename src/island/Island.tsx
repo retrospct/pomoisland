@@ -1451,7 +1451,7 @@ function TaskSessions({
 }) {
   return (
     <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
-      {' '}
+      <span style={{ fontWeight: 400, opacity: 0.5 }}>{' • '}</span>
       <span style={{ color: accent }}>{completed}</span>
       <span>/{estimate}</span>
     </span>
