@@ -340,6 +340,9 @@ function TaskRow({
   onAdjustEstimate,
 }: TaskRowProps) {
   const [hovered, setHovered] = useState(false)
+  // Reveal the − / + estimate steppers on row hover, or persistently once the
+  // user clicks the session count to edit it.
+  const [sessionsOpen, setSessionsOpen] = useState(false)
   const isEditing = editId === task.id
 
   return (
@@ -480,6 +483,8 @@ function TaskRow({
             accent={accent}
             onDec={() => onAdjustEstimate(-1)}
             onInc={() => onAdjustEstimate(1)}
+            buttonsVisible={hovered || sessionsOpen}
+            onCountClick={(e) => { e.stopPropagation(); setSessionsOpen((v) => !v) }}
           />
         ))}
 
@@ -523,46 +528,60 @@ function SessionCount({
           /{estimate}
         </span>
       )}
-      <span style={{ fontFamily: SANS, fontSize: 10, color: 'var(--il-muted)', lineHeight: 1 }}>
+      <span style={{ fontFamily: SANS, fontSize: 8.5, color: 'var(--il-muted)', lineHeight: 1 }}>
         {label}
       </span>
     </span>
   )
 }
 
-/** SessionCount flanked by − / + estimate steppers. */
+/**
+ * SessionCount flanked by − / + estimate steppers. The buttons render only when
+ * `buttonsVisible` is true (task rows reveal them on hover / on clicking the
+ * count); the add form leaves them always visible.
+ */
 function SessionStepper({
   completed,
   estimate,
   accent,
   onDec,
   onInc,
+  buttonsVisible = true,
+  onCountClick,
 }: {
   completed?: number
   estimate: number
   accent: string
   onDec: () => void
   onInc: () => void
+  buttonsVisible?: boolean
+  onCountClick?: (e: React.MouseEvent) => void
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-      <button
-        type="button"
-        aria-label="Fewer sessions"
-        onClick={(e) => { e.stopPropagation(); onDec() }}
-        style={pipBtn}
-      >
-        −
-      </button>
-      <SessionCount completed={completed} estimate={estimate} accent={accent} />
-      <button
-        type="button"
-        aria-label="More sessions"
-        onClick={(e) => { e.stopPropagation(); onInc() }}
-        style={pipBtn}
-      >
-        +
-      </button>
+      {buttonsVisible && (
+        <button
+          type="button"
+          aria-label="Fewer sessions"
+          onClick={(e) => { e.stopPropagation(); onDec() }}
+          style={pipBtn}
+        >
+          −
+        </button>
+      )}
+      <span onClick={onCountClick} style={onCountClick ? { cursor: 'pointer' } : undefined}>
+        <SessionCount completed={completed} estimate={estimate} accent={accent} />
+      </span>
+      {buttonsVisible && (
+        <button
+          type="button"
+          aria-label="More sessions"
+          onClick={(e) => { e.stopPropagation(); onInc() }}
+          style={pipBtn}
+        >
+          +
+        </button>
+      )}
     </div>
   )
 }

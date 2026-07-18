@@ -1274,8 +1274,9 @@ function OutlinedCard({
   )
 }
 
-function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
   const rm = useReducedMotion()
+  const activeTask = tasks?.tasks.find((t) => t.id === tasks?.activeTaskId) ?? null
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card. On a real-notch display, widen and
   // clear the physical notch height/width — same fix as ExpandedBody — so the
@@ -1337,6 +1338,13 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, 
         }}
       >
         {view.displayTask}
+        {activeTask && (
+          <TaskSessions
+            completed={activeTask.completedPomodoros}
+            estimate={activeTask.estimatePomodoros}
+            accent={view.accent}
+          />
+        )}
       </div>
       <div
         style={{
@@ -1442,6 +1450,29 @@ function expandedCardWidth(notch: boolean, hasNotch: boolean, notchWidth: number
   return notch && hasNotch ? Math.max(340, notchWidth + 160) : 320
 }
 
+/**
+ * "C/E" session count shown after the task title in the card (peek/expanded)
+ * views — completed in the theme accent, estimate dimmed. No "sessions" label
+ * here; that word only appears in the Tasks list.
+ */
+function TaskSessions({
+  completed,
+  estimate,
+  accent,
+}: {
+  completed: number
+  estimate: number
+  accent: string
+}) {
+  return (
+    <span style={{ whiteSpace: 'nowrap' }}>
+      {' '}
+      <span style={{ color: accent, fontWeight: 600 }}>{completed}</span>
+      <span style={{ opacity: 0.6 }}>/{estimate}</span>
+    </span>
+  )
+}
+
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const rm = useReducedMotion()
   const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
@@ -1538,10 +1569,11 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
       >
         {view.displayTask}
         {activeTask && (
-          <span className="il-task-progress-hint">
-            {' '}
-            &middot; {activeTask.completedPomodoros}/{activeTask.estimatePomodoros} sessions
-          </span>
+          <TaskSessions
+            completed={activeTask.completedPomodoros}
+            estimate={activeTask.estimatePomodoros}
+            accent={view.accent}
+          />
         )}
       </div>
 
