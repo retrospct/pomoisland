@@ -72,7 +72,7 @@ export type TickSound = 'off' | 'soft' | 'crisp'
  * start), distinct from the completion alarm. `off` is silent; the others are
  * synthesized in the renderer (see src/shared/sound.ts). MO-58.
  */
-export type StartCue = 'off' | 'countin' | 'ascend' | 'woosh'
+export type StartCue = 'off' | 'countin' | 'f1' | 'woosh'
 
 /**
  * User-rebindable global shortcut actions — see ADR-0007. `showHide` toggles the

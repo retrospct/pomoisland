@@ -963,7 +963,7 @@ const TICK_OPTIONS: { k: TickSound; label: string }[] = [
   { k: 'soft', label: TICK_LABELS.soft },
   { k: 'crisp', label: TICK_LABELS.crisp },
 ]
-const START_CUES: StartCue[] = ['off', 'countin', 'ascend', 'woosh']
+const START_CUES: StartCue[] = ['off', 'countin', 'f1', 'woosh']
 
 // Demo progress fraction for the live notch-style previews (a representative
 // mid-session point). No time/label/dots readout — the swatch shows only the

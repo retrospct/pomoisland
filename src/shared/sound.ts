@@ -711,14 +711,20 @@ const vCountIn: Voice = (eng, t0) => {
   route(eng, note(ctx, go, 'sine', 587.33 * 4, 0.16, 0.002, 0.12), 0.85, 0.08) // mallet attack
 }
 
-/** Ascend: a quick rising C–E–G triad — an upbeat "start" flourish. */
-const vAscend: Voice = (eng, t0) => {
+/**
+ * F1 start: the five red lights come on one at a time — five identical bright
+ * beeps — then "lights out" resolves to a fuller, lower GO tone. (~3 kHz beeps
+ * match the reference recording; compressed from the real 1 s spacing.)
+ */
+const vF1: Voice = (eng, t0) => {
   const { ctx } = eng
-  ;[523.25, 659.25, 783.99].forEach((f, i) => {
-    const t = t0 + i * 0.09
-    route(eng, note(ctx, t, 'triangle', f, 0.32, 0.004, 0.26), 0.9, 0.12)
-    route(eng, note(ctx, t, 'sine', f * 2, 0.1, 0.002, 0.08), 0.8, 0.06)
-  })
+  const gap = 0.19
+  for (let i = 0; i < 5; i++) {
+    route(eng, note(ctx, t0 + i * gap, 'triangle', 3000, 0.1, 0.003, 0.22), 0.9, 0)
+  }
+  const go = t0 + 5 * gap + 0.14
+  route(eng, note(ctx, go, 'triangle', 1046.5, 0.36, 0.004, 0.26), 0.9, 0.1) // C6 GO
+  route(eng, note(ctx, go, 'sine', 523.25, 0.34, 0.004, 0.12), 0.85, 0.06) // C5 body
 }
 
 /** Woosh: an upward filtered sweep resolving on a bright ping — an energetic "go". */
@@ -744,20 +750,22 @@ const vWoosh: Voice = (eng, t0) => {
 
 export const START_CUE_VOICES: Record<StartCueStyle, Voice> = {
   countin: vCountIn,
-  ascend: vAscend,
+  f1: vF1,
   woosh: vWoosh,
 }
 
 export const START_CUE_LABELS: Record<StartCue, string> = {
   off: 'Off',
   countin: 'Count-in',
-  ascend: 'Ascend',
+  f1: 'F1 start',
   woosh: 'Woosh',
 }
 
 /** Play the start-of-session cue. `'off'` / `volume <= 0` is silent. Best-effort. */
 export function playStartCue(key: StartCue, volume: number): void {
   if (key === 'off' || volume <= 0) return
+  const voice = START_CUE_VOICES[key as StartCueStyle]
+  if (!voice) return // guards against a stale/removed persisted value
   stopSound()
   try {
     const eng = ensureEngine()
@@ -766,7 +774,7 @@ export function playStartCue(key: StartCue, volume: number): void {
     if (ctx.state === 'suspended') void ctx.resume()
     eng.master.gain.setValueAtTime((Math.min(100, Math.max(0, volume)) / 100) * 0.9, ctx.currentTime)
     capturingVoice = true
-    START_CUE_VOICES[key](eng, ctx.currentTime + 0.03)
+    voice(eng, ctx.currentTime + 0.03)
     capturingVoice = false
   } catch {
     capturingVoice = false
