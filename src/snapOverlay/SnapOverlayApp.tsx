@@ -112,21 +112,21 @@ function NotchGhost({ nearSnap, accent }: { nearSnap: boolean; accent: string })
     textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 0 6px rgba(0,0,0,0.4)',
   }
 
-  // Light "liquid glass" fill for the whole drop zone (like the macOS Dock).
-  // A strong backdrop-filter blurs whatever is behind the overlay so the label
-  // reads clearly. IMPORTANT: don't put `filter` on this element — it breaks
-  // `backdrop-filter`. Feathering into the dashed outline is done with a mask
-  // gradient instead (which leaves backdrop-filter intact).
+  // Light "liquid glass" fill for the WHOLE drop zone (like the macOS Dock). A
+  // strong backdrop-filter blurs whatever is behind the overlay so the label
+  // reads clearly. It fills the entire shape (flat top flush with the screen,
+  // rounded bottom to match the dashed outline). A soft inner shadow gives the
+  // edges a gentle feather into the dashed line without shrinking the fill.
+  // NOTE: no `filter` here — it breaks `backdrop-filter`; and no radial `mask`,
+  // which collapses to a centered blob on this wide, short shape.
   const glassFill: CSSProperties = {
     position: 'absolute',
     inset: 0,
     borderRadius: '0 0 15px 15px',
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0.16))',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0.14))',
     backdropFilter: 'blur(32px) saturate(1.8)',
     WebkitBackdropFilter: 'blur(32px) saturate(1.8)',
-    // Soft-edged mask so the frost fades into the dashed line, not a hard rectangle.
-    maskImage: 'radial-gradient(135% 135% at 50% 25%, #000 62%, transparent 100%)',
-    WebkitMaskImage: 'radial-gradient(135% 135% at 50% 25%, #000 62%, transparent 100%)',
+    boxShadow: 'inset 0 0 10px 2px rgba(255,255,255,0.12)',
     pointerEvents: 'none',
     zIndex: 0,
   }
