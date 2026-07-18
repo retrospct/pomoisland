@@ -9,7 +9,7 @@
 // `buildEngine`, which runs on any BaseAudioContext — including an OfflineAudioContext, so
 // `scripts/audio-check.ts` can render + measure every voice silently before you ever hear it.
 
-import type { Sound, TickSound } from './types'
+import type { Sound, StartCue, TickSound } from './types'
 
 export const SOUND_LABELS: Record<Sound, string> = {
   chime: 'Chime',
@@ -686,4 +686,119 @@ export function previewTick(style: TickSound, volume: number, count = 5, gapMs =
   for (let i = 0; i < count; i++) {
     tickPreviewTimers.push(setTimeout(() => playTick(style, volume), i * gapMs))
   }
+}
+
+// ---- start-of-session cues (MO-58) ----
+//
+// Played when a focus block begins (break-end / session start), distinct from the
+// completion alarm. Short and mostly dry (a little wet for sparkle) so they read as a
+// crisp "go" rather than a lingering chime — and stay clear of the ~1.8s reverb tail.
+
+type StartCueStyle = Exclude<StartCue, 'off'>
+
+/** Count-in: three low woodblock ticks, then a bright "go" note a fourth up. */
+const vCountIn: Voice = (eng, t0) => {
+  const { ctx } = eng
+  const tick = (t: number) => {
+    route(eng, note(ctx, t, 'sine', 200, 0.07, 0.001, 0.18), 0.9, 0)
+    route(eng, note(ctx, t, 'sine', 400, 0.03, 0.0008, 0.06), 0.7, 0)
+  }
+  tick(t0)
+  tick(t0 + 0.16)
+  tick(t0 + 0.32)
+  const go = t0 + 0.5
+  route(eng, note(ctx, go, 'sine', 587.33, 0.5, 0.004, 0.3), 0.9, 0.12) // D5 marimba body
+  route(eng, note(ctx, go, 'sine', 587.33 * 4, 0.16, 0.002, 0.12), 0.85, 0.08) // mallet attack
+}
+
+/**
+ * F1 start: a weighty "boomp — boomp — BEEEP" countdown. Two low, heavy thuds
+ * (each with a short downward pitch punch) spaced ~1 s apart, then a higher,
+ * emphatic sustained beep. Total ~2.8 s.
+ */
+const vF1: Voice = (eng, t0) => {
+  const { ctx } = eng
+  // "boomp": a heavy low tone with a brief downward pitch punch for weight.
+  const boomp = (t: number) => {
+    const o = ctx.createOscillator()
+    o.type = 'sine'
+    o.frequency.setValueAtTime(240, t)
+    o.frequency.exponentialRampToValueAtTime(165, t + 0.1)
+    const g = envGain(ctx, t, { attack: 0.006, dur: 0.42, peak: 0.34 })
+    o.connect(g)
+    o.start(t)
+    o.stop(t + 0.47)
+    route(eng, g, 0.9, 0.06)
+    route(eng, note(ctx, t, 'sine', 120, 0.4, 0.008, 0.14), 0.9, 0) // low weight
+    route(eng, note(ctx, t, 'triangle', 330, 0.14, 0.004, 0.07), 0.8, 0) // body/definition
+  }
+  // "BEEEP": a higher, emphatic sustained tone.
+  const beeep = (t: number) => {
+    route(eng, note(ctx, t, 'triangle', 988, 0.85, 0.01, 0.3), 0.9, 0.14) // B5
+    route(eng, note(ctx, t, 'sine', 494, 0.85, 0.01, 0.14), 0.85, 0.07) // B4 body
+    route(eng, note(ctx, t, 'sine', 1976, 0.1, 0.003, 0.05), 0.8, 0.05) // bright attack
+  }
+  boomp(t0)
+  boomp(t0 + 0.98)
+  beeep(t0 + 1.96)
+}
+
+/** Woosh: an upward filtered sweep resolving on a bright ping — an energetic "go". */
+const vWoosh: Voice = (eng, t0) => {
+  const { ctx } = eng
+  const o = ctx.createOscillator()
+  o.type = 'sawtooth'
+  o.frequency.setValueAtTime(220, t0)
+  o.frequency.exponentialRampToValueAtTime(880, t0 + 0.22)
+  const bp = ctx.createBiquadFilter()
+  bp.type = 'bandpass'
+  bp.frequency.setValueAtTime(600, t0)
+  bp.frequency.exponentialRampToValueAtTime(2400, t0 + 0.22)
+  bp.Q.value = 0.8
+  const g = envGain(ctx, t0, { attack: 0.02, dur: 0.26, peak: 0.16 })
+  o.connect(bp)
+  bp.connect(g)
+  o.start(t0)
+  o.stop(t0 + 0.3)
+  route(eng, g, 0.7, 0.2)
+  route(eng, note(ctx, t0 + 0.22, 'sine', 1174.66, 0.4, 0.003, 0.22), 0.85, 0.18) // D6 ping
+}
+
+export const START_CUE_VOICES: Record<StartCueStyle, Voice> = {
+  countin: vCountIn,
+  f1: vF1,
+  woosh: vWoosh,
+}
+
+export const START_CUE_LABELS: Record<StartCue, string> = {
+  off: 'Off',
+  countin: 'Count-in',
+  f1: 'F1 start',
+  woosh: 'Woosh',
+}
+
+/** Play the start-of-session cue. `'off'` / `volume <= 0` is silent. Best-effort. */
+export function playStartCue(key: StartCue, volume: number): void {
+  if (key === 'off' || volume <= 0) return
+  const voice = START_CUE_VOICES[key as StartCueStyle]
+  if (!voice) return // guards against a stale/removed persisted value
+  stopSound()
+  try {
+    const eng = ensureEngine()
+    if (!eng) return
+    const ctx = eng.ctx as AudioContext
+    if (ctx.state === 'suspended') void ctx.resume()
+    eng.master.gain.setValueAtTime((Math.min(100, Math.max(0, volume)) / 100) * 0.9, ctx.currentTime)
+    capturingVoice = true
+    voice(eng, ctx.currentTime + 0.03)
+    capturingVoice = false
+  } catch {
+    capturingVoice = false
+    // Audio is best-effort (e.g. before any user gesture); ignore failures.
+  }
+}
+
+/** Settings preview — plays the cue once (stops any prior voice first, via playStartCue). */
+export function previewStartCue(key: StartCue, volume: number): void {
+  playStartCue(key, volume)
 }

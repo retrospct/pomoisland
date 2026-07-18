@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import { IPC } from '../src/shared/types'
 import type {
   IslandResizeSize,
@@ -10,7 +10,12 @@ import type {
 } from '../src/shared/types'
 import { resetShortcuts, trySetShortcut } from './shortcuts'
 import { getPrefs, onPrefsChange, setPrefs } from './store'
-import { checkForUpdatesInteractive } from './updater'
+import {
+  checkForUpdatesInteractive,
+  getUpdateStatus,
+  installAndRestart,
+  onUpdateReady,
+} from './updater'
 import { activeTaskTitle, applyMutation, getTasks, onTasksChange, recordFocusComplete } from './taskStore'
 import {
   applyAlwaysOnTop,
@@ -81,8 +86,14 @@ export function registerIpc(timer: Timer): void {
     }
   })
 
+  // App lifecycle
+  ipcMain.on(IPC.appQuit, () => app.quit())
+
   // Updates
   ipcMain.on(IPC.checkUpdates, () => checkForUpdatesInteractive())
+  ipcMain.handle(IPC.updateGet, () => getUpdateStatus())
+  ipcMain.on(IPC.installUpdate, () => installAndRestart())
+  onUpdateReady(() => broadcastToAll(IPC.updateStatus, getUpdateStatus()))
 
   // Shortcuts (ADR-0007) — request/response so the renderer can reject-and-revert.
   ipcMain.handle(IPC.shortcutsSet, (_e, action: ShortcutAction, accelerator: string | null) =>

@@ -242,8 +242,15 @@ function applyIslandWindowLevel(): void {
     islandWin.setPosition(Math.round(x), Math.round(y))
     return
   }
-  // Floating/dragging: respect the alwaysTop pref ('floating' is below the menu
-  // bar, which is fine since the island isn't at the top edge while floating).
+  // Dragging: sit one level above the snap-overlay (also 'screen-saver') so the
+  // dragged card renders ON TOP of the drop-zone ghost, not behind it. Regardless
+  // of the alwaysTop pref — the user is actively manipulating the card.
+  if (placement.dragging) {
+    islandWin.setAlwaysOnTop(true, 'screen-saver', 1)
+    return
+  }
+  // Floating (not dragging): respect the alwaysTop pref ('floating' is below the
+  // menu bar, which is fine since the island isn't at the top edge while floating).
   if (getPrefs().alwaysTop) {
     islandWin.setAlwaysOnTop(true, 'floating')
   } else {

@@ -32,7 +32,10 @@ interface Handlers {
   onCloseTasks: () => void
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
+  onInstallRestart: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
+  /** A downloaded update is waiting to install (drives the 3-dot dot + relabel). */
+  updateReady: boolean
 }
 
 interface IslandProps extends Handlers {
@@ -88,7 +91,13 @@ export function Island(props: IslandProps) {
     }
   }
 
-  const showMenu = (props.present === 'expanded' || props.present === 'tasks') && props.menuOpen
+  // The popover is rendered next to its trigger inside ExpandedBody and drops
+  // below it. Reserve room whenever the menu is open so the transparent Electron
+  // window grows to reveal it — needed both when Tasks is closed (short card) and
+  // when Tasks is open but the list is shorter than the dropdown. (ExpandedWithTasks
+  // uses overflow:visible so the dropdown can extend past a short list.)
+  const reserveMenuRoom =
+    (props.present === 'expanded' || props.present === 'tasks') && props.menuOpen
 
   return (
     <div
@@ -108,28 +117,9 @@ export function Island(props: IslandProps) {
       }}
     >
       {panel}
-      {showMenu && (
-        <>
-          {/* Invisible spacer keeps the Electron window tall enough for the floating menu */}
-          <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
-          {/* Absolutely-positioned menu — floats over task list and any other content */}
-          <div
-            style={{
-              position: 'absolute',
-              right: 0,
-              top: `calc(100% - ${MENU_ALLOWANCE}px + 4px)`,
-              zIndex: 100,
-            }}
-            onClick={stop}
-          >
-            <MenuDropdown
-              onTasks={props.onOpenTasks}
-              onSettings={props.onSettings}
-              onCheckUpdates={props.onCheckUpdates}
-              onQuit={props.onQuit}
-            />
-          </div>
-        </>
+      {reserveMenuRoom && (
+        /* Invisible spacer grows the window so the button-anchored popover isn't clipped */
+        <div style={{ height: MENU_ALLOWANCE, pointerEvents: 'none', visibility: 'hidden' }} />
       )}
     </div>
   )
@@ -1273,8 +1263,9 @@ function OutlinedCard({
   )
 }
 
-function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
   const rm = useReducedMotion()
+  const activeTask = tasks?.tasks.find((t) => t.id === tasks?.activeTaskId) ?? null
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card. On a real-notch display, widen and
   // clear the physical notch height/width — same fix as ExpandedBody — so the
@@ -1336,6 +1327,13 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, 
         }}
       >
         {view.displayTask}
+        {activeTask && (
+          <TaskSessions
+            completed={activeTask.completedPomodoros}
+            estimate={activeTask.estimatePomodoros}
+            accent={view.accent}
+          />
+        )}
       </div>
       <div
         style={{
@@ -1431,6 +1429,39 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, onToggleExpand, 
 }
 
 /** Shared body used by both Expanded and ExpandedWithTasks. */
+/**
+ * Width (px) of the expanded timer body. Widened on a real notch so the status
+ * label / session dots flanking the camera housing keep clear of its horizontal
+ * footprint. Shared with the Tasks panel so both edges line up (falls back to a
+ * sane default before notch metrics arrive).
+ */
+function expandedCardWidth(notch: boolean, hasNotch: boolean, notchWidth: number): number {
+  return notch && hasNotch ? Math.max(340, notchWidth + 160) : 320
+}
+
+/**
+ * "C/E" session count shown after the task title in the card (peek/expanded)
+ * views — completed in the theme accent, estimate dimmed. No "sessions" label
+ * here; that word only appears in the Tasks list.
+ */
+function TaskSessions({
+  completed,
+  estimate,
+  accent,
+}: {
+  completed: number
+  estimate: number
+  accent: string
+}) {
+  return (
+    <span style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>
+      <span style={{ fontWeight: 400, opacity: 0.5 }}>{' • '}</span>
+      <span style={{ color: accent }}>{completed}</span>
+      <span>/{estimate}</span>
+    </span>
+  )
+}
+
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const rm = useReducedMotion()
   const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
@@ -1451,7 +1482,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   // Widen using the real measured notch width (falling back to a sane default
   // if metrics haven't arrived yet) so the status label / session dots flanking
   // it keep clear of its horizontal footprint too, not just its height.
-  const cardWidth = wrapNotch ? Math.max(340, notchWidth + 160) : 320
+  const cardWidth = expandedCardWidth(notch, hasNotch, notchWidth)
   return (
     <div
       data-hover-target="1"
@@ -1527,10 +1558,11 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
       >
         {view.displayTask}
         {activeTask && (
-          <span className="il-task-progress-hint">
-            {' '}
-            &middot; {activeTask.completedPomodoros}/{activeTask.estimatePomodoros} sessions
-          </span>
+          <TaskSessions
+            completed={activeTask.completedPomodoros}
+            estimate={activeTask.estimatePomodoros}
+            accent={view.accent}
+          />
         )}
       </div>
 
@@ -1626,7 +1658,29 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           <SkipLarge />
         </button>
         <div style={{ flex: 1 }} />
-        <Menu onToggleMenu={props.onToggleMenu} />
+        <div style={{ position: 'relative' }}>
+          <Menu
+            onToggleMenu={props.onToggleMenu}
+            updateReady={props.updateReady}
+            accent={view.accent}
+          />
+          {props.menuOpen && (
+            <div
+              data-hover-target="1"
+              onClick={stop}
+              style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 100 }}
+            >
+              <MenuDropdown
+                onTasks={props.onOpenTasks}
+                onSettings={props.onSettings}
+                onCheckUpdates={props.onCheckUpdates}
+                onQuit={props.onQuit}
+                updateReady={props.updateReady}
+                onInstallRestart={props.onInstallRestart}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -1645,12 +1699,20 @@ function ExpandedWithTasks(props: IslandProps) {
         flexDirection: 'column',
         borderRadius: props.notch ? '0 0 26px 26px' : 26,
         boxShadow: 'none',
-        overflow: 'hidden',
+        // visible (not hidden) so the button-anchored popover can extend past a
+        // short task list. Corners still round via each child's own radius
+        // (ExpandedBody top, TaskList bottom).
+        overflow: 'visible',
       }}
     >
       <ExpandedBody {...props} bottomRadius={0} />
       {props.tasks && (
-        <TaskList tasks={props.tasks} accent={props.view.accent} onClose={props.onCloseTasks} />
+        <TaskList
+          tasks={props.tasks}
+          accent={props.view.accent}
+          width={expandedCardWidth(props.notch, props.hasNotch, props.notchWidth)}
+          onClose={props.onCloseTasks}
+        />
       )}
     </div>
   )

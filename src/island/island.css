@@ -25,6 +25,38 @@ body.island-body {
   background: var(--il-hover) !important;
 }
 
+/* Completed-tasks collapse toggle (MO-52) */
+.il-completed-toggle:hover {
+  background: var(--il-hover) !important;
+}
+/* Clear-all button (MO-54) — muted at rest, red on hover like the row delete. */
+.il-completed-clear:hover {
+  color: #ff6b6b !important;
+}
+.il-completed-chevron {
+  transition: transform 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-completed-chevron {
+    transition: none;
+  }
+}
+
+/* Themed, thin scrollbar for the task list — inherits light/dark via --il-* */
+.il-task-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.il-task-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.il-task-scroll::-webkit-scrollbar-thumb {
+  background: var(--il-border);
+  border-radius: 999px;
+}
+.il-task-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--il-muted);
+}
+
 .island-pill {
   transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
@@ -58,6 +90,31 @@ body.island-body {
   }
 }
 
+/* Session dots ⇄ daily-goal cross-fade (MO-50). Both layers share one grid cell
+   so the container never resizes on hover — the size stability is what prevents
+   the enter/leave flicker loop. Only opacity changes. */
+.il-dots-layer {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+.il-goal-layer {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.il-session-dots:hover .il-dots-layer {
+  opacity: 0;
+}
+.il-session-dots:hover .il-goal-layer {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .il-dots-layer,
+  .il-goal-layer {
+    transition: none;
+  }
+}
+
 /* Active-task label in the expanded view. It opens the task list on click, so a
    hover cue (underline + slight brighten) signals it's interactive. */
 .il-task-open {
@@ -71,21 +128,8 @@ body.island-body {
   filter: brightness(1.28);
 }
 
-/* Completed/planned session count for the active task — hidden until hover so it
-   doesn't compete with the task name at rest. */
-.il-task-progress-hint {
-  font-size: 11px;
-  color: var(--il-muted);
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.il-task-open:hover .il-task-progress-hint {
-  opacity: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .il-task-open,
-  .il-task-progress-hint {
+  .il-task-open {
     transition: none;
   }
 }

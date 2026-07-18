@@ -106,10 +106,34 @@ function NotchGhost({ nearSnap, accent }: { nearSnap: boolean; accent: string })
     fontWeight: 700,
     color: accent,
     userSelect: 'none',
+    position: 'relative',
+    zIndex: 2,
+    // Crisp halo so the label stays legible over the glass on any desktop.
+    textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 0 6px rgba(0,0,0,0.4)',
+  }
+
+  // Light "liquid glass" fill for the WHOLE drop zone (like the macOS Dock). A
+  // strong backdrop-filter blurs whatever is behind the overlay so the label
+  // reads clearly. It fills the entire shape (flat top flush with the screen,
+  // rounded bottom to match the dashed outline). A soft inner shadow gives the
+  // edges a gentle feather into the dashed line without shrinking the fill.
+  // NOTE: no `filter` here — it breaks `backdrop-filter`; and no radial `mask`,
+  // which collapses to a centered blob on this wide, short shape.
+  const glassFill: CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: '0 0 15px 15px',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0.14))',
+    backdropFilter: 'blur(32px) saturate(1.8)',
+    WebkitBackdropFilter: 'blur(32px) saturate(1.8)',
+    boxShadow: 'inset 0 0 10px 2px rgba(255,255,255,0.12)',
+    pointerEvents: 'none',
+    zIndex: 0,
   }
 
   return (
     <div className="snap-ghost" style={shape}>
+      <div style={glassFill} />
       {nearSnap && (
         // Solid glowing ring that animates in outside the dashed outline,
         // tracing the same shape offset outward — never replaces the dashed line.

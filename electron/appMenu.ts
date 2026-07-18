@@ -7,8 +7,15 @@
 // window native copy/paste/undo shortcuts; Window is the usual minimize/zoom/close.
 
 import { app, Menu, type MenuItemConstructorOptions } from 'electron'
-import { checkForUpdatesInteractive } from './updater'
+import { checkForUpdatesInteractive, getUpdateStatus, installAndRestart } from './updater'
 import { createSettingsWindow } from './windows'
+
+/** "Restart to Update" when a download is ready, else the interactive check. */
+export function updateMenuItem(): MenuItemConstructorOptions {
+  return getUpdateStatus().ready
+    ? { label: 'Restart to Update', click: () => installAndRestart() }
+    : { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() }
+}
 
 export function buildAppMenu(): Menu {
   const template: MenuItemConstructorOptions[] = [
@@ -18,7 +25,7 @@ export function buildAppMenu(): Menu {
         { role: 'about' },
         { type: 'separator' },
         { label: 'Preferences…', accelerator: 'CmdOrCtrl+,', click: () => createSettingsWindow() },
-        { label: 'Check for Updates…', click: () => checkForUpdatesInteractive() },
+        updateMenuItem(),
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

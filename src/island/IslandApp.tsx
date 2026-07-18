@@ -1,10 +1,10 @@
 import { resolveNotchHeight } from '@shared/notchHeight'
-import { playSound, playTick } from '@shared/sound'
+import { playSound, playStartCue, playTick } from '@shared/sound'
 import type { Placement, Prefs, TasksState, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
 import { Island, type Present } from './Island'
-import { islandPaletteVars, notchBackgroundColor, resolveTheme } from './palette'
+import { islandPaletteVars, notchSurfaceColor, resolveTheme } from './palette'
 import { useDrag } from './useDrag'
 
 export function IslandApp() {
@@ -24,12 +24,15 @@ export function IslandApp() {
   const [tasksOpen, setTasksOpen] = useState(false)
   const [peek, setPeek] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [updateReady, setUpdateReady] = useState(false)
 
   const measureRef = useRef<HTMLDivElement>(null)
   // Ref so the resize observer's report() closure (registered once) always sees
   // the latest presentation without re-subscribing.
   const presentRef = useRef<Present>('collapsed')
   const prevStatus = useRef<string | null>(null)
+  // Prev block (mode+status) for detecting the edge into a new running focus block.
+  const prevBlock = useRef<{ mode: string; status: string } | null>(null)
   const prefsRef = useRef<Prefs | null>(null)
   const retractTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Ref so the blur handler never has a stale dragging value.
@@ -59,16 +62,19 @@ export function IslandApp() {
     void window.api.prefs.get().then((p) => alive && setPrefs(p))
     void window.api.tasks.get().then((t) => alive && setTasks(t))
     void window.api.island.getPlacement().then((p) => alive && setPlacement(p))
+    void window.api.updates.getStatus().then((u) => alive && setUpdateReady(u.ready))
     const offState = window.api.timer.onState(setState)
     const offPrefs = window.api.prefs.onChange(setPrefs)
     const offTasks = window.api.tasks.onChange(setTasks)
     const offPlace = window.api.island.onPlacement(setPlacement)
+    const offUpdate = window.api.updates.onStatus((u) => setUpdateReady(u.ready))
     return () => {
       alive = false
       offState()
       offPrefs()
       offTasks()
       offPlace()
+      offUpdate()
     }
   }, [])
 
@@ -77,13 +83,31 @@ export function IslandApp() {
     prefsRef.current = prefs
   }, [prefs])
 
-  // --- Completion chime on transition into `complete` ---
+  // --- Completion alarm on transition into `complete` ---
+  // Only a finished FOCUS block (session end) rings the alarm; a finished break is
+  // signalled by the start cue when focus resumes (below), not by the alarm (MO-58).
   useEffect(() => {
     if (!state || !prefs) return
-    if (prevStatus.current !== 'complete' && state.status === 'complete') {
+    if (prevStatus.current !== 'complete' && state.status === 'complete' && state.mode === 'focus') {
       playSound(prefs.sound, prefs.volume)
     }
     prevStatus.current = state.status
+  }, [state, prefs])
+
+  // --- Start-of-session cue on transition into a running focus block (MO-58) ---
+  // Fires on the edge into a NEW running focus block — break→focus autostart or a
+  // manual start from idle/complete — but not on resume-from-pause or tick updates.
+  useEffect(() => {
+    if (!state || !prefs) return
+    const prev = prevBlock.current
+    const startingFocus =
+      state.mode === 'focus' &&
+      state.status === 'running' &&
+      prev != null &&
+      prev.status !== 'running' &&
+      prev.status !== 'paused'
+    if (startingFocus) playStartCue(prefs.startCue, prefs.volume)
+    prevBlock.current = { mode: state.mode, status: state.status }
   }, [state, prefs])
 
   // --- Per-second focus tick (ADR-0005) ---
@@ -158,8 +182,14 @@ export function IslandApp() {
   // The wrapper is always rendered so the ResizeObserver (attached on mount) can
   // measure the island once state/prefs arrive and drive the window auto-resize.
   const resolvedTheme = prefs ? resolveTheme(prefs.theme) : 'dark'
+  // When the notch-background setting is on and the island is docked, the whole
+  // island renders as a dark card on pure black regardless of the app theme, so
+  // the surface and the (JS-derived) foreground stay legible together. Floating,
+  // or with the setting off, it follows the app theme (see MO-51).
+  const forceNotchBlack = !!prefs && placement.snapped && prefs.notchBackground === 'black'
+  const effectiveTheme: 'light' | 'dark' = forceNotchBlack ? 'dark' : resolvedTheme
   const view =
-    state && prefs ? deriveIsland(state, prefs, resolvedTheme, tasks?.completedToday ?? 0) : null
+    state && prefs ? deriveIsland(state, prefs, effectiveTheme, tasks?.completedToday ?? 0) : null
 
   // Notch band height honoring the user's setting — see resolveNotchHeight for
   // the mode → height mapping (shared with the settings custom-height stepper).
@@ -172,9 +202,9 @@ export function IslandApp() {
         custom: prefs.notchHeightCustom,
       })
 
-  // Snapped-island surface color: pure black (Dynamic Island look, default) or
-  // the theme's normal surface — only applied to the snapped presentation.
-  const notchBg = prefs ? notchBackgroundColor(prefs.theme, prefs.notchBackground) : '#000000'
+  // Snapped-island surface color: pure black when docked with the setting on,
+  // else the effective theme's surface — only applied to the snapped presentation.
+  const notchBg = notchSurfaceColor(effectiveTheme, forceNotchBlack)
 
   // Determine presentation
   let present: Present = 'collapsed'
@@ -232,6 +262,10 @@ export function IslandApp() {
   }
 
   const onIslandMouseOut = (e: React.MouseEvent) => {
+    // Never collapse while the popover menu is open — its items float below the
+    // expanded panel outside any hover-target, so a naive mouseout there would
+    // schedule a retract and shrink the island out from under the open menu.
+    if (menuOpen) return
     const target = (e.target as HTMLElement).closest<HTMLElement>('[data-hover-target="1"]')
     if (!target) return
     const to = e.relatedTarget as HTMLElement | null
@@ -247,7 +281,7 @@ export function IslandApp() {
   return (
     <div
       ref={measureRef}
-      style={{ display: 'inline-block', ...(prefs ? islandPaletteVars(prefs.theme) : {}) }}
+      style={{ display: 'inline-block', ...(prefs ? islandPaletteVars(effectiveTheme) : {}) }}
       onMouseDown={onMouseDown}
       onMouseOver={onIslandMouseOver}
       onMouseOut={onIslandMouseOut}
@@ -285,10 +319,16 @@ export function IslandApp() {
             setMenuOpen(false)
             window.api.updates.check()
           }}
+          onInstallRestart={(e) => {
+            e.stopPropagation()
+            setMenuOpen(false)
+            window.api.updates.installRestart()
+          }}
+          updateReady={updateReady}
           onQuit={(e) => {
             e.stopPropagation()
             setMenuOpen(false)
-            window.api.timer.action({ type: 'quit' })
+            window.api.app.quit()
           }}
         />
       )}

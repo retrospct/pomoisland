@@ -11,13 +11,19 @@ const MONO = "'IBM Plex Mono', monospace"
 interface TaskListProps {
   tasks: TasksState
   accent: string
+  /** Panel width (px) — matched to the expanded timer body so their edges line up. */
+  width?: number
   onClose: () => void
 }
 
-export function TaskList({ tasks, accent, onClose }: TaskListProps) {
+export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps) {
   const [addText, setAddText] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [showCompleted, setShowCompleted] = useState(false)
+  // Session estimate for the next task; seeded from the persisted default (the
+  // last value used) and kept as the running default within the session (MO-53).
+  const [addEstimate, setAddEstimate] = useState(() => tasks.defaultEstimate ?? 1)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function mutate(m: Parameters<typeof window.api.tasks.mutate>[0]) {
@@ -28,7 +34,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
     e.preventDefault()
     const title = addText.trim()
     if (!title) return
-    mutate({ type: 'add', title })
+    mutate({ type: 'add', title, estimate: addEstimate })
     setAddText('')
   }
 
@@ -54,7 +60,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
     <div
       data-hover-target="1"
       style={{
-        width: 320,
+        width,
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
@@ -106,7 +112,7 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
       </div>
 
       {/* Task rows */}
-      <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+      <div className="il-task-scroll" style={{ maxHeight: 220, overflowY: 'auto' }}>
         {active.length === 0 && done.length === 0 && (
           <p
             style={{
@@ -147,7 +153,66 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
         {done.length > 0 && (
           <>
             <div style={{ height: 1, background: 'var(--il-border)', margin: '4px 20px' }} />
-            {done.map((task) => (
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1px 4px' }}>
+              <button
+                className="il-completed-toggle"
+                aria-expanded={showCompleted}
+                onClick={(e) => { e.stopPropagation(); setShowCompleted((v) => !v) }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flex: 1,
+                  padding: '5px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: 'var(--il-muted)',
+                  fontFamily: SANS,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <svg
+                  className="il-completed-chevron"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  style={{ transform: showCompleted ? 'rotate(90deg)' : 'none', flexShrink: 0 }}
+                >
+                  <path
+                    d="M4.5 3L8 6.5L4.5 10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {showCompleted ? 'Hide completed' : `Show completed (${done.length})`}
+              </button>
+              <button
+                className="il-completed-clear"
+                aria-label="Clear all completed tasks"
+                onClick={(e) => { e.stopPropagation(); mutate({ type: 'clearCompleted' }) }}
+                style={{
+                  flexShrink: 0,
+                  padding: '5px 12px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: 'var(--il-muted)',
+                  fontFamily: SANS,
+                  fontSize: 11.5,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Clear
+              </button>
+            </div>
+            {showCompleted && done.map((task) => (
               <TaskRow
                 key={task.id}
                 task={task}
@@ -182,51 +247,62 @@ export function TaskList({ tasks, accent, onClose }: TaskListProps) {
       {/* Add task */}
       <form
         onSubmit={handleAdd}
-        style={{ display: 'flex', gap: 8, padding: '9px 20px 0', alignItems: 'center' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '9px 20px 0' }}
       >
-        <input
-          ref={inputRef}
-          value={addText}
-          onChange={(e) => setAddText(e.target.value)}
-          onKeyDown={stopProp}
-          onClick={stopProp}
-          placeholder="Add task…"
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: '1px solid var(--il-border)',
-            borderRadius: 8,
-            color: 'var(--il-text)',
-            fontFamily: SANS,
-            fontSize: 12.5,
-            padding: '7px 10px',
-            outline: 'none',
-            caretColor: accent,
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!addText.trim()}
-          aria-label="Add task"
-          style={{
-            flexShrink: 0,
-            width: 30,
-            height: 30,
-            background: addText.trim() ? accent : 'var(--il-track)',
-            border: 'none',
-            borderRadius: 8,
-            color: addText.trim() ? 'var(--il-bg)' : 'var(--il-muted)',
-            fontFamily: SANS,
-            fontSize: 20,
-            cursor: addText.trim() ? 'pointer' : 'default',
-            display: 'grid',
-            placeItems: 'center',
-            lineHeight: 1,
-            transition: 'background .15s, color .15s',
-          }}
-        >
-          +
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            ref={inputRef}
+            value={addText}
+            onChange={(e) => setAddText(e.target.value)}
+            onKeyDown={stopProp}
+            onClick={stopProp}
+            placeholder="Add task…"
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: '1px solid var(--il-border)',
+              borderRadius: 8,
+              color: 'var(--il-text)',
+              fontFamily: SANS,
+              fontSize: 12.5,
+              padding: '7px 10px',
+              outline: 'none',
+              caretColor: accent,
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!addText.trim()}
+            aria-label="Add task"
+            style={{
+              flexShrink: 0,
+              width: 30,
+              height: 30,
+              background: addText.trim() ? accent : 'var(--il-track)',
+              border: 'none',
+              borderRadius: 8,
+              color: addText.trim() ? 'var(--il-bg)' : 'var(--il-muted)',
+              fontFamily: SANS,
+              fontSize: 20,
+              cursor: addText.trim() ? 'pointer' : 'default',
+              display: 'grid',
+              placeItems: 'center',
+              lineHeight: 1,
+              transition: 'background .15s, color .15s',
+            }}
+          >
+            +
+          </button>
+        </div>
+        {/* Session picker for the task about to be added — only while typing. */}
+        {addText.trim() && (
+          <SessionStepper
+            estimate={addEstimate}
+            accent={accent}
+            onDec={() => setAddEstimate((n) => Math.max(1, n - 1))}
+            onInc={() => setAddEstimate((n) => n + 1)}
+          />
+        )}
       </form>
     </div>
   )
@@ -264,6 +340,9 @@ function TaskRow({
   onAdjustEstimate,
 }: TaskRowProps) {
   const [hovered, setHovered] = useState(false)
+  // Reveal the − / + estimate steppers on row hover, or persistently once the
+  // user clicks the session count to edit it.
+  const [sessionsOpen, setSessionsOpen] = useState(false)
   const isEditing = editId === task.id
 
   return (
@@ -388,34 +467,26 @@ function TaskRow({
       {/* Spacer pushes the session controls + delete to the right */}
       {!isEditing && <div style={{ flex: 1 }} />}
 
-      {/* Session controls: − + only for incomplete tasks */}
-      {!isEditing && !task.done && (
-        <>
-          <button
-            aria-label="Fewer sessions"
-            onClick={(e) => { e.stopPropagation(); onAdjustEstimate(-1) }}
-            style={pipBtn}
-          >
-            −
-          </button>
-          <button
-            aria-label="More sessions"
-            onClick={(e) => { e.stopPropagation(); onAdjustEstimate(1) }}
-            style={pipBtn}
-          >
-            +
-          </button>
-        </>
-      )}
-
-      {/* Session pips — always visible unless editing */}
-      {!isEditing && (
-        <Pips
-          completed={task.completedPomodoros}
-          estimate={task.estimatePomodoros}
-          accent={accent}
-        />
-      )}
+      {/* Session count: interactive − / + stepper for active tasks, read-only
+          "c/e sessions" for done tasks. Fixed-ish width keeps rows aligned. */}
+      {!isEditing &&
+        (task.done ? (
+          <SessionCount
+            completed={task.completedPomodoros}
+            estimate={task.estimatePomodoros}
+            accent={accent}
+          />
+        ) : (
+          <SessionStepper
+            completed={task.completedPomodoros}
+            estimate={task.estimatePomodoros}
+            accent={accent}
+            onDec={() => onAdjustEstimate(-1)}
+            onInc={() => onAdjustEstimate(1)}
+            buttonsVisible={hovered || sessionsOpen}
+            onCountClick={(e) => { e.stopPropagation(); setSessionsOpen((v) => !v) }}
+          />
+        ))}
 
       {/* Delete */}
       <button
@@ -431,30 +502,86 @@ function TaskRow({
   )
 }
 
-function Pips({
+/**
+ * "N sessions" (add form — just the estimate) or "C/E sessions" (task rows —
+ * completed/estimate). The leading number is the theme accent; "session(s)" is
+ * smaller and faded as secondary info. Singular when the estimate is 1.
+ */
+function SessionCount({
   completed,
   estimate,
   accent,
 }: {
-  completed: number
+  /** When provided, renders "completed/estimate"; otherwise just the estimate. */
+  completed?: number
   estimate: number
   accent: string
 }) {
-  const total = Math.min(Math.max(estimate, completed), 8)
+  const label = estimate === 1 ? 'session' : 'sessions'
   return (
-    <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          key={i}
-          style={{
-            width: 5,
-            height: 5,
-            borderRadius: '50%',
-            background: i < completed ? accent : 'var(--il-icon)',
-            flexShrink: 0,
-          }}
-        />
-      ))}
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3, whiteSpace: 'nowrap' }}>
+      <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: accent, lineHeight: 1 }}>
+        {completed ?? estimate}
+      </span>
+      {completed !== undefined && (
+        <span style={{ fontFamily: MONO, fontSize: 12, color: 'var(--il-body)', lineHeight: 1 }}>
+          /{estimate}
+        </span>
+      )}
+      <span style={{ fontFamily: SANS, fontSize: 8.5, color: 'var(--il-muted)', lineHeight: 1 }}>
+        {label}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * SessionCount flanked by − / + estimate steppers. The buttons render only when
+ * `buttonsVisible` is true (task rows reveal them on hover / on clicking the
+ * count); the add form leaves them always visible.
+ */
+function SessionStepper({
+  completed,
+  estimate,
+  accent,
+  onDec,
+  onInc,
+  buttonsVisible = true,
+  onCountClick,
+}: {
+  completed?: number
+  estimate: number
+  accent: string
+  onDec: () => void
+  onInc: () => void
+  buttonsVisible?: boolean
+  onCountClick?: (e: React.MouseEvent) => void
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      {buttonsVisible && (
+        <button
+          type="button"
+          aria-label="Fewer sessions"
+          onClick={(e) => { e.stopPropagation(); onDec() }}
+          style={pipBtn}
+        >
+          −
+        </button>
+      )}
+      <span onClick={onCountClick} style={onCountClick ? { cursor: 'pointer' } : undefined}>
+        <SessionCount completed={completed} estimate={estimate} accent={accent} />
+      </span>
+      {buttonsVisible && (
+        <button
+          type="button"
+          aria-label="More sessions"
+          onClick={(e) => { e.stopPropagation(); onInc() }}
+          style={pipBtn}
+        >
+          +
+        </button>
+      )}
     </div>
   )
 }

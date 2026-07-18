@@ -1,16 +1,19 @@
 // Auto-update wrapper around electron-updater (Squirrel.Mac via GitHub Releases).
 //
 // Behavior: a silent check on launch (and every 6h) auto-downloads a newer signed
-// build and, once ready, prompts "Restart now / Later" (and installs on next quit
-// regardless — autoInstallOnAppQuit). A separate *interactive* path, invoked from the
-// three-dots menu / tray / app menu, always gives clear feedback ("up to date",
-// "downloading…", errors) so a manual "Check for Updates…" never fails silently.
+// build. Once ready, instead of a disruptive dialog we flip a passive "update ready"
+// state — a dot on the island's 3-dot button and a "Restart to Update" action in the
+// three menus (MO-57). It still installs on next quit regardless (autoInstallOnAppQuit).
+// A separate *interactive* path, invoked from the menus, always gives clear feedback
+// ("up to date", "downloading…", errors) so a manual "Check for Updates…" never fails
+// silently.
 //
 // macOS auto-update only works on a *signed* build, and only from the `.zip` artifact
 // — see electron-builder.yml (mac.target includes zip) and the `publish` block.
 
 import { app, BrowserWindow, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import type { UpdateStatus } from '../src/shared/types'
 
 const SIX_HOURS = 6 * 60 * 60 * 1000
 
@@ -19,6 +22,27 @@ const SIX_HOURS = 6 * 60 * 60 * 1000
 let interactive = false
 // Guards against stacking checks (double-clicks, overlapping timer + manual check).
 let checking = false
+
+// Passive "update downloaded and ready to install" state, exposed to the renderer
+// (dot) and the native menus ("Restart to Update"). Sticky until the app restarts.
+let updateReady = false
+let updateVersion: string | undefined
+const updateReadyListeners = new Set<() => void>()
+
+/** Current update-ready state for the renderer/menus. */
+export function getUpdateStatus(): UpdateStatus {
+  return { ready: updateReady, version: updateVersion }
+}
+
+/** Subscribe to the moment an update becomes ready (fires once, when it flips true). */
+export function onUpdateReady(cb: () => void): void {
+  updateReadyListeners.add(cb)
+}
+
+/** Install the downloaded update and relaunch (the "Restart to Update" action). */
+export function installAndRestart(): void {
+  if (updateReady) autoUpdater.quitAndInstall()
+}
 
 function focusedWindow(): BrowserWindow | undefined {
   return BrowserWindow.getFocusedWindow() ?? undefined
@@ -59,19 +83,11 @@ export function initAutoUpdater(): void {
   autoUpdater.on('update-downloaded', (i) => {
     checking = false
     interactive = false
-    void dialog
-      .showMessageBox(focusedWindow() ?? (undefined as never), {
-        type: 'info',
-        title: 'PomoIsland',
-        message: 'Update ready to install',
-        detail: `PomoIsland ${i?.version ?? ''} has been downloaded. Restart now to update, or it will install the next time you quit.`,
-        buttons: ['Restart now', 'Later'],
-        defaultId: 0,
-        cancelId: 1,
-      })
-      .then(({ response }) => {
-        if (response === 0) autoUpdater.quitAndInstall()
-      })
+    // No disruptive dialog — flip the passive "ready" state so the island shows a
+    // dot and the menus offer "Restart to Update" (MO-57).
+    updateReady = true
+    updateVersion = i?.version
+    for (const cb of updateReadyListeners) cb()
   })
 
   autoUpdater.on('error', (err) => {

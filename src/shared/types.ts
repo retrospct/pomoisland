@@ -68,6 +68,13 @@ export type Ripple = 'burst' | 'echo' | 'heartbeat' | 'bloom'
 export type TickSound = 'off' | 'soft' | 'crisp'
 
 /**
+ * Start-of-session cue — plays when a focus block begins (break-end / session
+ * start), distinct from the completion alarm. `off` is silent; the others are
+ * synthesized in the renderer (see src/shared/sound.ts). MO-58.
+ */
+export type StartCue = 'off' | 'countin' | 'f1' | 'woosh'
+
+/**
  * User-rebindable global shortcut actions — see ADR-0007. `showHide` toggles the
  * island's visibility; `playPause`/`next` mirror the `playPause`/`skip` TimerActions.
  * Opening Settings is a `⌘,` app-menu item, not a global shortcut, so it has no action here.
@@ -131,6 +138,8 @@ export interface Prefs {
   volume: number
   /** Per-second ticking sound while focusing — see ADR-0005. */
   tick: TickSound
+  /** Cue played when a focus session starts (break-end / session start). MO-58. */
+  startCue: StartCue
   notify: boolean
   // ---- Preferences · Appearance ----
   accent: AccentKey
@@ -161,7 +170,7 @@ export interface Prefs {
   expandRetractMs: number
 }
 
-export type TimerActionType = 'playPause' | 'reset' | 'skip' | 'switchMode' | 'quit'
+export type TimerActionType = 'playPause' | 'reset' | 'skip' | 'switchMode'
 
 export interface SetTaskAction {
   type: 'setTask'
@@ -224,10 +233,14 @@ export interface TasksState {
   completedToday: number
   /** ISO date string (YYYY-MM-DD) tracking when completedToday was last reset. */
   completedDate: string
+  /** Session estimate applied to the next added task — the last value chosen in
+   *  the add form, remembered across restarts (MO-53). */
+  defaultEstimate: number
 }
 
 export type TaskMutation =
-  | { type: 'add'; title: string }
+  | { type: 'add'; title: string; estimate?: number }
+  | { type: 'clearCompleted' }
   | {
       type: 'update'
       id: string
@@ -268,9 +281,19 @@ export interface PomApi {
     openSettings(): void
     settingsControl(action: SettingsControl): void
   }
+  app: {
+    /** Quit the whole application (matches the tray's "Quit PomoIsland"). */
+    quit(): void
+  }
   updates: {
     /** Trigger an interactive update check; the main process drives its own dialogs. */
     check(): void
+    /** Current update-ready state (a downloaded update waiting to install). */
+    getStatus(): Promise<UpdateStatus>
+    /** Subscribe to update-ready changes (fires when an update finishes downloading). */
+    onStatus(cb: (s: UpdateStatus) => void): () => void
+    /** Install the downloaded update and relaunch (the "Restart to Update" action). */
+    installRestart(): void
   }
   shortcuts: {
     /**
@@ -286,6 +309,13 @@ export interface PomApi {
 }
 
 export type SettingsControl = 'close' | 'minimize' | 'zoom'
+
+/** Auto-update state surfaced to the renderer + native menus (MO-57). */
+export interface UpdateStatus {
+  /** A newer signed build has downloaded and is ready to install on restart. */
+  ready: boolean
+  version?: string
+}
 
 export const IPC = {
   timerGet: 'timer:get',
@@ -306,7 +336,11 @@ export const IPC = {
   islandDragEnd: 'island:dragEnd',
   openSettings: 'windows:openSettings',
   settingsControl: 'windows:settingsControl',
+  appQuit: 'app:quit',
   checkUpdates: 'updates:check',
+  updateGet: 'updates:get',
+  updateStatus: 'updates:status',
+  installUpdate: 'updates:install',
   shortcutsSet: 'shortcuts:set',
   shortcutsReset: 'shortcuts:reset',
 } as const

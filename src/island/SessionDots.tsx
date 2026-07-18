@@ -4,7 +4,6 @@
 // completedToday/dailyGoal are only ever passed by the expanded card — it's the
 // only view where a hover can land reliably long enough to reveal the tooltip.
 
-import { useState } from 'react'
 import type { DotStyle } from './derive'
 
 interface SessionDotsProps {
@@ -17,29 +16,54 @@ interface SessionDotsProps {
 }
 
 export function SessionDots({ dots, gap = 5, completedToday, dailyGoal }: SessionDotsProps) {
-  const [hovered, setHovered] = useState(false)
+  const dotRow = (
+    <div style={{ display: 'flex', alignItems: 'center', gap }}>
+      {dots.map((d, i) => (
+        <span
+          key={i}
+          style={{
+            width: d.size,
+            height: d.size,
+            borderRadius: 999,
+            background: d.background,
+            boxShadow: d.boxShadow,
+            flex: '0 0 auto',
+            transition: 'all .3s',
+          }}
+        />
+      ))}
+    </div>
+  )
 
-  const handlers = {
-    onMouseEnter: () => setHovered(true),
-    onMouseLeave: () => setHovered(false),
+  // Peek / collapsed views don't pass completedToday — no hover reveal there, so
+  // render the bare dot row (no stacked layers, no hover class).
+  if (completedToday === undefined) {
+    return <div style={{ display: 'flex', alignItems: 'center', flex: '0 0 auto' }}>{dotRow}</div>
   }
 
-  if (hovered && completedToday !== undefined) {
-    const isMilestone = completedToday === 10 || completedToday === 20
-    const label =
-      dailyGoal !== undefined ? `${completedToday}/${dailyGoal} goal` : String(completedToday)
-    return (
+  const isMilestone = completedToday === 10 || completedToday === 20
+  const label = dailyGoal !== undefined ? `${completedToday}/${dailyGoal} goal` : String(completedToday)
+
+  // Both layers occupy the same grid cell, so the container is always sized to
+  // the wider child (the goal label) and never resizes on hover — which is what
+  // kills the enter/leave flicker loop (MO-50). A pure-CSS :hover opacity swap
+  // (island.css) reveals the goal count; no React hover state.
+  return (
+    <div className="il-session-dots" style={{ display: 'grid', justifyItems: 'end', alignItems: 'center', flex: '0 0 auto' }}>
+      <div className="il-dots-layer" style={{ gridArea: '1 / 1' }}>
+        {dotRow}
+      </div>
       <div
+        className="il-goal-layer"
         style={{
+          gridArea: '1 / 1',
           position: 'relative',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          flex: '0 0 auto',
           minWidth: 20,
           minHeight: 16,
         }}
-        {...handlers}
       >
         {isMilestone && <MilestoneRing count={completedToday} />}
         <span
@@ -56,25 +80,6 @@ export function SessionDots({ dots, gap = 5, completedToday, dailyGoal }: Sessio
           {label}
         </span>
       </div>
-    )
-  }
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap, flex: '0 0 auto' }} {...handlers}>
-      {dots.map((d, i) => (
-        <span
-          key={i}
-          style={{
-            width: d.size,
-            height: d.size,
-            borderRadius: 999,
-            background: d.background,
-            boxShadow: d.boxShadow,
-            flex: '0 0 auto',
-            transition: 'all .3s',
-          }}
-        />
-      ))}
     </div>
   )
 }
@@ -103,7 +108,7 @@ function MilestoneRing({ count }: { count: number }) {
         const angle = (i / pipCount) * 2 * Math.PI - Math.PI / 2
         const cx = size / 2 + r * Math.cos(angle)
         const cy = size / 2 + r * Math.sin(angle)
-        return <circle key={i} cx={cx} cy={cy} r={pip} fill="rgba(242,241,236,0.5)" />
+        return <circle key={i} cx={cx} cy={cy} r={pip} fill="var(--il-muted)" />
       })}
     </svg>
   )

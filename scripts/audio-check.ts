@@ -20,8 +20,16 @@
 import { readFileSync } from 'node:fs'
 import { OfflineAudioContext } from 'node-web-audio-api'
 import type { Voice, Engine } from '../src/shared/sound.ts'
-import { buildEngine, VOICES, TICK_VOICES, SOUND_LABELS, TICK_LABELS } from '../src/shared/sound.ts'
-import type { Sound, TickSound } from '../src/shared/types.ts'
+import {
+  buildEngine,
+  VOICES,
+  TICK_VOICES,
+  START_CUE_VOICES,
+  SOUND_LABELS,
+  TICK_LABELS,
+  START_CUE_LABELS,
+} from '../src/shared/sound.ts'
+import type { Sound, StartCue, TickSound } from '../src/shared/types.ts'
 
 const SAMPLE_RATE = 48000
 const RENDER_SECONDS = 5
@@ -183,6 +191,12 @@ async function main(): Promise<void> {
     ...Object.keys(TICK_VOICES).map((k): Entry => {
       const key = k as Exclude<TickSound, 'off'>
       return { label: `Tick ${TICK_LABELS[key]}`, voice: TICK_VOICES[key], isCompletion: false }
+    }),
+    ...Object.keys(START_CUE_VOICES).map((k): Entry => {
+      const key = k as Exclude<StartCue, 'off'>
+      // Start cues are short one-shots like ticks — safety-only (exempt from the
+      // completion 1 s / -12 dBFS spec).
+      return { label: `Start ${START_CUE_LABELS[key]}`, voice: START_CUE_VOICES[key], isCompletion: false }
     }),
   ]
 

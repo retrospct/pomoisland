@@ -18,7 +18,14 @@ import {
   SHORTCUT_LABELS,
   humanizeAccelerator,
 } from '@shared/shortcuts'
-import { SOUND_LABELS, TICK_LABELS, playSound, previewTick } from '@shared/sound'
+import {
+  SOUND_LABELS,
+  START_CUE_LABELS,
+  TICK_LABELS,
+  playSound,
+  previewStartCue,
+  previewTick,
+} from '@shared/sound'
 import type {
   AccentKey,
   FloatingLayout,
@@ -29,6 +36,7 @@ import type {
   Ripple,
   ShortcutAction,
   Sound,
+  StartCue,
   ThemeChoice,
   TickSound,
 } from '@shared/types'
@@ -955,6 +963,7 @@ const TICK_OPTIONS: { k: TickSound; label: string }[] = [
   { k: 'soft', label: TICK_LABELS.soft },
   { k: 'crisp', label: TICK_LABELS.crisp },
 ]
+const START_CUES: StartCue[] = ['off', 'countin', 'f1', 'woosh']
 
 // Demo progress fraction for the live notch-style previews (a representative
 // mid-session point). No time/label/dots readout — the swatch shows only the
@@ -1161,67 +1170,14 @@ export function PreferencesTab({ prefs, set }: TabProps) {
               })}
             </div>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: 11,
-              borderTop: '1px solid var(--sp-line)',
-            }}
-          >
-            <div>
-              <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
-                Notch background
-              </div>
-              <div
-                style={{ fontFamily: SANS, fontSize: 11.5, color: 'var(--sp-faint)', marginTop: 2 }}
-              >
-                Snapped island surface — pure black or the theme color
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                gap: 3,
-                background: 'var(--sp-field)',
-                border: '1px solid var(--sp-border)',
-                borderRadius: 11,
-                padding: 3,
-                flex: '0 0 auto',
-              }}
-            >
-              {(
-                [
-                  { k: 'black', label: 'Black' },
-                  { k: 'theme', label: 'Theme' },
-                ] as const
-              ).map((o) => {
-                const on = prefs.notchBackground === o.k
-                return (
-                  <button
-                    key={o.k}
-                    onClick={() => set({ notchBackground: o.k })}
-                    style={{
-                      height: 30,
-                      minWidth: 34,
-                      padding: '0 12px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      borderRadius: 8,
-                      background: on ? 'var(--sp-seg-on-bg)' : 'transparent',
-                      color: on ? 'var(--sp-seg-on-text)' : 'var(--sp-faint)',
-                      fontFamily: SANS,
-                      fontSize: 12.5,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <ToggleRow
+            title="Notch background"
+            desc="When docked to the notch, use pure black to match it — in any theme. Off: follow your theme everywhere."
+            on={prefs.notchBackground === 'black'}
+            onClick={() =>
+              set({ notchBackground: prefs.notchBackground === 'black' ? 'theme' : 'black' })
+            }
+          />
         </div>
 
         <div>
@@ -1483,6 +1439,37 @@ export function PreferencesTab({ prefs, set }: TabProps) {
                   </button>
                 )
               })}
+            </div>
+          </div>
+          <div style={{ paddingTop: 11, borderTop: '1px solid var(--sp-line)', marginBottom: 13 }}>
+            <div style={{ fontFamily: SANS, fontSize: 13.5, color: 'var(--sp-body)' }}>
+              Session start sound
+            </div>
+            <div
+              style={{
+                fontFamily: SANS,
+                fontSize: 11.5,
+                color: 'var(--sp-faint)',
+                marginTop: 2,
+                marginBottom: 10,
+                lineHeight: 1.35,
+              }}
+            >
+              Plays when a focus session begins (after a break).
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {START_CUES.map((k) => (
+                <Chip
+                  key={k}
+                  label={START_CUE_LABELS[k]}
+                  on={prefs.startCue === k}
+                  onClick={() => {
+                    set({ startCue: k })
+                    // Audition on select; fall back to an audible level if muted.
+                    previewStartCue(k, prefs.volume > 0 ? prefs.volume : 60)
+                  }}
+                />
+              ))}
             </div>
           </div>
           <ToggleRow
