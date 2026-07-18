@@ -68,11 +68,13 @@ export function islandPaletteVars(theme: ThemeChoice): CSSProperties {
 }
 
 /**
- * Surface color for the SNAPPED island. `'black'` returns pure black
- * regardless of theme (the Dynamic Island look); `'theme'` returns the same
- * `--il-bg` the rest of the app uses. See NotchBackgroundMode.
+ * Surface color for the SNAPPED island. The pure-black "notch bezel" look only
+ * applies in dark modes — in light / system-light the island always uses the
+ * light surface, so the setting never leaves dark ink on a black card (MO-51).
+ * In dark modes, `'black'` returns pure black (the Dynamic Island look) and
+ * `'theme'` returns the same `--il-bg` the rest of the app uses.
  */
 export function notchBackgroundColor(theme: ThemeChoice, mode: NotchBackgroundMode): string {
-  if (mode === 'black') return '#000000'
-  return resolveTheme(theme) === 'dark' ? DARK['--il-bg'] : LIGHT['--il-bg']
+  if (resolveTheme(theme) === 'light') return LIGHT['--il-bg']
+  return mode === 'black' ? '#000000' : DARK['--il-bg']
 }

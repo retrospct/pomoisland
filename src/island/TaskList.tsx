@@ -20,6 +20,7 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
   const [addText, setAddText] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [showCompleted, setShowCompleted] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function mutate(m: Parameters<typeof window.api.tasks.mutate>[0]) {
@@ -149,7 +150,46 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
         {done.length > 0 && (
           <>
             <div style={{ height: 1, background: 'var(--il-border)', margin: '4px 20px' }} />
-            {done.map((task) => (
+            <button
+              className="il-completed-toggle"
+              aria-expanded={showCompleted}
+              onClick={(e) => { e.stopPropagation(); setShowCompleted((v) => !v) }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                width: 'calc(100% - 8px)',
+                margin: '1px 4px',
+                padding: '5px 12px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 8,
+                color: 'var(--il-muted)',
+                fontFamily: SANS,
+                fontSize: 12,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <svg
+                className="il-completed-chevron"
+                width="10"
+                height="10"
+                viewBox="0 0 12 12"
+                fill="none"
+                style={{ transform: showCompleted ? 'rotate(90deg)' : 'none', flexShrink: 0 }}
+              >
+                <path
+                  d="M4.5 3L8 6.5L4.5 10"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {showCompleted ? 'Hide completed' : `Show completed (${done.length})`}
+            </button>
+            {showCompleted && done.map((task) => (
               <TaskRow
                 key={task.id}
                 task={task}
