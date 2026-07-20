@@ -1,0 +1,8 @@
+node_modules/
+dist/
+qa-*.png
+qa-artifacts/
+test-results/
+design-qa.md
+recovery/
+.DS_Store
