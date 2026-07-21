@@ -58,6 +58,30 @@ a {
   text-decoration: none;
 }
 
+.external-link {
+  display: inline-flex;
+  gap: 0.3em;
+  align-items: center;
+}
+
+.external-link::after {
+  width: 0.72em;
+  height: 0.72em;
+  background: currentColor;
+  content: '';
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.7' d='M6 3.5h-2.5v9h9V10M8 3.5h4.5V8M12.25 3.75 7 9'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  opacity: 0.68;
+  transition:
+    transform 160ms var(--ease),
+    opacity 160ms ease;
+}
+
+.external-link:hover::after {
+  transform: translate(1px, -1px);
+  opacity: 1;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;
@@ -135,7 +159,9 @@ img {
 }
 
 .primary-nav a {
-  transition: color 180ms ease, transform 180ms var(--ease);
+  transition:
+    color 180ms ease,
+    transform 180ms var(--ease);
 }
 
 .primary-nav a:not(.nav-cta):hover {
@@ -150,7 +176,10 @@ img {
   justify-content: center;
   border: 1px solid transparent;
   font-weight: 600;
-  transition: transform 180ms var(--ease), box-shadow 180ms ease, background-color 180ms ease;
+  transition:
+    transform 180ms var(--ease),
+    box-shadow 180ms ease,
+    background-color 180ms ease;
 }
 
 .nav-cta {
@@ -266,7 +295,7 @@ img {
 }
 
 .platform-note {
-  margin: 26px 0 0;
+  margin: 26px 0 0 13px;
   color: var(--muted);
   font: 400 10px var(--mono);
   letter-spacing: 0.06em;
@@ -411,8 +440,40 @@ img {
   max-width: none;
 }
 
+.moment-media.moment-media-edge > img,
+.moment-media.moment-media-hover > img,
+.moment-media.moment-media-break > img {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: auto;
+  max-width: none;
+  transform: translateX(-50%);
+}
+
+.moment-media.moment-media-edge > img,
+.moment-media.moment-media-break > img {
+  width: 110%;
+}
+
+.moment-media.moment-media-hover > img {
+  width: 94%;
+}
+
+.moment-media-edge {
+  align-items: flex-start;
+}
+
+.moment-media-edge img {
+  height: auto;
+}
+
 .moment-media-hover img {
   width: 94%;
+}
+
+.moment-media-open {
+  background: #131818;
 }
 
 .moment-media-open img {
@@ -519,7 +580,7 @@ img {
 
 .details-product {
   position: absolute;
-  top: 3%;
+  top: 0;
   left: 23%;
   width: 54%;
   filter: drop-shadow(0 13px 18px rgba(0, 0, 0, 0.3));
@@ -574,12 +635,20 @@ img {
   background: var(--purple);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.32);
   cursor: pointer;
-  transition: transform 180ms var(--ease), border-color 180ms ease;
+  transition:
+    transform 180ms var(--ease),
+    border-color 180ms ease;
 }
 
-.accent-dot:nth-child(2) { background: var(--mint); }
-.accent-dot:nth-child(3) { background: var(--blue); }
-.accent-dot:nth-child(4) { background: var(--amber); }
+.accent-dot:nth-child(2) {
+  background: var(--mint);
+}
+.accent-dot:nth-child(3) {
+  background: var(--blue);
+}
+.accent-dot:nth-child(4) {
+  background: var(--amber);
+}
 
 .accent-dot:hover,
 .accent-dot.is-active {
@@ -622,7 +691,9 @@ img {
   max-width: 100%;
   max-height: 92px;
   object-fit: contain;
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
 .floating-preview img.is-changing {

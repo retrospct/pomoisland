@@ -19,7 +19,7 @@ navigation.addEventListener('click', (event) => {
 })
 
 const accentAssets = {
-  purple: '/assets/standalone-mode.png',
+  purple: '/assets/edge-purple.png',
   mint: '/assets/edge-mint.png',
   blue: '/assets/edge-blue.png',
   amber: '/assets/edge-amber.png',

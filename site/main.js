@@ -28,8 +28,7 @@ document.querySelector('#site-root').innerHTML = `
         <a href="#how-it-works">How it works</a>
         <a href="#settings">Make it yours</a>
         <a href="#every-display">Every display</a>
-        <a href="https://github.com/retrospct/pomoisland/blob/main/CHANGELOG.md">Changelog</a>
-        <a href="https://github.com/retrospct/pomoisland/issues">Support</a>
+        <a class="external-link" href="https://github.com/retrospct/pomoisland/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">Changelog</a>
         <a class="button button-small button-dark" href="${releaseUrl}">Download</a>
       </nav>
     </div>
@@ -48,7 +47,7 @@ document.querySelector('#site-root').innerHTML = `
           <a class="button button-primary" href="${releaseUrl}">Download for macOS</a>
           <a class="text-link" href="#how-it-works">See how it works</a>
         </div>
-        <p class="micro-note">Apple Silicon + Intel · Built for your Mac</p>
+        <p class="micro-note">Apple Silicon · Built for your Mac</p>
       </div>
 
       <div class="hero-stage" aria-label="${brandName} floating on a notchless desktop">
@@ -106,7 +105,7 @@ document.querySelector('#site-root').innerHTML = `
             <span class="story-index">03</span>
             <h3>Expand.</h3>
             <p>Click any timer card for the full timer view: progress, pause, reset, skip, and the current task at a glance.</p>
-            <p class="mono-detail">TASK · k0rdent docs + diagrams</p>
+            <p class="mono-detail">TASK + diagrams</p>
           </div>
           <div class="story-media media-expanded">
             ${image('expanded-timer.png', `Expanded ${brandName} timer card with task context and playback controls`, 'contain-image expanded-timer-image')}
@@ -169,15 +168,17 @@ document.querySelector('#site-root').innerHTML = `
 
     <section class="section shell snap-section" id="snap" aria-labelledby="snap-title">
       <div class="section-heading">
-        <p class="eyebrow">04 / wherever you work</p>
-        <h2 id="snap-title">Dock it. Float it. Keep going.</h2>
-        <p>Use the top-edge dock, or pull ${brandName} away to turn it into a standalone timer anywhere on your desktop.</p>
+        <p class="eyebrow">04 / one block at a time</p>
+        <h2 id="snap-title">Choose a task. Start the clock. Stay with it.</h2>
+        <p>${brandName} pairs each Pomodoro with the task that matters now, so you can work in focused blocks, take deliberate breaks, and keep moving without losing your place.</p>
       </div>
 
       <div class="snap-grid snap-grid-single">
         <figure class="snap-card snap-card-large">
-          ${image('expanded-tasks-full.png', `Expanded ${brandName} timer with playback controls and task list`, 'snap-image expanded-tasks-full-image')}
-          <figcaption><span>Open</span> / click the timer to manage the current block and task list.</figcaption>
+          <div class="snap-frame">
+            ${image('expanded-tasks-full.png', `Expanded ${brandName} timer with playback controls and task list`, 'snap-image expanded-tasks-full-image')}
+          </div>
+          <figcaption><span>Focus</span> / keep the task, timer, and session progress together.</figcaption>
         </figure>
       </div>
     </section>
@@ -204,8 +205,7 @@ document.querySelector('#site-root').innerHTML = `
           <h3>Look up when it matters.</h3>
           <p>A quiet system notification closes the loop, while the menu-bar timer keeps the next block within reach.</p>
         </div>
-        ${image('notification-center.png', `macOS Notification Center showing a ${brandName} break notification`, 'completion-notification')}
-        ${image('menu-bar-timer.png', `${brandName} showing remaining time in the macOS menu bar`, 'completion-menubar')}
+        ${image('notification-center-transparent.png', `macOS Notification Center showing a ${brandName} break notification`, 'completion-notification')}
       </div>
     </section>
 
@@ -230,7 +230,8 @@ document.querySelector('#site-root').innerHTML = `
       <div class="footer-links">
         <a href="${releaseUrl}">Download</a>
         <a href="https://github.com/retrospct/pomoisland">GitHub</a>
-        <a href="https://github.com/retrospct/pomoisland/issues">Support</a>
+        <a class="external-link" href="https://github.com/retrospct/pomoisland/issues">Support</a>
+        <a class="external-link" href="https://x.com/retrospct" target="_blank" rel="noopener noreferrer">@retrospct</a>
       </div>
     </div>
   </footer>
