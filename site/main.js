@@ -1,6 +1,10 @@
 /* global document, HTMLAnchorElement, window */
 
+import { inject } from '@vercel/analytics'
+
 import './styles.css'
+
+inject()
 
 const releaseUrl = 'https://github.com/retrospct/pomoisland/releases/latest'
 const brandName = 'PomoIsland'
