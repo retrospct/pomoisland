@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-*/
+qa-*.png
+qa-artifacts/
+test-results/
+design-qa.md
+recovery/
+.DS_Store
+.vercel/
+.env*
