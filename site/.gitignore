@@ -8,4 +8,5 @@ design-qa.md
 recovery/
 .DS_Store
 .vercel/
+.wrangler/
 .env*

@@ -1,7 +1,5 @@
 /* global document, HTMLAnchorElement, window */
 
-import './styles.css'
-
 const releaseUrl = 'https://github.com/retrospct/pomoisland/releases/latest'
 const brandName = 'PomoIsland'
 
@@ -11,7 +9,11 @@ const image = (src, alt, className = '') =>
 const appMark = (className = '') =>
   `<img class="app-mark ${className}" src="/assets/icon.png" alt="" aria-hidden="true" />`
 
-document.querySelector('#site-root').innerHTML = `
+export function mountSite() {
+const siteRoot = document.querySelector('#site-root')
+if (!siteRoot) return undefined
+
+siteRoot.innerHTML = `
   <header class="site-header">
     <div class="shell header-inner">
       <a class="wordmark" href="#top" aria-label="${brandName} home">
@@ -252,3 +254,6 @@ nav.addEventListener('click', (event) => {
     nav.classList.remove('is-open')
   }
 })
+}
+
+if (typeof document !== 'undefined' && document.querySelector('#site-root')) mountSite()
