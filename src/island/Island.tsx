@@ -71,9 +71,11 @@ function stop(e: React.MouseEvent) {
 
 // Height allowance added below the panel when the menu is open, so the
 // Electron window auto-grows to reveal the absolutely-positioned dropdown.
-// Sized for the worst case: the two-line "Always on Top / Floating only" row
-// (51px, snapped) + its separator, then Tasks, Settings, Check for updates,
-// separator, Quit — 231px of popover plus the trigger offset and slack.
+// Worst case is snapped, where the "Always on Top" row grows a second
+// "Floating only" line: measured 226px of popover (vs 211px floating). The
+// popover starts 6px below the 42px trigger, which itself sits 20px above the
+// panel's bottom edge, so 226 + 6 - 20 = 212px must clear the panel. 264 keeps
+// roughly the same slack this constant carried before the row was added.
 const MENU_ALLOWANCE = 264
 
 export function Island(props: IslandProps) {
