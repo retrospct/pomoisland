@@ -28,6 +28,10 @@ interface Handlers {
   onSkip: () => void
   menuOpen: boolean
   onToggleMenu: (e: React.MouseEvent) => void
+  /** Current Prefs.alwaysTop, drives the ⋯ menu's checkable row. */
+  alwaysTop: boolean
+  /** Flips Prefs.alwaysTop. Deliberately leaves the dropdown open. */
+  onToggleAlwaysTop: (e: React.MouseEvent) => void
   onOpenTasks: (e: React.MouseEvent) => void
   onCloseTasks: () => void
   onSettings: (e: React.MouseEvent) => void
@@ -67,8 +71,10 @@ function stop(e: React.MouseEvent) {
 
 // Height allowance added below the panel when the menu is open, so the
 // Electron window auto-grows to reveal the absolutely-positioned dropdown.
-// Sized for the 4 items (Tasks, Settings, Check for updates, Quit) + separator.
-const MENU_ALLOWANCE = 200
+// Sized for the worst case: the two-line "Always on Top / Floating only" row
+// (51px, snapped) + its separator, then Tasks, Settings, Check for updates,
+// separator, Quit — 231px of popover plus the trigger offset and slack.
+const MENU_ALLOWANCE = 264
 
 export function Island(props: IslandProps) {
   let panel: React.ReactNode
@@ -1671,6 +1677,10 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
               style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, zIndex: 100 }}
             >
               <MenuDropdown
+                onToggleAlwaysTop={props.onToggleAlwaysTop}
+                alwaysTop={props.alwaysTop}
+                snapped={notch}
+                accent={view.accent}
                 onTasks={props.onOpenTasks}
                 onSettings={props.onSettings}
                 onCheckUpdates={props.onCheckUpdates}

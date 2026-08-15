@@ -70,6 +70,20 @@ export function getPlacement(): Placement {
   return { ...placement }
 }
 
+type PlacementListener = (p: Placement) => void
+const placementListeners = new Set<PlacementListener>()
+
+/**
+ * Subscribe to placement changes in the main process (the main-side equivalent of
+ * the IPC.islandPlacement broadcast). Fires on EVERY broadcastPlacement() — i.e.
+ * once per dragMove while a drag is in flight, not only when `snapped` flips —
+ * so callers that care about a single field must dedupe. See electron/tray.ts.
+ */
+export function onPlacementChange(cb: PlacementListener): () => void {
+  placementListeners.add(cb)
+  return () => placementListeners.delete(cb)
+}
+
 /** Reposition snap overlay, then broadcast placement to all renderer windows. */
 function broadcastPlacement(): void {
   // Refresh notch metrics for the display the island currently sits on.
@@ -83,9 +97,11 @@ function broadcastPlacement(): void {
     placement.notchCenterX = m.notchCenterX
   }
   updateSnapOverlay()
+  const snapshot = getPlacement()
   for (const w of BrowserWindow.getAllWindows()) {
-    w.webContents.send(IPC.islandPlacement, getPlacement())
+    w.webContents.send(IPC.islandPlacement, snapshot)
   }
+  for (const l of placementListeners) l(snapshot)
 }
 
 export function createIslandWindow(): BrowserWindow {
@@ -172,6 +188,27 @@ export function revealIsland(): void {
   if (!islandWin) return
   islandWin.show()
   islandWin.focus()
+}
+
+/**
+ * Show (if hidden) and lift the island to the front WITHOUT taking focus —
+ * the "bring timer to front when time ends" behavior (Prefs.raiseOnComplete).
+ *
+ * Deliberately NOT revealIsland(): that calls focus(), which on macOS activates
+ * the application and pulls the menu bar away from whatever the user is in.
+ * showInactive() maps to [NSWindow orderFrontRegardless], the only reliable raise
+ * for a background app — plain moveTop()/orderFront: can be deferred while
+ * another app is active, and PomoIsland is almost never the active app. Safe on
+ * an already-visible window (it re-orders rather than re-shows).
+ *
+ * applyIslandWindowLevel() runs LAST: show/orderFront can re-clamp a snapped
+ * island back under the menu bar, and that routine is what re-asserts the level
+ * and then drives the position to y = display.bounds.y (ADR-0006).
+ */
+export function raiseIsland(): void {
+  if (!islandWin) return
+  islandWin.showInactive()
+  applyIslandWindowLevel()
 }
 
 /** Resize the island window to fit content, keeping its anchor (top-center if snapped). */

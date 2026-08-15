@@ -666,6 +666,11 @@ const PRESET_VALS: Partial<Record<Prefs['preset'], Partial<Prefs>>> = {
 
 const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['autoStart', 'Auto-start next session', 'Begin the next focus or break automatically'],
+  [
+    'raiseOnComplete',
+    'Bring timer to front when time ends',
+    'Show the island above other windows when a focus or break finishes. Never steals keyboard focus.',
+  ],
   ['launchLogin', 'Launch at login', 'Open Pomodoro when your Mac starts up'],
   ['messages', 'Motivational messages', 'Show an encouraging line in the expanded panel'],
   ['hideShare', 'Hide during screen sharing', 'Auto-conceal while presenting or recording.'],

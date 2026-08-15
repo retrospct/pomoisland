@@ -307,6 +307,13 @@ export function IslandApp() {
             e.stopPropagation()
             setMenuOpen((v) => !v)
           }}
+          alwaysTop={prefs.alwaysTop}
+          onToggleAlwaysTop={(e) => {
+            // Intentionally does NOT setMenuOpen(false): the point is to watch the
+            // check flip. The new value arrives back via prefs.onChange.
+            e.stopPropagation()
+            window.api.prefs.set({ alwaysTop: !prefs.alwaysTop })
+          }}
           onOpenTasks={openTasks}
           onCloseTasks={closeTasks}
           onSettings={(e) => {

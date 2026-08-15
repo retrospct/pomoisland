@@ -104,7 +104,8 @@ export interface TimerState {
  * Persisted user preferences, owned by the main process. The field set mirrors
  * the SettingsPanel.dc.html design (General + Preferences tabs). `alwaysTop` and
  * `magnetic` are not surfaced in that panel but the main process reads them to
- * drive window behavior — see ADR-0004.
+ * drive window behavior — see ADR-0004. (`alwaysTop` IS user-toggleable, just not
+ * from the Settings window: it lives in the island ⋯ menu and the tray menu.)
  */
 export interface Prefs {
   // ---- General · Timer preset + durations (minutes) ----
@@ -118,6 +119,13 @@ export interface Prefs {
   // ---- General · Behavior ----
   /** Auto-start the next focus/break block when one ends. */
   autoStart: boolean
+  /**
+   * Raise the island when a block runs out (focus AND break). Raise only: the
+   * island is a non-activating NSPanel (see createIslandWindow), so this shows it
+   * if hidden and lifts it in the z-order without ever taking keyboard focus.
+   * A manual Next/skip is not a "time ends" event and does not raise.
+   */
+  raiseOnComplete: boolean
   /**
    * Do Not Disturb while focusing. Persisted but dropped from the Settings UI
    * (ADR-0004 update, 2026-07-01) — macOS has no public API to toggle system
