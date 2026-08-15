@@ -1,7 +1,7 @@
 # 06 — Truncation detection and the title popover
 
 Type: prototype
-Status: open
+Status: deferred — decided during implementation, not on the map
 
 ## Question
 

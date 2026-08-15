@@ -1,7 +1,7 @@
 # 11 — Task row layout under pressure
 
 Type: prototype
-Status: open
+Status: deferred — decided during implementation, not on the map
 Blocked by: 06, 09
 
 ## Question

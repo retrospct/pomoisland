@@ -1,8 +1,8 @@
 # 10 — Detached window architecture and header controls
 
 Type: grilling
-Status: open
-Blocked by: 02
+Status: deferred — decided during implementation, not on the map
+Blocked by: 02 (resolved)
 
 ## Question
 

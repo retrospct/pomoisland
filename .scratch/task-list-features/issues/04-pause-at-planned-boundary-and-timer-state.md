@@ -1,9 +1,13 @@
-# 04 — Pause-at-planned: which boundary, and what the timer does
+# 04 — Pause-at-planned: boundary, timer state, and the resume controls
 
 Type: grilling
 Status: open
 
-## Question
+<!-- Ticket 08 was merged into this one when the decision phase was shortened; its
+     questions are Part B below. -->
+
+
+## Question — Part A: the boundary
 
 The hardest decision on the map. When a task's completed sessions reach its planned count,
 the timer "pauses" and the bar's slot shows two buttons. But `advance()` goes
@@ -39,3 +43,28 @@ the timer "pauses" and the bar's slot shows two buttons. But `advance()` goes
 
 Note this overturns a deliberate existing decision — `electron/taskStore.ts:91-96` says
 tasks are never auto-completed at estimate and "keeps counting, e.g. 8/7".
+
+## Question — Part B: the resume controls (merged from ticket 08)
+
+Two buttons occupy the progress bar's slot while paused: **+** (add and start another
+session) and **✓** (complete this task, start the timer on the next one). Part A decides
+when they appear; these decide what they do. Answer both parts in one session.
+
+7. **What does + mutate?** Increment the planned count by 1 and start a focus block — or
+   start a session without touching the plan, letting the task run 5/4? The former keeps
+   the bar honest; the latter preserves the existing "keeps counting" spirit.
+
+8. **What does ✓ do, in order?** Mark done → clear/advance `activeTaskId` → start a focus
+   block. Ticket 05 may already make the done path auto-advance, in which case ✓ is partly
+   a wrapper over existing behaviour — check before specifying new code.
+
+9. **Do either of them skip the break?** Falls straight out of Part A's boundary answer. If
+   the pause lands *before* the break, both buttons starting a focus block means the user
+   never breaks.
+
+10. **"No more incomplete tasks → starts a timer with no active tasks."** Confirm this means
+    ✓ falls into ticket 05's no-task mode *and* starts running — the timer running with
+    `activeTaskId === null`.
+
+Deferred to implementation (record as spec notes, don't decide here): where the two buttons
+render in each host and how the pause state degrades in narrow views; tooltip copy.

@@ -1,7 +1,7 @@
 # 07 — Segmented task progress bar: visual and behavioural design
 
 Type: prototype
-Status: open
+Status: deferred — decided during implementation, not on the map
 Blocked by: 03
 
 ## Question

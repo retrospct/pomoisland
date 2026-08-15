@@ -1,7 +1,7 @@
 # 12 — Tasks settings section: copy and placement
 
 Type: grilling
-Status: open
+Status: deferred — decided during implementation, not on the map
 Blocked by: 03, 04
 
 ## Question

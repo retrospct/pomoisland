@@ -1,7 +1,7 @@
 # 09 — Reorder: data model and drag interaction
 
 Type: grilling
-Status: open
+Status: deferred — decided during implementation, not on the map
 Blocked by: 01
 
 ## Question

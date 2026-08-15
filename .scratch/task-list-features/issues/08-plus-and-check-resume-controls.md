@@ -1,7 +1,7 @@
 # 08 — The + and ✓ resume controls
 
 Type: grilling
-Status: open
+Status: merged into 04 — its questions are Part B of that ticket
 Blocked by: 04
 
 ## Question

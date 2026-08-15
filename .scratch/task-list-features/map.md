@@ -7,9 +7,16 @@ A written spec at `.scratch/task-list-features/spec.md` plus implementation issu
 hover pencil, truncation popover, drag-reorder, click-to-deselect) and the task↔timer
 semantics batch (task progress bar, pause-at-planned, the two new Tasks settings).
 
-The map is done when every design decision below is resolved and the spec can be handed
-to `/implement` sessions with nothing left to invent. **No production code is written on
-this map** — the map produces decisions and a spec, not the feature.
+**The decision phase was deliberately shortened** after charting. Only four tickets are
+worked on the map — **01, 04, 03, 05** — the ones whose answers are expensive to get wrong
+or that constrain everything downstream. Ticket 08 was merged into 04. Seven others are
+written up in full but marked **deferred**: their questions are real and still have to be
+answered, just by `/implement` sessions with the code in front of them rather than by a
+map session. `/to-spec` **must** carry them into the spec as implementation notes — see
+**Deferred to implementation** below.
+
+The map is done when those four are resolved. **No production code is written on this
+map** — the map produces decisions and a spec, not the feature.
 
 ## Notes
 
@@ -118,6 +125,34 @@ decisions the map still has to make.
 - **Whether pop-out deserves a global shortcut** (`Shortcuts`, ADR-0007) — depends on 10.
 - **Empty-state copy**, and whether "no tasks at all" and "all tasks done" read
   differently — depends on 05.
+
+## Deferred to implementation
+
+**Not out of scope** — these ship. Their questions are written up in full in the ticket
+files below and were consciously moved off the decision phase to shorten it. `/to-spec`
+must fold each one into the spec as an implementation note, carrying its file:line detail
+across, so the `/implement` session answers it with the code in front of it.
+
+Anything here that turns out to be a genuine product call rather than a build call should
+be escalated back to a map ticket rather than guessed at.
+
+- [06 — Truncation detection and the title popover](issues/06-truncation-detection-and-title-popover.md)
+  — detection strategy, and whether the popover needs `Menu.tsx`'s window-clipping spacer trick.
+- [07 — Segmented progress bar design](issues/07-segmented-progress-bar-design.md)
+  — segment count at large planned values, overflow past the plan, live-accent vs stable colour.
+- [09 — Reorder: model and drag interaction](issues/09-reorder-model-and-drag-interaction.md)
+  — mutation shape, per-partition vs raw indices, whether drags cross the active/done boundary.
+- [10 — Detached window architecture and header controls](issues/10-detached-window-architecture-and-header.md)
+  — renderer entry, lifecycle, what ✕ means. The hard Electron facts are already answered
+  by ticket 02; what remains is architecture.
+- [11 — Task row layout under pressure](issues/11-task-row-layout-under-pressure.md)
+  — what fits in 320px, the unmount-vs-opacity reflow fix, which controls are hover-revealed.
+- [12 — Tasks settings section](issues/12-tasks-settings-section.md)
+  — copy and grid placement; mechanical once 03 and 04 are settled.
+
+[08 — The + and ✓ resume controls](issues/08-plus-and-check-resume-controls.md) is **merged
+into 04**, not deferred — its questions are product calls, so they stay on the map as Part B
+of that ticket.
 
 ## Out of scope
 
