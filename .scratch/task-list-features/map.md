@@ -1,0 +1,127 @@
+# Map: Task list features
+
+## Destination
+
+A written spec at `.scratch/task-list-features/spec.md` plus implementation issues under
+`.scratch/task-list-features/issues/`, covering the task-list UI batch (detach, resize,
+hover pencil, truncation popover, drag-reorder, click-to-deselect) and the task↔timer
+semantics batch (task progress bar, pause-at-planned, the two new Tasks settings).
+
+The map is done when every design decision below is resolved and the spec can be handed
+to `/implement` sessions with nothing left to invent. **No production code is written on
+this map** — the map produces decisions and a spec, not the feature.
+
+## Notes
+
+**Domain**: PomoIsland — macOS notch-aware Pomodoro timer, Electron + React 19 + TS
+(Vite). Main process owns the timer runtime, prefs (`electron/store.ts`, hand-rolled JSON
+at `userData/prefs.json`) and tasks (`electron/taskStore.ts`, `userData/tasks.json`);
+both renderers are pure IPC subscribers (ADR-0002). Read `CONTEXT.md` before any ticket.
+
+**Skills every session should consult**: `/grilling` and `/domain-modeling` by default;
+`/prototype` for the tickets typed `prototype`; `/research` for those typed `research`.
+
+### Standing decisions from charting
+
+These were settled in the charting interview and bind every ticket. They are not
+decisions the map still has to make.
+
+- **Vocabulary — two independent axes.** *Docked* (list lives inside the island) vs
+  *detached* (list is its own window) is axis one; the header control is labelled
+  **pop out** / **pop in**. *Pin* means **always-on-top** and nothing else. The word
+  "pinned" is retired for axis one. Planned `Prefs` keys: `tasksDetached`,
+  `tasksAlwaysOnTop`.
+- **Zero runtime dependencies.** `package.json` has no `dependencies` block; everything
+  ships via `devDependencies` + electron-vite. Drag-reorder, the truncation popover and
+  all tooltips are **hand-rolled**. No `dnd-kit`, no `floating-ui`. Precedents to copy:
+  the hand-rolled popover in `src/island/Menu.tsx:174`, the pure-CSS two-layer hover
+  reveal in `src/island/SessionDots.tsx`, native `title=""` tooltips used throughout.
+- **Detach is exclusive.** While detached, the island never renders the inline panel; the
+  ⋯ → Tasks item and the `il-task-open` label both focus the detached window instead.
+  Pop-out/pop-in is a *move*, never a clone.
+- **Detached window is persisted and always-on-top-capable.** Geometry survives restart
+  (first window-geometry keys in `prefs.json`). `tasksDetached` and `tasksAlwaysOnTop`
+  are persisted but have **no Settings UI** — precedent is `dnd`, persisted with no
+  control (ADR-0004). Only two new *visible* toggles ship, both in the new Tasks section.
+- **Exactly two new visible prefs**: task-progress-bar on/off (default **on**) and
+  pause-at-planned on/off (default **on**). The "respects Auto-start next session" clause
+  is the else-branch of pause-at-planned, reusing the existing `autoStart` pref — not a
+  third control.
+- **Reorder is pointer-only.** Keyboard-accessible reorder is explicitly not a
+  requirement for this app.
+- **Deselecting mid-session lets the timer run on, untasked.** Credit resolves from
+  `activeTaskId` at `complete()` time (`electron/taskStore.ts:97`); a deselected session
+  credits nothing. No second "session's task" notion is introduced.
+- **Motion: free tier only.** Bar fill, hover fade, popover fade, the progress-bar→buttons
+  swap, and a drag **drop-indicator line** are in scope, all guarded by the existing `rm`
+  reduced-motion flag (`src/island/Island.tsx:1338`). Neighbour FLIP animation and
+  pop-out window choreography are out (see Out of scope).
+
+### Load-bearing facts found while charting
+
+- **`sessionIndex` ≠ task sessions.** The global dots are driven by `TimerState.sessionIndex`
+  against `prefs.cSessions` (default 4, user-configurable **2–8** — it is not always four
+  dots). Task progress is `Task.completedPomodoros` / `Task.estimatePomodoros`. Two
+  independent counters.
+- **`'below'` does not mean "below another element".** `IslandSlot` is `off|left|below|right`
+  relative to *the notch*; clusters are horizontal flex rows (`src/island/placement.ts:21`).
+  There is no vertical stacking primitive.
+- **`SessionDots` has five call sites**, only one of which goes through the cluster
+  system: `Island.tsx:293` (clusters), plus `930` (L3Card), `1083` (CircleCard), `1315`
+  (Peek), `1525` (ExpandedBody). Peek renders it unconditionally, ignoring `dots: 'off'`.
+- **Tasks are never auto-completed at estimate** — a deliberate decision with a comment at
+  `electron/taskStore.ts:91-96` ("keeps counting, e.g. 8/7"). Pause-at-planned overturns it.
+- **`advance()` goes focus→break→focus** (`electron/timer.ts:171`), and `autoStart` is read
+  in exactly two lines there. `recordFocusComplete` fires at `complete()`, i.e. at the
+  start of the 2600 ms flourish — so `skip()` also counts as a completed session.
+- **`activeTaskId` is not cleared on the done path** (`electron/taskStore.ts:129`), though
+  `delete` and `clearCompleted` both clear it. Completing your last task leaves the island
+  showing it as active. In scope — click-to-deselect depends on it.
+- **`Task` has no `order` field.** Ordering is implicit array position, and the UI
+  re-partitions into active/done before rendering (`src/island/TaskList.tsx:56`), so drop
+  indices are per-partition, not raw. `TaskList.tsx:3` already says drag-reorder is a
+  planned fast-follow.
+- **Row hover-reveal unmounts rather than hides** (`TaskList.tsx:342`), so rows reflow on
+  hover. Adding a third hover control worsens it.
+- **No shared component library.** Every primitive (`ToggleRow`, `ToggleSwitch`, `Chip`,
+  `StepButton`) is a local function in `src/settings/sections.tsx`; the segmented control
+  is a repeated inline idiom, not a component.
+- **Adding a plain pref is cheap**: a field on `Prefs` + a value in `DEFAULT_PREFS`.
+  `load()` merges over defaults (`electron/store.ts:154`); no migration helper needed
+  unless a key changes shape.
+- **Settings General tab is a 2-column grid**; "Behavior" is the entire right column
+  (`src/settings/sections.tsx:845`). "Below Behavior" means a sibling block in that column.
+- **Primary colour**: `--sp-teal` in Settings (overwritten with the resolved accent in
+  `paletteVars`), `--il-teal` / `--il-track` in the island — but the island's *live* accent
+  is a JS value, `view.accent`, not a CSS var.
+
+## Decisions so far
+
+<!-- one line per closed ticket: gist + link -->
+
+_None yet — charting session only._
+
+## Not yet specified
+
+- **The spec artifact itself.** Structure and granularity of `spec.md` and the handoff
+  implementation issues; sharpens once the decision tickets land.
+- **`tasks.json` back-compat** if an `order` field is introduced — depends on 01/09.
+- **Notification behaviour when pause-at-planned fires.** `electron/notify.ts` hooks
+  completion; whether a pause-at-planned stop deserves its own notification depends on 04.
+- **Tray menu implications** of no-task mode and of a detached window (`electron/tray.ts`).
+- **Whether pop-out deserves a global shortcut** (`Shortcuts`, ADR-0007) — depends on 10.
+- **Empty-state copy**, and whether "no tasks at all" and "all tasks done" read
+  differently — depends on 05.
+
+## Out of scope
+
+- **`sessionIndex` never wrapping modulo `cSessions`** (`electron/timer.ts:176`) — after
+  round one every global dot reads *done* and none reads *current* until reset. A real
+  bug, but it is the global dot cycle, not the task bar. Separate effort.
+- **Docs rot**: ADR-0002 claims `electron-store` when the store is hand-rolled JSON; two
+  files are numbered ADR-0006. Unrelated housekeeping.
+- **Motion tuning proper** — neighbour FLIP reordering on drag, and pop-out/pop-in window
+  choreography. Deferred to the global motion pass that `AGENTS.md:40` describes.
+- **Multi-select and bulk task operations.** Adjacent to drag-reorder, never asked for.
+- **Task list in the snap overlay window.** It renders none of this today.
+- **Keyboard-accessible reorder** and screen-reader announcements for drag.
