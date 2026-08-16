@@ -2,7 +2,26 @@
 
 Type: grilling
 Status: deferred — decided during implementation, not on the map
-Blocked by: 03, 04
+Blocked by: 03 (04 resolved 2026-08-16)
+
+**Ticket 04 settled the pref keys and defaults**, and added a third toggle that does *not*
+live here. Q4 below is answered; Q1–Q3 and Q5 stand.
+
+| Key | Section | Default |
+|---|---|---|
+| `taskProgress` | **Tasks** | on |
+| `pauseAtEstimate` | **Tasks** | on |
+| `creditSkipped` | **Behavior**, not Tasks | off |
+
+`creditSkipped` governs what counts as a completed session at all — it moves
+`completedToday`, the daily-goal reveal and the milestone rings, not just task counters — so
+it sits with `autoStart` and `pauseIdle` in Behavior. Its copy is settled: **"Count skipped
+sessions"** / *"A session you end early with Next still counts toward your task estimate and
+daily goal."* The Tasks section is still exactly two rows, which is what Q1's column-balance
+question was sized against.
+
+Q2's copy now also has to describe a `pauseAtEstimate` that pauses **after the break**, and
+whose **+** deliberately never raises the estimate.
 
 ## Question
 

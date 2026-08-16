@@ -15,7 +15,7 @@ answered, just by `/implement` sessions with the code in front of them rather th
 map session. `/to-spec` **must** carry them into the spec as implementation notes — see
 **Deferred to implementation** below.
 
-The map is done when those four are resolved. **01 is closed**; 04, 03 and 05 remain.
+The map is done when those four are resolved. **01 and 04 are closed**; 03 and 05 remain.
 **No production code is written on this map** — the map produces decisions and a spec, not
 the feature.
 
@@ -56,10 +56,14 @@ decisions the map still has to make.
   It is user-toggleable from the island ⋯ menu and the tray menu — just not from Settings.
   See **Landed since charting** below; ticket 10 inherits the pattern rather than inventing
   one.
-- **Exactly two new visible prefs**: task-progress-bar on/off (default **on**) and
-  pause-at-estimate on/off (default **on**). The "respects Auto-start next session" clause
-  is the else-branch of pause-at-estimate, reusing the existing `autoStart` pref — not a
-  third control.
+- **~~Exactly two new visible prefs~~ — amended 2026-08-16 by ticket 04: two in Tasks, one
+  in Behavior.** Tasks gets `taskProgress` (default **on**) and `pauseAtEstimate` (default
+  **on**). Behavior gets a third, `creditSkipped` (default **off**), because ticket 04 made
+  skipped-session credit user-controllable; it governs what counts as a session at all
+  (moving `completedToday`, the daily-goal reveal and the milestone rings, not just task
+  counters), so it does not belong under Tasks. Ticket 12's Tasks section is still exactly
+  two rows. The "respects Auto-start next session" clause remains the else-branch of
+  pause-at-estimate, reusing the existing `autoStart` pref — not a control.
 - **Reorder is pointer-only.** Keyboard-accessible reorder is explicitly not a
   requirement for this app.
 - **Deselecting mid-session lets the timer run on, untasked.** Credit resolves from
@@ -166,6 +170,22 @@ Four consequences for open tickets:
   now named a **cycle**; the task side is qualified in prose as *estimated sessions* and row copy
   is unchanged. Consequently **`pause-at-planned` → `pause-at-estimate`** across the map.
 
+- [04 — Pause-at-estimate: boundary, timer state, and the resume controls](issues/04-pause-at-planned-boundary-and-timer-state.md)
+  — **The pause lands after the break**, at the break→focus boundary, as one branch in
+  `advance()` placed before `autoStart` is read. **No new `Status`** — the timer reuses
+  `idle` and the at-estimate condition is a **derived predicate**
+  (`completedSessions >= estimateSessions`), never stored or broadcast, injected into `Timer`
+  as a `getAtEstimate` getter so `Timer` still never imports `taskStore`. `complete()` is
+  untouched: the flourish, sound, notification and bring-to-front all still fire; only the
+  scheduled `advance()` is replaced. **A skipped block credits nothing** by default (task
+  *and* daily counters alike), restorable via a new Behavior pref `creditSkipped`;
+  `reason` threads into `FocusCompleteHook`. **+ does not raise the estimate** — the task
+  runs 5/4 and the pause re-fires every boundary, deliberately: the nag *is* the feature.
+  **✓ is `update {done:true}` plus a start** and owns no advance logic, which hard-couples
+  this to ticket 05 answering *auto-advance*. Attention cue is **visual only**; a repeating
+  beep is held as a later dial. Also settles the notification copy branch, the tooltips, and
+  three pref keys.
+
 - [02 — RESEARCH: Electron frameless resizable window on macOS](issues/02-research-electron-frameless-resizable-macos.md)
   — AppKit owns resize on macOS (Electron's hit test is compiled out); the corner grip is a
   hand-drawn, `pointer-events: none` glyph. Pin with `setAlwaysOnTop(true, 'normal', 1)` so
@@ -178,8 +198,6 @@ Four consequences for open tickets:
 
 - **The spec artifact itself.** Structure and granularity of `spec.md` and the handoff
   implementation issues; sharpens once the decision tickets land.
-- **Notification behaviour when pause-at-estimate fires.** `electron/notify.ts` hooks
-  completion; whether a pause-at-estimate stop deserves its own notification depends on 04.
 - **Tray menu implications** of no-task mode and of a detached window (`electron/tray.ts`).
 - **Whether pop-out deserves a global shortcut** (`Shortcuts`, ADR-0007) — depends on 10.
 - **Empty-state copy**, and whether "no tasks at all" and "all tasks done" read

@@ -16,9 +16,16 @@ decides *where* it lives; this decides what it looks like and how it behaves at 
    continuous bar, compress segments, or let them shrink indefinitely? The answer differs
    sharply by host width — a collapsed cluster is far narrower than `ExpandedBody`.
 
-2. **Overflow.** `completedPomodoros` can exceed the estimate (the deliberate 8/7 case,
-   `taskStore.ts:91`), and ticket 08's **+** button increments the estimate. Does the bar grow
-   a segment, overfill, or clamp?
+2. **Overflow — now the common case, not the edge.** `completedSessions` can exceed the
+   estimate (the deliberate 8/7 case, `taskStore.ts:91`). **Amended by ticket 04 (§B1):** the
+   **+** button deliberately does *not* increment the estimate, so a task that keeps going
+   runs 5/4, 6/4, 7/4 and the pause re-fires at every boundary. Overflow is therefore the
+   normal state of any task worked past its estimate, and the bar has to read well there
+   rather than merely survive it. Does it grow a segment, overfill, or clamp?
+
+   Ticket 04 §B3 also puts an **over-estimate treatment** on this bar: while at estimate the
+   bar switches to that treatment and the two resume buttons pulse, `rm`-guarded. That
+   treatment is this ticket's to design.
 
 3. **Hover reveal.** Reuse the two-layer opacity-swap pattern from `SessionDots.tsx` +
    `island.css:94-115`, which exists specifically to avoid React hover state and container
