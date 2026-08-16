@@ -7,7 +7,7 @@ Blocked by: 03, 04
 ## Question
 
 A new **Tasks** section in the General tab, below Behavior, with exactly two toggles
-(settled): task progress bar on/off (default on) and pause-at-planned on/off (default on).
+(settled): task progress bar on/off (default on) and pause-at-estimate on/off (default on).
 Blocked because the toggle copy has to describe what tickets 03 and 04 actually decided.
 
 1. **Placement in the grid.** `GeneralTab` is a 2-column grid (`sections.tsx:708`); Behavior
@@ -29,6 +29,6 @@ Blocked because the toggle copy has to describe what tickets 03 and 04 actually 
    Defaults go in `DEFAULT_PREFS` (`electron/store.ts:19`); no migration helper needed for
    plain booleans since `load()` merges over defaults.
 
-5. **Does pause-at-planned's description need to mention `autoStart`?** Its off-branch
+5. **Does pause-at-estimate's description need to mention `autoStart`?** Its off-branch
    defers to "Auto-start next session", which sits a few rows above in the same tab. Cross-
    referencing another setting in body copy is not a pattern the app uses yet.

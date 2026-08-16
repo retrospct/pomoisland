@@ -6,7 +6,7 @@ Blocked by: 04
 
 ## Question
 
-When pause-at-planned fires, two buttons occupy the progress bar's slot: **+** (add and
+When pause-at-estimate fires, two buttons occupy the progress bar's slot: **+** (add and
 start another session) and **✓** (complete this task, start the timer on the next one).
 Ticket 04 decides *when* they appear; this decides what they do.
 

@@ -5,7 +5,7 @@
 A written spec at `.scratch/task-list-features/spec.md` plus implementation issues under
 `.scratch/task-list-features/issues/`, covering the task-list UI batch (detach, resize,
 hover pencil, truncation popover, drag-reorder, click-to-deselect) and the task↔timer
-semantics batch (task progress bar, pause-at-planned, the two new Tasks settings).
+semantics batch (task progress bar, pause-at-estimate, the two new Tasks settings).
 
 **The decision phase was deliberately shortened** after charting. Only four tickets are
 worked on the map — **01, 04, 03, 05** — the ones whose answers are expensive to get wrong
@@ -15,8 +15,9 @@ answered, just by `/implement` sessions with the code in front of them rather th
 map session. `/to-spec` **must** carry them into the spec as implementation notes — see
 **Deferred to implementation** below.
 
-The map is done when those four are resolved. **No production code is written on this
-map** — the map produces decisions and a spec, not the feature.
+The map is done when those four are resolved. **01 is closed**; 04, 03 and 05 remain.
+**No production code is written on this map** — the map produces decisions and a spec, not
+the feature.
 
 ## Notes
 
@@ -51,8 +52,8 @@ decisions the map still has to make.
   are persisted but have **no Settings UI** — precedent is `dnd`, persisted with no
   control (ADR-0004). Only two new *visible* toggles ship, both in the new Tasks section.
 - **Exactly two new visible prefs**: task-progress-bar on/off (default **on**) and
-  pause-at-planned on/off (default **on**). The "respects Auto-start next session" clause
-  is the else-branch of pause-at-planned, reusing the existing `autoStart` pref — not a
+  pause-at-estimate on/off (default **on**). The "respects Auto-start next session" clause
+  is the else-branch of pause-at-estimate, reusing the existing `autoStart` pref — not a
   third control.
 - **Reorder is pointer-only.** Keyboard-accessible reorder is explicitly not a
   requirement for this app.
@@ -77,7 +78,7 @@ decisions the map still has to make.
   system: `Island.tsx:293` (clusters), plus `930` (L3Card), `1083` (CircleCard), `1315`
   (Peek), `1525` (ExpandedBody). Peek renders it unconditionally, ignoring `dots: 'off'`.
 - **Tasks are never auto-completed at estimate** — a deliberate decision with a comment at
-  `electron/taskStore.ts:91-96` ("keeps counting, e.g. 8/7"). Pause-at-planned overturns it.
+  `electron/taskStore.ts:91-96` ("keeps counting, e.g. 8/7"). Pause-at-estimate overturns it.
 - **`advance()` goes focus→break→focus** (`electron/timer.ts:171`), and `autoStart` is read
   in exactly two lines there. `recordFocusComplete` fires at `complete()`, i.e. at the
   start of the 2600 ms flourish — so `skip()` also counts as a completed session.
@@ -106,6 +107,16 @@ decisions the map still has to make.
 
 <!-- one line per closed ticket: gist + link -->
 
+- [01 — Task vocabulary and the estimated-sessions model](issues/01-task-vocabulary-and-planned-sessions-model.md)
+  — **Estimate is the word, everywhere**; "planned" is retired and "pomodoro" leaves the task
+  model. `Task.estimatePomodoros`/`completedPomodoros` → **`estimateSessions`/`completedSessions`**
+  (suffix-only; `defaultEstimate`, `TaskMutation.add.estimate` and `onAdjustEstimate` are already
+  right and don't move). Rename requires a tolerant per-task read in `taskStore.ts` `load()`
+  (`?? t.estimatePomodoros ?? 1`) — there is no per-task normalizer today — but **no `version`
+  field**. **No `order` field** on `Task`; array position stays the order. The dot grouping is
+  now named a **cycle**; the task side is qualified in prose as *estimated sessions* and row copy
+  is unchanged. Consequently **`pause-at-planned` → `pause-at-estimate`** across the map.
+
 - [02 — RESEARCH: Electron frameless resizable window on macOS](issues/02-research-electron-frameless-resizable-macos.md)
   — AppKit owns resize on macOS (Electron's hit test is compiled out); the corner grip is a
   hand-drawn, `pointer-events: none` glyph. Pin with `setAlwaysOnTop(true, 'normal', 1)` so
@@ -118,9 +129,8 @@ decisions the map still has to make.
 
 - **The spec artifact itself.** Structure and granularity of `spec.md` and the handoff
   implementation issues; sharpens once the decision tickets land.
-- **`tasks.json` back-compat** if an `order` field is introduced — depends on 01/09.
-- **Notification behaviour when pause-at-planned fires.** `electron/notify.ts` hooks
-  completion; whether a pause-at-planned stop deserves its own notification depends on 04.
+- **Notification behaviour when pause-at-estimate fires.** `electron/notify.ts` hooks
+  completion; whether a pause-at-estimate stop deserves its own notification depends on 04.
 - **Tray menu implications** of no-task mode and of a detached window (`electron/tray.ts`).
 - **Whether pop-out deserves a global shortcut** (`Shortcuts`, ADR-0007) — depends on 10.
 - **Empty-state copy**, and whether "no tasks at all" and "all tasks done" read
@@ -139,7 +149,7 @@ be escalated back to a map ticket rather than guessed at.
 - [06 — Truncation detection and the title popover](issues/06-truncation-detection-and-title-popover.md)
   — detection strategy, and whether the popover needs `Menu.tsx`'s window-clipping spacer trick.
 - [07 — Segmented progress bar design](issues/07-segmented-progress-bar-design.md)
-  — segment count at large planned values, overflow past the plan, live-accent vs stable colour.
+  — segment count at large estimate values, overflow past the estimate, live-accent vs stable colour.
 - [09 — Reorder: model and drag interaction](issues/09-reorder-model-and-drag-interaction.md)
   — mutation shape, per-partition vs raw indices, whether drags cross the active/done boundary.
 - [10 — Detached window architecture and header controls](issues/10-detached-window-architecture-and-header.md)

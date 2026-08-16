@@ -1,4 +1,4 @@
-# 04 — Pause-at-planned: boundary, timer state, and the resume controls
+# 04 — Pause-at-estimate: boundary, timer state, and the resume controls
 
 Type: grilling
 Status: open
@@ -9,7 +9,7 @@ Status: open
 
 ## Question — Part A: the boundary
 
-The hardest decision on the map. When a task's completed sessions reach its planned count,
+The hardest decision on the map. When a task's completed sessions reach its estimate,
 the timer "pauses" and the bar's slot shows two buttons. But `advance()` goes
 **focus → break → focus** (`electron/timer.ts:171`), so there is a break in the way.
 
@@ -20,7 +20,7 @@ the timer "pauses" and the bar's slot shows two buttons. But `advance()` goes
      where the buttons ("start another session" / "next task") actually make sense — but
      the bar sits in its paused state for the whole break.
 
-2. **What `Status` is the timer in while paused-at-planned?** Existing states are
+2. **What `Status` is the timer in while paused-at-estimate?** Existing states are
    `idle | running | paused | complete` (`src/shared/types.ts:4`). Reuse `idle`, reuse
    `paused`, or introduce a new state? A new state touches every consumer — `derive.ts`,
    tray (`electron/tray.ts:83`), notifications (`electron/notify.ts:21`), idle auto-pause
@@ -28,7 +28,7 @@ the timer "pauses" and the bar's slot shows two buttons. But `advance()` goes
 
 3. **Does the 2600 ms completion flourish still run?** `complete()` sets `status: 'complete'`
    and schedules `advance()` after `COMPLETE_HOLD_MS` (`timer.ts:8`, `158`). Does
-   pause-at-planned suppress the hold, run inside it, or replace `advance()`?
+   pause-at-estimate suppress the hold, run inside it, or replace `advance()`?
 
 4. **Where does it hook?** `recordFocusComplete` fires at `complete()` time, which means
    `skip()` also counts as a completed session (`timer.ts:222`). Should a *skipped* session
@@ -37,7 +37,7 @@ the timer "pauses" and the bar's slot shows two buttons. But `advance()` goes
 5. **Long-break interaction.** If the task's final session also lands on a long-break
    boundary (`idx % cSessions === 0`), does that change anything?
 
-6. **Precedence.** Pause-at-planned ON plus `autoStart` ON: pause wins (settled). Confirm
+6. **Precedence.** Pause-at-estimate ON plus `autoStart` ON: pause wins (settled). Confirm
    mechanically where that precedence lives, given `autoStart` is read in exactly two lines
    inside `advance()` (`timer.ts:184`, `:195`).
 
@@ -50,7 +50,7 @@ Two buttons occupy the progress bar's slot while paused: **+** (add and start an
 session) and **✓** (complete this task, start the timer on the next one). Part A decides
 when they appear; these decide what they do. Answer both parts in one session.
 
-7. **What does + mutate?** Increment the planned count by 1 and start a focus block — or
+7. **What does + mutate?** Increment the estimate by 1 and start a focus block — or
    start a session without touching the plan, letting the task run 5/4? The former keeps
    the bar honest; the latter preserves the existing "keeps counting" spirit.
 
