@@ -305,7 +305,8 @@ counts toward your task estimate and daily goal."*
 `advance()` lands in at-estimate and does *not* go back to focus. The title stays; the body
 branches when the pause is about to land:
 
-> **Break over** — "You've hit your estimate. Pick up where you left off, or finish the task."
+> Title: **Break over**
+> Body: **You've hit your estimate. Pick up where you left off, or finish the task.**
 
 One branch in `copyFor`, reading the same predicate. `notify.ts` already imports `getPrefs`,
 so importing the task predicate is in keeping. Leaving it unbranched would make the one
