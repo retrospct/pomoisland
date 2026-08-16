@@ -65,6 +65,20 @@ decisions the map still has to make.
 - **Deselecting mid-session lets the timer run on, untasked.** Credit resolves from
   `activeTaskId` at `complete()` time (`electron/taskStore.ts:97`); a deselected session
   credits nothing. No second "session's task" notion is introduced.
+- **Testing seams — one new seam, settled 2026-08-16 in a `/to-spec` session.** The repo
+  has no test framework; the seam is hand-rolled `scripts/*-check.ts` node scripts driving
+  real main-process modules (`scripts/complete-reason-check.ts` drives `Timer` via
+  `tickOnce()`). Three consequences: **(a)** `Timer` is reused as-is — pause-at-estimate
+  hangs off an injected predicate in the same shape as the existing `getPrefs` getter, so
+  ticket 04 adds no seam. **(b)** One new seam: the pure task reducer is extracted out of
+  `electron/taskStore.ts`, which imports `electron` at module load and so cannot be driven
+  from a check script today. Pure functions over `TasksState` (mutations, focus-complete
+  credit, ticket 01's tolerant `estimateSessions` read, ticket 04's at-estimate predicate);
+  the fs + listener shell stays behind. One script covers 01's migration, 05's deselect
+  toggle and done-path advance, and 04's credit/pause logic. **(c)** No seam for UI — the
+  bar visuals, drag-reorder, popover and detached window are verified by hand, as the rest
+  of the island is. Sole exception: if ticket 07's segment-count/overflow math becomes a
+  pure function, it tests alongside `scripts/placement-check.ts`.
 - **Motion: free tier only.** Bar fill, hover fade, popover fade, the progress-bar→buttons
   swap, and a drag **drop-indicator line** are in scope, all guarded by the existing `rm`
   reduced-motion flag (`src/island/Island.tsx:1346`). Neighbour FLIP animation and
