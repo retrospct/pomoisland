@@ -4,6 +4,7 @@ import { startIdleWatcher, stopIdleWatcher } from './idle'
 import { registerIpc } from './ipc'
 import { initLaunchLogin } from './launchLogin'
 import { initNotifications } from './notify'
+import { initRaiseOnComplete } from './raiseOnComplete'
 import { configureShortcutHandlers, registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
 import { getPrefs, onPrefsChange } from './store'
 import { Timer } from './timer'
@@ -31,6 +32,7 @@ function bootstrap(): void {
   })
   registerIpc(timer)
   initNotifications(timer)
+  initRaiseOnComplete(timer)
   startIdleWatcher(timer)
   createIslandWindow()
   createSnapOverlayWindow()

@@ -12,10 +12,12 @@ type Listener = (s: TimerState) => void
 type FocusCompleteHook = () => void
 type TickHook = () => void
 
-/** What just finished, and whether the upcoming break (once `advance()` fires) is the long one. */
+/** What just finished, whether the upcoming break (once `advance()` fires) is the long one, and why. */
 export interface CompleteEvent {
   finishedMode: Mode
   nextIsLongBreak: boolean
+  /** 'elapsed' = the clock ran out; 'skipped' = the user pressed Next/skip. */
+  reason: 'elapsed' | 'skipped'
 }
 type CompleteHook = (e: CompleteEvent) => void
 
@@ -155,7 +157,7 @@ export class Timer {
     this.set({ remaining: rem })
   }
 
-  private complete(): void {
+  private complete(reason: CompleteEvent['reason'] = 'elapsed'): void {
     if (this.completeTimer) clearTimeout(this.completeTimer)
     const wasFocus = this.state.mode === 'focus'
     const p = this.getPrefs()
@@ -164,7 +166,8 @@ export class Timer {
     if (wasFocus) {
       for (const hook of this.focusCompleteHooks) hook()
     }
-    for (const hook of this.completeHooks) hook({ finishedMode: this.state.mode, nextIsLongBreak })
+    for (const hook of this.completeHooks)
+      hook({ finishedMode: this.state.mode, nextIsLongBreak, reason })
     this.completeTimer = setTimeout(() => this.advance(), COMPLETE_HOLD_MS)
   }
 
@@ -220,7 +223,7 @@ export class Timer {
 
   /** Skip to the end of the current block now (plays the completion flourish, then advances). */
   private skip(): void {
-    this.complete()
+    this.complete('skipped')
   }
 
   private switchMode(): void {

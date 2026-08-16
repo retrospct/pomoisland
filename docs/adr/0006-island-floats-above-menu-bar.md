@@ -69,3 +69,9 @@ non-notch displays it covers the center of the real menu bar.
 - Using `'screen-saver'` level means the island floats above most system UI.
   Acceptable for a thin, transparent utility widget; revisit if it causes
   interference with system dialogs on specific macOS versions.
+- Because the snapped island must run at `'screen-saver'`, `Prefs.alwaysTop` is
+  meaningful only while **floating** — `applyIslandWindowLevel` ignores it in the
+  snapped and dragging branches. The island ⋯ menu and the tray menu both surface
+  the toggle as floating-only (an inline "Floating only" hint / a
+  "(floating only)" label suffix) rather than hiding or disabling it, so the
+  control is never a silent no-op.

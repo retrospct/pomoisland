@@ -19,6 +19,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",
     "audio:check": "node scripts/audio-check.ts",
     "tick:check": "node scripts/tick-cadence-check.ts",
+    "complete:check": "node scripts/complete-reason-check.ts",
     "placement:check": "node scripts/placement-check.ts",
     "notch:check": "node scripts/notch-check.ts",
     "package": "electron-vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir",

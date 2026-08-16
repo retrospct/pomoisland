@@ -26,6 +26,7 @@ export const DEFAULT_PREFS: Prefs = {
   dailyGoal: 8,
   // General · Behavior
   autoStart: true,
+  raiseOnComplete: false,
   dnd: true,
   launchLogin: false,
   messages: true,

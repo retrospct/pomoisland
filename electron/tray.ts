@@ -1,12 +1,17 @@
 import { Menu, Tray } from 'electron'
 import { fmtTime } from '../src/shared/format'
-import type { Shortcuts, TimerState } from '../src/shared/types'
+import type { Placement, Prefs, TimerState } from '../src/shared/types'
 import { updateMenuItem } from './appMenu'
-import { getPrefs, onPrefsChange } from './store'
+import { getPrefs, onPrefsChange, setPrefs } from './store'
 import type { Timer } from './timer'
 import { loadTrayIcon } from './tray-icon'
 import { onUpdateReady } from './updater'
-import { createSettingsWindow, toggleIslandVisibility } from './windows'
+import {
+  createSettingsWindow,
+  getPlacement,
+  onPlacementChange,
+  toggleIslandVisibility,
+} from './windows'
 
 let tray: Tray | null = null
 
@@ -52,25 +57,41 @@ function applyTrayState(state: TimerState): void {
   tray.setToolTip(trayTooltip(state))
 }
 
-/** Rebuilds the tray's context menu so its accelerator labels reflect `shortcuts`. */
-function buildMenu(timer: Timer, shortcuts: Shortcuts): Menu {
+/**
+ * Rebuilds the tray's context menu so its accelerator labels reflect
+ * `prefs.shortcuts` and the Always on Top item reflects `prefs.alwaysTop` plus
+ * the current placement.
+ */
+function buildMenu(timer: Timer, prefs: Prefs, placement: Placement): Menu {
   return Menu.buildFromTemplate([
     {
       label: 'Show / Hide Island',
-      accelerator: shortcuts.showHide ?? undefined,
+      accelerator: prefs.shortcuts.showHide ?? undefined,
       click: () => toggleIslandVisibility(),
     },
     {
       label: 'Play / Pause',
-      accelerator: shortcuts.playPause ?? undefined,
+      accelerator: prefs.shortcuts.playPause ?? undefined,
       click: () => timer.action({ type: 'playPause' }),
     },
     {
       label: 'Next',
-      accelerator: shortcuts.next ?? undefined,
+      accelerator: prefs.shortcuts.next ?? undefined,
       click: () => timer.action({ type: 'skip' }),
     },
     { type: 'separator' },
+    {
+      // Docked, applyIslandWindowLevel() forces 'screen-saver' level so the island
+      // can paint over the menu bar (ADR-0006) — the pref only bites once the
+      // island floats. Stay enabled (setting it before undocking is legitimate)
+      // but say so in the label rather than silently no-op'ing.
+      type: 'checkbox',
+      label: placement.snapped ? 'Always on Top (floating only)' : 'Always on Top',
+      checked: prefs.alwaysTop,
+      // Read through getPrefs() rather than the captured `prefs` so a menu built
+      // before an unrelated pref write can't invert a stale value.
+      click: () => setPrefs({ alwaysTop: !getPrefs().alwaysTop }),
+    },
     { label: 'Settings…', click: () => createSettingsWindow() },
     updateMenuItem(),
     { type: 'separator' },
@@ -83,15 +104,24 @@ export function createTray(timer: Timer): Tray {
   applyTrayState(timer.getState())
   timer.subscribe(applyTrayState)
 
-  tray.setContextMenu(buildMenu(timer, getPrefs().shortcuts))
-  onPrefsChange((p) => {
+  const rebuild = (): void => {
     if (!tray || tray.isDestroyed()) return
-    tray.setContextMenu(buildMenu(timer, p.shortcuts))
-  })
+    tray.setContextMenu(buildMenu(timer, getPrefs(), getPlacement()))
+  }
+
+  rebuild()
+  onPrefsChange(rebuild)
   // Rebuild so "Check for Updates…" becomes "Restart to Update" when one is ready.
-  onUpdateReady(() => {
-    if (!tray || tray.isDestroyed()) return
-    tray.setContextMenu(buildMenu(timer, getPrefs().shortcuts))
+  onUpdateReady(rebuild)
+  // Snap/unsnap flips the Always on Top label to/from "(floating only)". Dedupe on
+  // `snapped`: broadcastPlacement fires on every dragMove, and rebuilding the
+  // native menu at mouse-move rate would be gratuitous. Same lastApplied shape as
+  // electron/launchLogin.ts.
+  let lastSnapped = getPlacement().snapped
+  onPlacementChange((p) => {
+    if (p.snapped === lastSnapped) return
+    lastSnapped = p.snapped
+    rebuild()
   })
 
   return tray

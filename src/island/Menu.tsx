@@ -12,6 +12,13 @@ interface TriggerProps {
 }
 
 interface DropdownProps {
+  /** Toggles Prefs.alwaysTop. Unlike every other item, does NOT close the dropdown. */
+  onToggleAlwaysTop: (e: React.MouseEvent) => void
+  alwaysTop: boolean
+  /** Island is docked to the notch — the toggle is inert until it floats (ADR-0006). */
+  snapped: boolean
+  /** Accent color for the check glyph. */
+  accent?: string
   onTasks: (e: React.MouseEvent) => void
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
@@ -55,6 +62,10 @@ export function Menu({ onToggleMenu, updateReady, accent }: TriggerProps) {
 }
 
 export function MenuDropdown({
+  onToggleAlwaysTop,
+  alwaysTop,
+  snapped,
+  accent,
   onTasks,
   onSettings,
   onCheckUpdates,
@@ -64,6 +75,62 @@ export function MenuDropdown({
 }: DropdownProps) {
   return (
     <div style={popover}>
+      {/* State toggle, kept in its own group above the commands. Unlike every
+          other item this one does NOT close the dropdown — the user should see
+          the check flip in place. While snapped, applyIslandWindowLevel() forces
+          'screen-saver' level so the island can paint over the menu bar
+          (ADR-0006), so the pref only bites once the island is floating; say so
+          rather than silently no-op'ing. Stays ENABLED while snapped — setting it
+          before undocking is legitimate. */}
+      <button
+        className="island-menu-item"
+        onClick={onToggleAlwaysTop}
+        role="menuitemcheckbox"
+        aria-checked={alwaysTop}
+        style={menuItem}
+      >
+        {/* Thumbtack — "pin this on top". */}
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flex: '0 0 auto' }}>
+          <path
+            d="M5.8 1.5h3.4l-.5 3.3 2.3 2.3H4l2.3-2.3z"
+            stroke="var(--il-icon)"
+            strokeWidth="1.3"
+            strokeLinejoin="round"
+          />
+          <path d="M7.5 7.1v6.2" stroke="var(--il-icon)" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: 'block' }}>Always on Top</span>
+          {snapped && (
+            <span
+              style={{
+                display: 'block',
+                fontSize: 10.5,
+                lineHeight: 1.25,
+                color: 'var(--il-muted)',
+                marginTop: 2,
+              }}
+            >
+              Floating only
+            </span>
+          )}
+        </span>
+        {/* Fixed-width slot so the label column doesn't shift as the check appears. */}
+        <span style={{ flex: '0 0 14px', display: 'grid', placeItems: 'center' }} aria-hidden>
+          {alwaysTop && (
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path
+                d="M2.2 6.9l2.9 3 5.7-6.4"
+                stroke={accent ?? 'var(--il-text)'}
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </span>
+      </button>
+      <div style={{ height: 1, background: 'var(--il-line)', margin: '5px 9px' }} />
       <button className="island-menu-item" onClick={onTasks} style={menuItem}>
         <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
           <rect
