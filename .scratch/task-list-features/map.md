@@ -42,15 +42,20 @@ decisions the map still has to make.
 - **Zero runtime dependencies.** `package.json` has no `dependencies` block; everything
   ships via `devDependencies` + electron-vite. Drag-reorder, the truncation popover and
   all tooltips are **hand-rolled**. No `dnd-kit`, no `floating-ui`. Precedents to copy:
-  the hand-rolled popover in `src/island/Menu.tsx:174`, the pure-CSS two-layer hover
+  the hand-rolled popover in `src/island/Menu.tsx:241`, the pure-CSS two-layer hover
   reveal in `src/island/SessionDots.tsx`, native `title=""` tooltips used throughout.
 - **Detach is exclusive.** While detached, the island never renders the inline panel; the
   ⋯ → Tasks item and the `il-task-open` label both focus the detached window instead.
   Pop-out/pop-in is a *move*, never a clone.
 - **Detached window is persisted and always-on-top-capable.** Geometry survives restart
   (first window-geometry keys in `prefs.json`). `tasksDetached` and `tasksAlwaysOnTop`
-  are persisted but have **no Settings UI** — precedent is `dnd`, persisted with no
-  control (ADR-0004). Only two new *visible* toggles ship, both in the new Tasks section.
+  are persisted with **no Settings UI**. Only two new *visible* toggles ship in Settings,
+  both in the new Tasks section.
+  **Amended 2026-08-16 (PR #47, `2aabf28`)** — the stated precedent was `dnd`, "persisted
+  with no control" (ADR-0004). That is now the wrong precedent: `alwaysTop` shipped a UI.
+  It is user-toggleable from the island ⋯ menu and the tray menu — just not from Settings.
+  See **Landed since charting** below; ticket 10 inherits the pattern rather than inventing
+  one.
 - **Exactly two new visible prefs**: task-progress-bar on/off (default **on**) and
   pause-at-estimate on/off (default **on**). The "respects Auto-start next session" clause
   is the else-branch of pause-at-estimate, reusing the existing `autoStart` pref — not a
@@ -62,8 +67,38 @@ decisions the map still has to make.
   credits nothing. No second "session's task" notion is introduced.
 - **Motion: free tier only.** Bar fill, hover fade, popover fade, the progress-bar→buttons
   swap, and a drag **drop-indicator line** are in scope, all guarded by the existing `rm`
-  reduced-motion flag (`src/island/Island.tsx:1338`). Neighbour FLIP animation and
+  reduced-motion flag (`src/island/Island.tsx:1346`). Neighbour FLIP animation and
   pop-out window choreography are out (see Out of scope).
+
+### Landed since charting
+
+Main moved under the map. **PR #47 `2aabf28` — "always-on-top toggle and bring-to-front when
+time ends"** (merged 2026-08-16) touched `Island.tsx`, `IslandApp.tsx`, `Menu.tsx`,
+`sections.tsx`, `types.ts`, `timer.ts`, `tray.ts`, `windows.ts`, `store.ts`. Every `file:line`
+citation on this map and in every ticket was **re-resolved against `2aabf28` by content, not by
+offset** — they are current. It touched no task file: `TaskList.tsx` and `taskStore.ts` are
+untouched, so ticket 01's rename is unaffected.
+
+Four consequences for open tickets:
+
+- **`alwaysTop` now has a UI, and a shipped visual language for "pin".** A `role="menuitemcheckbox"`
+  row at the top of the island ⋯ dropdown — thumbtack glyph, label **"Always on Top"**, accent
+  check on the right, a `--il-muted` **"Floating only"** sub-label while snapped — plus a matching
+  tray checkbox. Deliberately does *not* close the dropdown on click. **Ticket 10** should reuse
+  this glyph and label for the detached window's pin rather than invent one.
+- **Two always-on-top prefs now coexist with different semantics.** Amended ADR-0006: `alwaysTop`
+  is inert while snapped, because `applyIslandWindowLevel()` forces `'screen-saver'` so the island
+  can paint over the menu bar. Ticket 02 settled the detached window on
+  `setAlwaysOnTop(true, 'normal', 1)` — deliberately *below* the island. **Open for ticket 10**:
+  is a separate `tasksAlwaysOnTop` still right, or does the detached window read `alwaysTop`?
+  They are not interchangeable.
+- **`CompleteEvent` gained `reason: 'elapsed' | 'skipped'`** (`electron/timer.ts`), with
+  `skip()` passing `'skipped'`. New sub-question folded into **ticket 04**.
+- **`MENU_ALLOWANCE` was retuned 200 → 264** for the new row, and `MenuDropdown` now takes
+  `snapped` and `accent` props. **Ticket 10** edits this same component to add pop-out/pop-in and
+  must retune the constant again. Also new and useful to it: `onPlacementChange()` in
+  `electron/windows.ts`, a main-process placement subscription that fires on every
+  `broadcastPlacement()` — i.e. once per `dragMove` — so callers watching one field must dedupe.
 
 ### Load-bearing facts found while charting
 
@@ -75,11 +110,11 @@ decisions the map still has to make.
   relative to *the notch*; clusters are horizontal flex rows (`src/island/placement.ts:21`).
   There is no vertical stacking primitive.
 - **`SessionDots` has five call sites**, only one of which goes through the cluster
-  system: `Island.tsx:293` (clusters), plus `930` (L3Card), `1083` (CircleCard), `1315`
-  (Peek), `1525` (ExpandedBody). Peek renders it unconditionally, ignoring `dots: 'off'`.
+  system: `Island.tsx:301` (clusters), plus `938` (L3Card), `1091` (CircleCard), `1323`
+  (Peek), `1533` (ExpandedBody). Peek renders it unconditionally, ignoring `dots: 'off'`.
 - **Tasks are never auto-completed at estimate** — a deliberate decision with a comment at
   `electron/taskStore.ts:91-96` ("keeps counting, e.g. 8/7"). Pause-at-estimate overturns it.
-- **`advance()` goes focus→break→focus** (`electron/timer.ts:171`), and `autoStart` is read
+- **`advance()` goes focus→break→focus** (`electron/timer.ts:174`), and `autoStart` is read
   in exactly two lines there. `recordFocusComplete` fires at `complete()`, i.e. at the
   start of the 2600 ms flourish — so `skip()` also counts as a completed session.
 - **`activeTaskId` is not cleared on the done path** (`electron/taskStore.ts:129`), though
@@ -95,10 +130,10 @@ decisions the map still has to make.
   `StepButton`) is a local function in `src/settings/sections.tsx`; the segmented control
   is a repeated inline idiom, not a component.
 - **Adding a plain pref is cheap**: a field on `Prefs` + a value in `DEFAULT_PREFS`.
-  `load()` merges over defaults (`electron/store.ts:154`); no migration helper needed
+  `load()` merges over defaults (`electron/store.ts:155`); no migration helper needed
   unless a key changes shape.
 - **Settings General tab is a 2-column grid**; "Behavior" is the entire right column
-  (`src/settings/sections.tsx:845`). "Below Behavior" means a sibling block in that column.
+  (`src/settings/sections.tsx:850`). "Below Behavior" means a sibling block in that column.
 - **Primary colour**: `--sp-teal` in Settings (overwritten with the resolved accent in
   `paletteVars`), `--il-teal` / `--il-track` in the island — but the island's *live* accent
   is a JS value, `view.accent`, not a CSS var.
@@ -166,7 +201,7 @@ of that ticket.
 
 ## Out of scope
 
-- **`sessionIndex` never wrapping modulo `cSessions`** (`electron/timer.ts:176`) — after
+- **`sessionIndex` never wrapping modulo `cSessions`** (`electron/timer.ts:179`) — after
   round one every global dot reads *done* and none reads *current* until reset. A real
   bug, but it is the global dot cycle, not the task bar. Separate effort.
 - **Docs rot**: ADR-0002 claims `electron-store` when the store is hand-rolled JSON; two

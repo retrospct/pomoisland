@@ -11,7 +11,7 @@ What do we call task-side concepts, and does the `Task` model change shape?
 Three sub-decisions:
 
 1. **`estimatePomodoros` vs "planned sessions".** The brief and the intended UI copy both
-   say *planned sessions*; the model says `estimatePomodoros` (`src/shared/types.ts:212`)
+   say *planned sessions*; the model says `estimatePomodoros` (`src/shared/types.ts:220`)
    and `CONTEXT.md` says to prefer "session" over "pomodoro" in code, reserving "pomodoro"
    for user copy. So the field name violates the repo's own convention. Rename to
    `plannedSessions` (touching `taskStore.ts`, `TaskList.tsx`, `TaskMutation`, and existing
@@ -55,8 +55,8 @@ beside a `done: boolean` on the same object is a live misread hazard in `taskSto
 done-path logic. Once `completed` needs the suffix, `estimate` takes it for symmetry.
 
 **Blast radius — 12 references in 4 files**, all mechanical:
-`src/shared/types.ts:223,225,247` · `src/island/TaskList.tsx:147,238,475,476,481,482` ·
-`src/island/Island.tsx:1332,1333,1562,1563` · `electron/taskStore.ts:103,119,120`.
+`src/shared/types.ts:231,233,255` · `src/island/TaskList.tsx:147,238,475,476,481,482` ·
+`src/island/Island.tsx:1340,1341,1570,1571` · `electron/taskStore.ts:103,119,120`.
 
 ### 2. `tasks.json` back-compat — tolerant read, no versioning
 
@@ -75,7 +75,7 @@ completedSessions: t.completedSessions ?? t.completedPomodoros ?? 0
 Old keys are read forever but never written; the new shape lands on the next persist, so
 it is self-healing. **No `version` field on `TasksState`** — versioning machinery earns its
 place when a *shape* changes, not when a key is renamed, and this is the app's first task
-migration. The precedent is `store.ts:154`, which merges prefs over defaults with no version
+migration. The precedent is `store.ts:155`, which merges prefs over defaults with no version
 (ADR-0004).
 
 ### 3. The two counters — qualify the task side, name the grouping
@@ -86,7 +86,7 @@ task side would be a lie in the model. Instead:
 - **Task side** is qualified in prose as **estimated sessions**. The row copy is unchanged:
   `TaskList.tsx:506` already renders `"3/5 sessions"` with no adjective, and it reads fine.
 - **Global side** keeps plain "sessions". Existing settings copy `'Sessions until long
-  break'` (`sections.tsx:700`, `cSessions`, range 2–8) stands.
+  break'` (`sections.tsx:705`, `cSessions`, range 2–8) stands.
 - **The gap was never the counters — it was the grouping.** The run of `cSessions` focus
   sessions ending in a long break has never had a name. It is now a **cycle**, which also
   makes "Sessions until long break" legible as "sessions in a cycle".

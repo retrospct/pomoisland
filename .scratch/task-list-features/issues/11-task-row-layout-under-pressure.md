@@ -7,7 +7,7 @@ Blocked by: 06, 09
 ## Question
 
 The task row is about to carry six things in a 320px-wide docked panel
-(`Island.tsx:1438` derives the width; `TaskList.tsx:19` defaults to 320): drag handle,
+(`Island.tsx:1446` derives the width; `TaskList.tsx:19` defaults to 320): drag handle,
 checkbox, title, pencil, session stepper (`C/E` plus +/−), delete. Today it carries four,
 and two of those are hover-revealed.
 

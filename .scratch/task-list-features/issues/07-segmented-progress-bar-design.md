@@ -28,7 +28,7 @@ decides *where* it lives; this decides what it looks like and how it behaves at 
    *live* accent `view.accent` (a JS value that shifts for focus/break/final-minute,
    `src/shared/accent.ts:143`), not the static `--il-teal`. Does the task bar track the
    live accent shift, or hold a stable colour so it reads differently from timer progress?
-   Track colour: `--il-track`, per the peek bar at `Island.tsx:1338`.
+   Track colour: `--il-track`, per the peek bar at `Island.tsx:1346`.
 
 5. **Relationship to the dots directly above it.** They are different counters
    (`sessionIndex`/`cSessions` vs task completed/estimate) rendering as similar dotted runs a

@@ -10,8 +10,8 @@ A new **Tasks** section in the General tab, below Behavior, with exactly two tog
 (settled): task progress bar on/off (default on) and pause-at-estimate on/off (default on).
 Blocked because the toggle copy has to describe what tickets 03 and 04 actually decided.
 
-1. **Placement in the grid.** `GeneralTab` is a 2-column grid (`sections.tsx:708`); Behavior
-   is the *entire* right column (`sections.tsx:845`). "Below Behavior" means a sibling block
+1. **Placement in the grid.** `GeneralTab` is a 2-column grid (`sections.tsx:713`); Behavior
+   is the *entire* right column (`sections.tsx:850`). "Below Behavior" means a sibling block
    inside that right-hand `<div>`. Does adding it unbalance the columns badly enough to
    warrant moving something?
 

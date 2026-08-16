@@ -23,14 +23,14 @@ Specifically:
 3. **Always-on-top levels.** `setAlwaysOnTop(flag, level)` levels available on macOS, and
    which one a task-list window should use so it floats over normal apps *without* fighting
    the island's own level (the island deliberately floats above the menu bar, ADR-0006, via
-   `applyIslandWindowLevel()` in `electron/windows.ts:230`). Does a `'floating'`-level task
+   `applyIslandWindowLevel()` in `electron/windows.ts:267`). Does a `'floating'`-level task
    window sit above or below the island, and can that be controlled?
 
 4. **Geometry persistence.** Standard pattern for save/restore of bounds, and the failure
    modes worth guarding: window restored offscreen after a display change, restored larger
    than the current display, restore vs. `minWidth`/`minHeight` conflicts.
 
-5. **Minimum viable window config** to match the Settings precedent (`electron/windows.ts:435`)
+5. **Minimum viable window config** to match the Settings precedent (`electron/windows.ts:472`)
    while being frameless with a custom header.
 
 Capture findings on a throwaway `research/electron-frameless-resize` branch or as a note

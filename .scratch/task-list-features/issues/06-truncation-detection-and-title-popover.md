@@ -17,7 +17,7 @@ Show the full task title on hover **only when it is actually truncated**. Hand-r
 2. **Positioning, and the clipping problem.** The docked panel lives inside the island
    `BrowserWindow`, which auto-sizes to content via `ResizeObserver` → `island:resize`
    (`IslandApp.tsx:126`). A popover that overflows gets **clipped by the window**, which is
-   exactly why `Menu.tsx`'s dropdown needs an invisible spacer at `Island.tsx:121` to
+   exactly why `Menu.tsx`'s dropdown needs an invisible spacer at `Island.tsx:129` to
    reserve room. Does the title popover need the same trick, does it render inside the
    panel bounds only, or does it force the window to grow?
 
@@ -28,7 +28,7 @@ Show the full task title on hover **only when it is actually truncated**. Hand-r
    interaction with the row's existing `hovered` state (`TaskList.tsx:342`) which drives
    both the row background and the +/− reveal.
 
-5. **Reuse or build?** `Menu.tsx:174` has a hand-rolled popover style block; `SessionDots`
+5. **Reuse or build?** `Menu.tsx:241` has a hand-rolled popover style block; `SessionDots`
    has a pure-CSS two-layer hover reveal built specifically to avoid React hover state and
    container resize (the MO-50 flicker fix). Either could be the base.
 
