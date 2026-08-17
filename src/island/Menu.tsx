@@ -1,3 +1,5 @@
+import { ThumbtackGlyph } from './Glyphs'
+
 // The ⋯ menu from the expanded panel.
 // Menu         — trigger button only (rendered inline in the controls row).
 // MenuDropdown — item list, rendered in normal flow by Expanded so the window
@@ -95,16 +97,9 @@ export function MenuDropdown({
         aria-checked={alwaysTop}
         style={menuItem}
       >
-        {/* Thumbtack — "pin this on top". */}
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flex: '0 0 auto' }}>
-          <path
-            d="M5.8 1.5h3.4l-.5 3.3 2.3 2.3H4l2.3-2.3z"
-            stroke="var(--il-icon)"
-            strokeWidth="1.3"
-            strokeLinejoin="round"
-          />
-          <path d="M7.5 7.1v6.2" stroke="var(--il-icon)" strokeWidth="1.3" strokeLinecap="round" />
-        </svg>
+        {/* Thumbtack — "pin this on top". Shared with the detached task
+            window's pin so the two can't drift apart; see src/island/Glyphs.tsx. */}
+        <ThumbtackGlyph />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block' }}>Always on Top</span>
           {snapped && (

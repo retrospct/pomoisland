@@ -20,6 +20,7 @@ import {
 import { activeTaskTitle, applyMutation, getTasks, onTasksChange, recordFocusComplete } from './taskStore'
 import {
   applyAlwaysOnTop,
+  applyTasksWindowLevel,
   broadcastToAll,
   createSettingsWindow,
   dragEnd,
@@ -48,6 +49,10 @@ export function registerIpc(timer: Timer): void {
     broadcastToAll(IPC.prefsChanged, p)
     timer.syncPrefs()
     applyAlwaysOnTop(p.alwaysTop)
+    // The detached window's pin is a separate bit from the island's alwaysTop —
+    // see Prefs.tasksAlwaysOnTop. Self-deduping, so the debounced geometry
+    // writes flowing through here don't re-assert a window level mid-drag.
+    applyTasksWindowLevel()
   })
 
   // Tasks (MO-6 / MO-7)

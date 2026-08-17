@@ -105,3 +105,29 @@ export function ResetLarge() {
     </svg>
   )
 }
+
+/**
+ * Thumbtack — the app's "pin this on top" mark. Shipped in the ⋯ dropdown's
+ * "Always on Top" row (PR #47) and reused verbatim by the detached task window's
+ * pin (ticket 24); the tray uses the same *label* with a native checkbox.
+ *
+ * Lifted here from Menu.tsx so there is one path rather than one per call site:
+ * the pin is a single idea, and a second hand-drawn thumbtack would become a
+ * second idea the moment either copy drifted.
+ */
+export function ThumbtackGlyph({
+  size = 15,
+  color = 'var(--il-icon)',
+}: {
+  size?: number
+  /** Stroke color. The menu row leaves this at the icon color; the detached
+   *  window's pin swaps it for the accent to signal "on". */
+  color?: string
+}) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 15 15" fill="none" aria-hidden style={{ flex: '0 0 auto' }}>
+      <path d="M5.8 1.5h3.4l-.5 3.3 2.3 2.3H4l2.3-2.3z" stroke={color} strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M7.5 7.1v6.2" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  )
+}
