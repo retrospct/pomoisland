@@ -58,6 +58,8 @@ export const DEFAULT_PREFS: Prefs = {
   // Window behavior (not surfaced in SettingsPanel)
   alwaysTop: true,
   magnetic: true,
+  // The list starts docked inside the island; popping it out is opt-in.
+  tasksDetached: false,
   hoverRetractMs: 200,
   expandRetractMs: 800,
 }

@@ -20,6 +20,10 @@ interface DropdownProps {
   /** Accent color for the check glyph. */
   accent?: string
   onTasks: (e: React.MouseEvent) => void
+  /** Pop the task list out of the island, or back in — see `tasksDetached`. */
+  onPopTasks: (e: React.MouseEvent) => void
+  /** Prefs.tasksDetached — flips the row between "Pop out" and "Pop in". */
+  tasksDetached: boolean
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
@@ -67,6 +71,8 @@ export function MenuDropdown({
   snapped,
   accent,
   onTasks,
+  onPopTasks,
+  tasksDetached,
   onSettings,
   onCheckUpdates,
   onQuit,
@@ -166,6 +172,49 @@ export function MenuDropdown({
           />
         </svg>
         Tasks
+      </button>
+      {/* Where the list lives. Docked → "Pop out"; detached → "Pop in". Single
+          line by design: the popover's reserved height (MENU_ALLOWANCE in
+          Island.tsx) is computed per row, and a sub-label here would blow it. */}
+      <button className="island-menu-item" onClick={onPopTasks} style={menuItem}>
+        {tasksDetached ? (
+          /* Pop in — arrow travelling back into the frame. */
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M6 2.5H2.5v9h9V8"
+              stroke="var(--il-icon)"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M7 7h3.5v3.5M11 11 7 7"
+              stroke="var(--il-icon)"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : (
+          /* Pop out — arrow leaving the frame toward the top-right. */
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M6 2.5H2.5v9h9V8"
+              stroke="var(--il-icon)"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M8.5 2.5h3v3M11.5 2.5 7 7"
+              stroke="var(--il-icon)"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+        {tasksDetached ? 'Pop in' : 'Pop out'}
       </button>
       <button className="island-menu-item" onClick={onSettings} style={menuItem}>
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none">

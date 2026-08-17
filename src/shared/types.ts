@@ -172,6 +172,17 @@ export interface Prefs {
   // ---- Window behavior (not in SettingsPanel UI; read by main) ----
   alwaysTop: boolean
   magnetic: boolean
+  /**
+   * Where the task list lives: `false` = **docked** (the inline panel below the
+   * timer in the island), `true` = **detached** (its own window). Detach is
+   * exclusive — while detached the island never renders the inline panel and
+   * every route that used to open it focuses the window instead.
+   *
+   * Persisted with no Settings UI, following the `alwaysTop` precedent (a pref
+   * the user toggles from the island's ⋯ menu, not from Settings). Restored on
+   * launch: a `true` value re-opens the window, so the bit is never dangling.
+   */
+  tasksDetached: boolean
   /** Delay (ms) before collapsing from peek after cursor leaves. */
   hoverRetractMs: number
   /** Delay (ms) before collapsing from expanded after cursor leaves. */
@@ -288,6 +299,8 @@ export interface PomApi {
   windows: {
     openSettings(): void
     settingsControl(action: SettingsControl): void
+    /** Pop the task list out / back in, or focus the detached window. */
+    tasksWindow(action: TasksWindowAction): void
   }
   app: {
     /** Quit the whole application (matches the tray's "Quit PomoIsland"). */
@@ -318,6 +331,22 @@ export interface PomApi {
 
 export type SettingsControl = 'close' | 'minimize' | 'zoom'
 
+/**
+ * Verbs on the detached task window (ticket 23).
+ *
+ * - `popOut` — move the list out of the island into its own window (sets
+ *   `Prefs.tasksDetached`). A **move**, never a clone.
+ * - `popIn` — move it back into the island (clears the pref, closes the window).
+ * - `focus` — show and focus the existing window. This is what the island's ⋯ →
+ *   Tasks item and its clickable task label do while detached, since the inline
+ *   panel is unreachable then.
+ *
+ * `popIn` is also what the detached header's close button means: closing the
+ * window pops the list back in, so `tasksDetached` is one bit that can never
+ * point at a window that isn't there.
+ */
+export type TasksWindowAction = 'popOut' | 'popIn' | 'focus'
+
 /** Auto-update state surfaced to the renderer + native menus (MO-57). */
 export interface UpdateStatus {
   /** A newer signed build has downloaded and is ready to install on restart. */
@@ -344,6 +373,7 @@ export const IPC = {
   islandDragEnd: 'island:dragEnd',
   openSettings: 'windows:openSettings',
   settingsControl: 'windows:settingsControl',
+  tasksWindow: 'windows:tasksWindow',
   appQuit: 'app:quit',
   checkUpdates: 'updates:check',
   updateGet: 'updates:get',

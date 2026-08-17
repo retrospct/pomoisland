@@ -83,6 +83,18 @@ export function IslandApp() {
     prefsRef.current = prefs
   }, [prefs])
 
+  // --- Detach is exclusive (ticket 23) ---
+  // While the list has its own window the island must never render the inline
+  // panel, so the 'tasks' presentation is unreachable and every route that used
+  // to open it focuses the window instead. Popping out mid-session leaves
+  // `tasksOpen` stale; clearing it here means the island returns to the plain
+  // expanded card and the ResizeObserver shrinks the window to match, exactly
+  // as it does when the panel is closed by hand.
+  const tasksDetached = prefs?.tasksDetached ?? false
+  useEffect(() => {
+    if (tasksDetached) setTasksOpen(false)
+  }, [tasksDetached])
+
   // --- Completion alarm on transition into `complete` ---
   // Only a finished FOCUS block (session end) rings the alarm; a finished break is
   // signalled by the start cue when focus resumes (below), not by the alarm (MO-58).
@@ -208,7 +220,7 @@ export function IslandApp() {
 
   // Determine presentation
   let present: Present = 'collapsed'
-  if (tasksOpen && expanded) present = 'tasks'
+  if (tasksOpen && expanded && !tasksDetached) present = 'tasks'
   else if (expanded) present = 'expanded'
   else if (peek && !placement.dragging) present = 'peek'
   // Kept in sync with `present` on every render so the resize-report closure
@@ -228,14 +240,40 @@ export function IslandApp() {
     }
   }
 
+  /**
+   * The single route to the task list. Both the ⋯ menu's Tasks item and the
+   * clickable task label in the expanded card come through here, so exclusivity
+   * is enforced once: detached, this focuses the window instead of opening a
+   * second copy of the list inside the island.
+   */
   const openTasks = (e: React.MouseEvent) => {
     e.stopPropagation()
     setMenuOpen(false)
+    if (tasksDetached) {
+      window.api.windows.tasksWindow('focus')
+      return
+    }
     setExpanded(true)
     setTasksOpen(true)
   }
 
   const closeTasks = () => setTasksOpen(false)
+
+  const popOutTasks = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setMenuOpen(false)
+    // Optimistically drop the inline panel so the island doesn't hold a second
+    // copy of the list on screen while the pref round-trips through main. The
+    // authoritative flip arrives via prefs.onChange.
+    setTasksOpen(false)
+    window.api.windows.tasksWindow('popOut')
+  }
+
+  const popInTasks = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setMenuOpen(false)
+    window.api.windows.tasksWindow('popIn')
+  }
 
   // --- Peek-trigger hover region (MO-45) ---
   // The wrapper window is much larger than the visible island (it reserves
@@ -316,6 +354,9 @@ export function IslandApp() {
           }}
           onOpenTasks={openTasks}
           onCloseTasks={closeTasks}
+          onPopOutTasks={popOutTasks}
+          onPopInTasks={popInTasks}
+          tasksDetached={tasksDetached}
           onSettings={(e) => {
             e.stopPropagation()
             setMenuOpen(false)

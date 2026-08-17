@@ -32,8 +32,22 @@ interface Handlers {
   alwaysTop: boolean
   /** Flips Prefs.alwaysTop. Deliberately leaves the dropdown open. */
   onToggleAlwaysTop: (e: React.MouseEvent) => void
+  /**
+   * Opens the docked task panel, or — while detached — focuses the task window.
+   * The routing lives in IslandApp; both the ⋯ menu's Tasks item and the
+   * clickable task label go through this one handler, so exclusivity can't be
+   * enforced at one route and forgotten at the other.
+   */
   onOpenTasks: (e: React.MouseEvent) => void
   onCloseTasks: () => void
+  /** Docked → detached. Drives the panel header's control and the ⋯ menu row.
+   *  The event is optional so the same handler serves the menu row (which needs
+   *  to stop propagation) and the header button (which already has). */
+  onPopOutTasks: (e?: React.MouseEvent) => void
+  /** Detached → docked, from the ⋯ menu (the window has its own control). */
+  onPopInTasks: (e?: React.MouseEvent) => void
+  /** Prefs.tasksDetached — while true the inline panel is unreachable. */
+  tasksDetached: boolean
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
   onInstallRestart: (e: React.MouseEvent) => void
@@ -74,9 +88,25 @@ function stop(e: React.MouseEvent) {
 // Worst case is snapped, where the "Always on Top" row grows a second
 // "Floating only" line: measured 226px of popover (vs 211px floating). The
 // popover starts 6px below the 42px trigger, which itself sits 20px above the
-// panel's bottom edge, so 226 + 6 - 20 = 212px must clear the panel. 264 keeps
-// roughly the same slack this constant carried before the row was added.
-const MENU_ALLOWANCE = 264
+// panel's bottom edge, so 226 + 6 - 20 = 212px must clear the panel. 264 kept
+// roughly the same slack this constant carried before that row was added.
+//
+// Ticket 23 adds a third state row (Pop out / Pop in), so this is retuned a
+// third time. Rather than re-eyeball it, the two recorded measurements are
+// decomposed against the actual style objects in Menu.tsx and the model checks
+// out exactly, which is what licenses extrapolating one more row:
+//
+//   chrome    = popover padding 6+6 + border 1+1                    =  14
+//   divider   = (height 1 + margin 5 top + 5 bottom) × 2            =  22
+//   menu item = padding 10+10 + 15px content (the icon, the tallest) =  35
+//   5 items   = 175  →  175 + 22 + 14 = 211  ✓ the measured floating height
+//   + the snapped "Floating only" sub-label (10.5px × 1.25 line-height
+//     = 13.125, + 2 marginTop, rounded) = 15  →  226  ✓ the measured snapped one
+//
+// Six items: 210 + 22 + 14 + 15 = 261px of popover snapped. Clearance needed is
+// 261 + 6 - 20 = 247. The 264 in place carried 264 - 212 = 52px of slack; the
+// same slack over 247 gives 299.
+const MENU_ALLOWANCE = 299
 
 export function Island(props: IslandProps) {
   let panel: React.ReactNode
@@ -1684,6 +1714,8 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
                 snapped={notch}
                 accent={view.accent}
                 onTasks={props.onOpenTasks}
+                onPopTasks={props.tasksDetached ? props.onPopInTasks : props.onPopOutTasks}
+                tasksDetached={props.tasksDetached}
                 onSettings={props.onSettings}
                 onCheckUpdates={props.onCheckUpdates}
                 onQuit={props.onQuit}
@@ -1723,6 +1755,7 @@ function ExpandedWithTasks(props: IslandProps) {
           tasks={props.tasks}
           accent={props.view.accent}
           width={expandedCardWidth(props.notch, props.hasNotch, props.notchWidth)}
+          onPopOut={props.onPopOutTasks}
           onClose={props.onCloseTasks}
         />
       )}
