@@ -15,7 +15,7 @@ answered, just by `/implement` sessions with the code in front of them rather th
 map session. `/to-spec` **must** carry them into the spec as implementation notes — see
 **Deferred to implementation** below.
 
-The map is done when those four are resolved. **01 and 04 are closed**; 03 and 05 remain.
+The map is done when those four are resolved. **01, 04 and 05 are closed**; only 03 remains.
 **No production code is written on this map** — the map produces decisions and a spec, not
 the feature.
 
@@ -186,6 +186,21 @@ Four consequences for open tickets:
   beep is held as a later dial. Also settles the notification copy branch, the tooltips, and
   three pref keys.
 
+- [05 — No-task mode and click-to-deselect](issues/05-no-task-mode-and-click-to-deselect.md)
+  — **The done path auto-advances** like `delete`/`clearCompleted`, guarded so ticking a
+  *non-active* task leaves `activeTaskId` alone; this closes the coupling ticket 04 §B2
+  declared, and ✓ owns no advance logic. **No-task is derived, never modelled** —
+  `activeTaskId === null` is the state; "no-task mode" names a situation, not a type.
+  Row click toggles on the **active partition only**; done rows keep un-done-and-activate,
+  with their two mutations collapsed into one. The four `displayTask` sites already render
+  the null case — **the ticket's five-view list was wrong** (L1, L3Card, CircleCard and the
+  snapped pill show no task text at all). Ticket 03's bar **hides entirely** with no active
+  task. `TimerState.task` stays a **mirror**; only its stale comment changes. Deselect gets a
+  native "Click to deselect" tooltip, **gated on ticket 06** removing the title span's
+  `title`. Selection stays **pointer-only** (Out of Scope, listbox refactor named as the
+  fix). Finishing a task mid-block **donates that block to the next task** — intended, and
+  spelled out so nobody "fixes" it.
+
 - [02 — RESEARCH: Electron frameless resizable window on macOS](issues/02-research-electron-frameless-resizable-macos.md)
   — AppKit owns resize on macOS (Electron's hit test is compiled out); the corner grip is a
   hand-drawn, `pointer-events: none` glyph. Pin with `setAlwaysOnTop(true, 'normal', 1)` so
@@ -200,8 +215,6 @@ Four consequences for open tickets:
   implementation issues; sharpens once the decision tickets land.
 - **Tray menu implications** of no-task mode and of a detached window (`electron/tray.ts`).
 - **Whether pop-out deserves a global shortcut** (`Shortcuts`, ADR-0007) — depends on 10.
-- **Empty-state copy**, and whether "no tasks at all" and "all tasks done" read
-  differently — depends on 05.
 
 ## Deferred to implementation
 

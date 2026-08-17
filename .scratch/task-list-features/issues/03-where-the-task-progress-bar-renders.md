@@ -3,6 +3,19 @@
 Type: grilling
 Status: open
 
+**Settled by ticket 05 (closed 2026-08-16):** with no active task the bar **hides entirely** —
+not an empty track. An empty track promises a thing that isn't there, and it would sit
+directly beneath the global session dots, which *are* still counting, implying the two are
+related when one is inert. This answers the second half of Q3's "what happens when `dots:
+'off'` but a task is active" only in the no-task direction; the `dots: 'off'` case is still
+open.
+
+**Correction to the table below:** `displayTask` renders in **four** places, not five —
+floating **L2** only (`Island.tsx:1176`, `:1255`), **Peek** (`:1337`) and **ExpandedBody**
+(`:1567`). L1, **L3Card**, **CircleCard** and the snapped collapsed pill carry no task text
+at all. The `SessionDots` call-site table is still accurate; the two lists are not the same
+list, which is itself part of this ticket's problem.
+
 ## Question
 
 The brief says the bar sits "below the 4 global session dots" and should appear in "any

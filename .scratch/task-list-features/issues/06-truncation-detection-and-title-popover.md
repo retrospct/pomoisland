@@ -3,6 +3,13 @@
 Type: prototype
 Status: deferred — decided during implementation, not on the map
 
+**Requirement from ticket 05 §7 (closed 2026-08-16):** this ticket must **remove**
+`title={task.title}` from the title span (`TaskList.tsx:433`), not merely add a popover
+alongside it. Ticket 05 puts a native `title="Click to deselect"` on the *active row*, and a
+nested `title` wins on hover — so leaving the span's attribute in place would make the row
+tooltip appear only when the pointer is off the text, which is worse than having none. Fold
+this into Q5's reuse-or-build answer.
+
 ## Question
 
 Show the full task title on hover **only when it is actually truncated**. Hand-rolled — no
