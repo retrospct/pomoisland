@@ -115,6 +115,57 @@ body.island-body {
   }
 }
 
+/* Task progress bar ⇄ exact-count cross-fade. Same two-layer grid trick as the
+   session dots above: one grid cell, opacity only, so the slot is size-stable
+   under the pointer. The bar's own slot is fixed-height, so unlike the dots this
+   holds even when the count layer is the taller child. */
+.il-task-bar-layer {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+.il-task-count-layer {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.il-task-bar:hover .il-task-bar-layer {
+  opacity: 0;
+}
+.il-task-bar:hover .il-task-count-layer {
+  opacity: 1;
+}
+
+/* At-estimate attention treatment (ticket 04 §B3): the bar breathes while the
+   task sits on its estimate and the timer is stopped. Opacity only — no
+   geometry — so it can never reflow the slot it shares with the resume
+   controls. */
+@keyframes islandTaskBarPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.il-task-bar-at-estimate {
+  animation: islandTaskBarPulse 1.6s ease-in-out infinite;
+}
+/* An animated opacity would outrank the hover rule above, leaving both layers
+   half-visible; stop the pulse while the count is being read. */
+.il-task-bar:hover .il-task-bar-at-estimate {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .il-task-bar-layer,
+  .il-task-count-layer {
+    transition: none;
+  }
+  .il-task-bar-at-estimate {
+    animation: none;
+  }
+}
+
 /* Active-task label in the expanded view. It opens the task list on click, so a
    hover cue (underline + slight brighten) signals it's interactive. */
 .il-task-open {

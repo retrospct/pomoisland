@@ -1,5 +1,5 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
-import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
+import { accentHex, hexToRgba, resolveAccent, resolveAccentColor } from '@shared/accent'
 import { fmtTime, frac as fracOf } from '@shared/format'
 import type { FloatingLayout, Prefs, TimerState, TimerStyle } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
@@ -11,6 +11,12 @@ export interface IslandView {
   accent: string
   accentBright: string
   accentSoft: string
+  /**
+   * The user's chosen accent, theme-adapted but NOT shifted by the current block
+   * (no break clay, no final-minute amber). Used by the task progress bar, which
+   * measures the task rather than this block — see TaskProgressBar.tsx note 4.
+   */
+  accentBase: string
   frac: number
   timeStr: string
   statusLabel: string
@@ -136,6 +142,7 @@ export function deriveIsland(
     accent,
     accentBright,
     accentSoft,
+    accentBase: resolveAccentColor(accentHex(prefs.accent), resolvedTheme),
     frac,
     timeStr,
     statusLabel,

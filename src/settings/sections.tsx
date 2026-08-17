@@ -688,7 +688,13 @@ const BEHAVIORS: [keyof Prefs, string, string][] = [
 
 // Tasks, not Behavior: these read the active task. Off for pause-at-estimate is
 // also the "respect auto-start" branch, which is why there is no third toggle.
+// (`creditSkipped` stays in Behavior: it changes what counts as a session at all.)
 const TASK_PREFS: [keyof Prefs, string, string][] = [
+  [
+    'taskProgress',
+    'Task progress bar',
+    'Show task progress as a bar instead of a count. Hover it for the exact number.',
+  ],
   [
     'pauseAtEstimate',
     'Pause at estimate',
