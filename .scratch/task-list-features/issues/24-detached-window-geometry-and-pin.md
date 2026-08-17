@@ -25,7 +25,13 @@ answered the hard Electron facts; follow them rather than re-deriving.
       order**, so a window can never be stranded off-screen after a display change or resolution
       change
 - [ ] The window can be pinned above ordinary applications, at a normal window level with relative
-      level 1, so it sits **below** the island in all three of the island's levels
+      level 1, so it sits **below** the island in the island's three *elevated* levels.
+      **Corrected 2026-08-17 during implementation:** the island has **four** window-level
+      states, not three — `screen-saver`, `screen-saver`+1, `floating`, and plain not-on-top
+      (floating with `alwaysTop` off). In that fourth state a pinned list sits *above* the
+      island, which is correct: they are two independent bits and both are honoured. This
+      ticket and the map both said "three"; the research note it came from counted only the
+      elevated cases.
 - [ ] The pin reuses the shipped always-on-top idiom — the same glyph and label the island's ⋯
       menu and the tray already use. Do not invent a second pin affordance
 - [ ] The pin reads clearly as on versus off, given the app has no icon-toggle precedent

@@ -262,7 +262,9 @@ Four consequences for open tickets:
 - [02 — RESEARCH: Electron frameless resizable window on macOS](issues/02-research-electron-frameless-resizable-macos.md)
   — AppKit owns resize on macOS (Electron's hit test is compiled out); the corner grip is a
   hand-drawn, `pointer-events: none` glyph. Pin with `setAlwaysOnTop(true, 'normal', 1)` so
-  the window sits above ordinary apps but below the island in all three of its levels; never
+  the window sits above ordinary apps but below the island in its three *elevated* levels
+  (the island has a fourth, plain not-on-top state, where a pinned list correctly sits above
+  it — corrected during ticket 24); never
   `parent: islandWin`. Persist `getNormalBounds()` debounced, restore with
   validate → intersect-a-display → clamp size → clamp origin. `transparent` must stay
   `false`. Full note: [research/electron-frameless-resize.md](research/electron-frameless-resize.md)
