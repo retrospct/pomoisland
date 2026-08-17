@@ -183,9 +183,15 @@ export function IslandApp() {
   // When the island window loses OS focus (user clicked elsewhere), collapse it.
   // Guard against firing during a drag — the mouse leaving the window doesn't
   // lose focus, but just in case.
+  // `autoRetract` off keeps the island at its current size when focus moves to
+  // another app, which is the case the pref most obviously exists for: watching the
+  // clock while working somewhere else. Read through the ref, not the closure — this
+  // listener is registered once, and binding it to the render-time value would
+  // freeze whichever setting was live at mount.
   useEffect(() => {
     const onBlur = () => {
       if (draggingRef.current) return
+      if (prefsRef.current?.autoRetract === false) return
       retract()
     }
     window.addEventListener('blur', onBlur)
@@ -309,6 +315,10 @@ export function IslandApp() {
     // expanded panel outside any hover-target, so a naive mouseout there would
     // schedule a retract and shrink the island out from under the open menu.
     if (menuOpen) return
+    // The pointer leaving is the other half of automatic collapse. Suppressed
+    // entirely rather than given a very long delay: a delay that eventually fires
+    // is a different feature, and this one promises the island stays put.
+    if (prefs?.autoRetract === false) return
     const target = (e.target as HTMLElement).closest<HTMLElement>('[data-hover-target="1"]')
     if (!target) return
     const to = e.relatedTarget as HTMLElement | null
