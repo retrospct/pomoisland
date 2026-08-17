@@ -137,13 +137,60 @@ function testElapsedBreak(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Case 5: the focus-complete hook carries the reason too
+// ---------------------------------------------------------------------------
+// Session credit hangs off onFocusComplete, not onComplete — deliberately, so it
+// lands before notifications and bring-to-front rather than after them. That
+// channel therefore needs the reason of its own: without it the credit path
+// cannot tell an elapsed block from a skipped one, and a skip counts as work
+// done. Breaks must still never reach this hook at all.
+function testFocusCompleteReason(): void {
+  console.log('\nCase 5: onFocusComplete carries the reason')
+
+  const elapsed = new Timer(() => makePrefs())
+  const elapsedReasons: string[] = []
+  elapsed.onFocusComplete((e) => elapsedReasons.push(e.reason))
+  elapsed.action({ type: 'playPause' })
+  runToCompletion(elapsed)
+  assert(
+    elapsedReasons.length === 1 && elapsedReasons[0] === 'elapsed',
+    `a focus block that ran out reports 'elapsed'; got ${JSON.stringify(elapsedReasons)}`,
+  )
+
+  const skipped = new Timer(() => makePrefs())
+  const skippedReasons: string[] = []
+  skipped.onFocusComplete((e) => skippedReasons.push(e.reason))
+  skipped.action({ type: 'playPause' })
+  skipped.action({ type: 'skip' })
+  assert(
+    skippedReasons.length === 1 && skippedReasons[0] === 'skipped',
+    `a focus block ended with Next reports 'skipped'; got ${JSON.stringify(skippedReasons)}`,
+  )
+
+  // A break ending is not a session either way, so it must not reach the hook.
+  const breaking = new Timer(() => makePrefs({ cShort: 1, autoStart: true }))
+  const breakReasons: string[] = []
+  breaking.action({ type: 'playPause' })
+  runToCompletion(breaking) // focus completes, before the hook is registered
+  breaking.action({ type: 'playPause' }) // 'complete' → advance() into the break
+  breaking.onFocusComplete((e) => breakReasons.push(e.reason))
+  assert(breaking.getState().mode === 'break', 'the timer is in a break block')
+  breaking.action({ type: 'skip' })
+  assert(
+    breakReasons.length === 0,
+    `skipping a break never fires the focus-complete hook; got ${JSON.stringify(breakReasons)}`,
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Run all cases
 // ---------------------------------------------------------------------------
-console.log('\nCompletion-reason check — 4 cases\n' + '-'.repeat(50))
+console.log('\nCompletion-reason check — 5 cases\n' + '-'.repeat(50))
 testElapsedFocus()
 testSkippedFocus()
 testSkipFromIdle()
 testElapsedBreak()
+testFocusCompleteReason()
 
 if (process.exitCode === 1) {
   console.log('\n✗ One or more completion-reason assertions failed.\n')

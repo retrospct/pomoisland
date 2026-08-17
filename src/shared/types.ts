@@ -120,6 +120,13 @@ export interface Prefs {
   /** Auto-start the next focus/break block when one ends. */
   autoStart: boolean
   /**
+   * Count a focus block ended early with Next as a completed session. Off by
+   * default: a session is one focus block, and a block you cut short is not one.
+   * Moves both counters together — the active task's completed sessions and the
+   * daily total (and with it the daily-goal reveal and the milestone rings).
+   */
+  creditSkipped: boolean
+  /**
    * Raise the island when a block runs out (focus AND break). Raise only: the
    * island is a non-activating NSPanel (see createIslandWindow), so this shows it
    * if hidden and lifts it in the z-order without ever taking keyboard focus.

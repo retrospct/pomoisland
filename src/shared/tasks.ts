@@ -104,13 +104,39 @@ export function activeTaskTitle(state: TasksState): string {
   return state.tasks.find((t) => t.id === state.activeTaskId)?.title ?? ''
 }
 
+/** Why a focus block ended, and whether the user has asked for skips to count. */
+export interface FocusCompleteOptions {
+  /** 'elapsed' = the clock ran out; 'skipped' = the user pressed Next. */
+  reason: 'elapsed' | 'skipped'
+  /** `Prefs.creditSkipped`, passed in rather than read: this module stays pure. */
+  creditSkipped?: boolean
+}
+
 /**
  * Called when a focus block completes — bumps the active task's session count
  * and the daily total, resetting the counter when the date has rolled over.
  * The task is NOT auto-completed when it reaches its estimate; it just keeps
  * counting (e.g. 8/7). Completion is manual (the checkbox) only.
+ *
+ * A **skipped** block credits nothing. A session is one focus block
+ * (CONTEXT.md) and a block cut short with Next is not one; crediting it let four
+ * taps of a global shortcut finish a four-session task and earn a milestone ring
+ * for work nobody did. `creditSkipped` restores the old behaviour for people who
+ * used Next as a "done early" button.
+ *
+ * Both counters always get the same answer. Splitting them — crediting the task
+ * but not the day, or the reverse — would let a task and the day disagree about
+ * the same minute.
+ *
+ * The default is deliberately the strict one, matching `complete()`'s own
+ * `reason = 'elapsed'` default in electron/timer.ts.
  */
-export function recordFocusComplete(state: TasksState, today: string): TasksState {
+export function recordFocusComplete(
+  state: TasksState,
+  today: string,
+  opts: FocusCompleteOptions = { reason: 'elapsed' },
+): TasksState {
+  if (opts.reason === 'skipped' && !opts.creditSkipped) return state
   const completedToday = state.completedDate === today ? state.completedToday + 1 : 1
   const tasks = state.tasks.map((t) =>
     t.id === state.activeTaskId ? { ...t, completedSessions: t.completedSessions + 1 } : t,

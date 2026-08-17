@@ -61,8 +61,9 @@ export function registerIpc(timer: Timer): void {
   // Seed the timer with the persisted active task on startup.
   timer.action({ type: 'setTask', task: activeTaskTitle() })
 
-  // When a focus block completes, bump both counters.
-  timer.onFocusComplete(recordFocusComplete)
+  // When a focus block completes, bump both counters — unless it was skipped,
+  // which credits nothing unless the user has turned that back on.
+  timer.onFocusComplete((e) => recordFocusComplete(e.reason))
 
   // Island window
   ipcMain.on(IPC.islandResize, (_e, size: IslandResizeSize) => resizeIsland(size))

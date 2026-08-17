@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import * as tasks from '../src/shared/tasks'
+import { getPrefs } from './store'
 import type { TaskMutation, TasksState } from '../src/shared/types'
 
 type Listener = (s: TasksState) => void
@@ -74,9 +75,19 @@ export function activeTaskTitle(): string {
   return tasks.activeTaskTitle(getTasks())
 }
 
-/** Called when a focus block completes — credits the active task and the day. */
-export function recordFocusComplete(): void {
-  commit(tasks.recordFocusComplete(getTasks(), todayString()))
+/**
+ * Called when a focus block completes — credits the active task and the day,
+ * unless the block was skipped and the user hasn't asked for skips to count.
+ * The reason comes from the timer; the pref is read here so the reducer stays
+ * pure.
+ */
+export function recordFocusComplete(reason: 'elapsed' | 'skipped'): void {
+  commit(
+    tasks.recordFocusComplete(getTasks(), todayString(), {
+      reason,
+      creditSkipped: getPrefs().creditSkipped,
+    }),
+  )
 }
 
 export function applyMutation(m: TaskMutation): void {
