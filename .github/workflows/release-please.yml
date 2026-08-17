@@ -2,11 +2,23 @@ name: Release Please
 on:
   push: { branches: [main] }
   workflow_dispatch:
+    inputs:
+      tag:
+        description: >-
+          Build and publish an EXISTING release tag (e.g. v0.4.0), skipping
+          release-please entirely. Use this to recover from a transient
+          release-please failure — re-running release-please itself is what
+          creates a duplicate draft. Leave empty for a normal run.
+        required: false
+        default: ''
 permissions:
   contents: write
   pull-requests: write
 jobs:
   release-please:
+    # Skipped on a recovery run: the release already exists, and asking
+    # release-please to look at it again is the thing that duplicates it.
+    if: ${{ inputs.tag == '' }}
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -20,28 +32,87 @@ jobs:
 
   publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    # `!cancelled()` (not `always()`) so the job still runs when release-please
+    # was *skipped* by a recovery dispatch, but a genuine cancellation still
+    # propagates. A release-please *failure* leaves release_created empty, so
+    # with no `tag` input this correctly evaluates false.
+    if: ${{ !cancelled() && (needs.release-please.outputs.release_created == 'true' || inputs.tag != '') }}
     runs-on: macos-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ inputs.tag != '' && inputs.tag || needs.release-please.outputs.tag_name }}
     steps:
-      # Check out by commit SHA, not tag_name: release-please's release is a
-      # draft (see release-please-config.json), and GitHub doesn't materialize
-      # the underlying git tag ref for a draft release until it's published —
-      # `ref: tag_name` has nothing to fetch until then. The commit itself
-      # exists on `main` immediately, so SHA checkout isn't affected.
+      # Everything downstream addresses the release by ID, never by tag. Tags are
+      # ambiguous: nothing stops two releases carrying the same tag_name, and when
+      # that happened on v0.4.0 `gh release edit <tag>` and electron-builder each
+      # resolved it to a *different* release — one got un-drafted empty, the other
+      # got the artifacts and stayed a draft. Refuse to proceed on ambiguity.
+      - name: Resolve the release (and refuse a duplicated tag)
+        id: resolve
+        run: |
+          set -euo pipefail
+          # TAG is dispatch-controlled on a recovery run; pin its shape before it
+          # reaches a jq program, a URL, or an API path.
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.]+)?$'; then
+            echo "::error::Refusing to operate on an unexpected tag name: '${TAG}'"
+            exit 1
+          fi
+
+          # List /releases rather than /releases/tags/<tag>: the release is still a
+          # draft here, and the by-tag endpoint only ever returns published releases
+          # (true even with force-tag-creation, which gives the tag a ref but leaves
+          # the release itself a draft). Listing is also what makes the count check
+          # below possible at all. Filter with --arg, so the tag stays data.
+          matches=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" --jq '.[]' \
+            | jq -s --arg tag "$TAG" '[.[] | select(.tag_name == $tag)]')
+          count=$(jq 'length' <<<"$matches")
+
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected exactly 1 GitHub release for ${TAG}, found ${count}."
+            jq -r '.[] | "  release \(.id)  draft=\(.draft)  assets=\(.assets|length)"' <<<"$matches"
+            echo "Delete the stale release, then re-run this workflow with the 'tag'"
+            echo "input set to ${TAG} (which skips release-please)."
+            exit 1
+          fi
+
+          id=$(jq -r '.[0].id' <<<"$matches")
+
+          # Normal run: trust release-please's sha. Recovery run: prefer the tag ref,
+          # which a published release always has and which points at the right commit.
+          # Never trust target_commitish blindly — it can hold a *branch name*
+          # (v0.1.0 and v0.2.0 both store "main"), which would resolve to today's HEAD
+          # and quietly build the wrong source under an old version number.
+          sha="${RP_SHA}"
+          if [ -z "$sha" ]; then
+            sha=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG}" --jq .sha 2>/dev/null || true)
+          fi
+          if [ -z "$sha" ]; then
+            # No tag ref yet, so the release is still a draft — target_commitish is
+            # then the commit itself. Accept it only if it really is one.
+            candidate=$(jq -r '.[0].target_commitish' <<<"$matches")
+            if printf '%s' "$candidate" | grep -Eq '^[0-9a-f]{40}$'; then
+              sha="$candidate"
+            else
+              echo "::error::Cannot determine a commit for ${TAG}: no tag ref exists and target_commitish is '${candidate}', not a commit sha."
+              exit 1
+            fi
+          fi
+
+          echo "release_id=$id" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Resolved ${TAG} -> release $id at $sha"
+        env:
+          RP_SHA: ${{ needs.release-please.outputs.sha }}
+
+      # Check out by commit SHA rather than by tag. `force-tag-creation` means the tag
+      # ref does now exist this early, but the SHA is the thing we actually want to
+      # build and it stays correct on the recovery path too, where the resolve step
+      # derives it independently.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.release-please.outputs.sha }}
-
-      # Un-draft immediately: this is what actually materializes refs/tags/<tag>.
-      # Doing it here (not by hand) means the tag exists within seconds of the
-      # Release PR merging, before any later push could re-trigger release-please
-      # and hit the same "no tag to diff against" confusion this caused twice.
-      - name: Publish the draft release (materializes the tag)
-        run: gh release edit "${{ needs.release-please.outputs.tag_name }}" --draft=false
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ steps.resolve.outputs.sha }}
 
       - uses: pnpm/action-setup@v6
 
@@ -52,12 +123,29 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The artifact names, and the version the updater will advertise, come from
+      # package.json — not from the tag. If the checked-out tree disagrees with the
+      # release it is being uploaded into, everything downstream is subtly wrong.
+      - name: Assert the checkout matches the release version
+        run: |
+          set -euo pipefail
+          have=$(node -p "require('./package.json').version")
+          want="${TAG#v}"
+          [ "$have" = "$want" ] || {
+            echo "::error::package.json is $have but the release is $want (tag ${TAG})"
+            exit 1
+          }
+          echo "package.json $have matches ${TAG}"
+
       # notarytool wants a file path here, not base64 content — decode once per run.
       - name: Materialize App Store Connect API key
         run: |
           echo "${{ secrets.APPLE_API_KEY_P8_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
           echo "APPLE_API_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
 
+      # Uploads into the still-draft release. electron-builder finds it by listing
+      # releases and taking the first tag match, returning a draft regardless of
+      # `releaseType` — see the note in electron-builder.js.
       - run: pnpm run release:mac
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
@@ -66,3 +154,102 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron-builder refuses to upload to a release published more than two
+          # hours ago, and — as ever — skips silently and exits 0. Irrelevant while the
+          # release is a draft (it has no published_at), but a recovery run targets an
+          # already-published release, which is exactly when that rule would bite.
+          EP_GH_IGNORE_TIME: 'true'
+
+      # electron-builder FAILS OPEN: when it can't resolve a release to upload to,
+      # it logs `"skipped publishing"` at warn level and still exits 0. That is how
+      # v0.2.1, v0.2.2, v0.2.3 and v0.4.0 all "succeeded" with zero assets. A green
+      # build is not evidence that anything was uploaded — so check.
+      - name: Assert every artifact reached the release
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          have=$(gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets" --jq '[.[].name]')
+          missing=0
+          for f in "latest-mac.yml" \
+                   "PomoIsland-${version}-arm64-mac.zip" \
+                   "PomoIsland-${version}-arm64-mac.zip.blockmap" \
+                   "PomoIsland-${version}-arm64.dmg" \
+                   "PomoIsland-${version}-arm64.dmg.blockmap"; do
+            if jq -e --arg f "$f" 'index($f)' <<<"$have" >/dev/null; then
+              echo "  ok       $f"
+            else
+              echo "::error::$f was never uploaded to release ${RELEASE_ID}"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || { echo "Refusing to publish an incomplete release."; exit 1; }
+        env:
+          RELEASE_ID: ${{ steps.resolve.outputs.release_id }}
+
+      # Un-draft LAST, and by ID. Until this runs the release has no public download
+      # URLs and /releases/latest still points at the previous good version, so a
+      # failure anywhere above leaves an invisible draft rather than a published,
+      # asset-less release that 404s both the in-app updater and the site's Download
+      # button. The git tag is not created here — release-please already made it at the
+      # start, via `force-tag-creation` (README "Releasing" explains why that matters).
+      - name: Publish the release
+        run: |
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+            -F draft=false -f make_latest=true --jq .html_url
+        env:
+          RELEASE_ID: ${{ steps.resolve.outputs.release_id }}
+
+      # The only check that speaks for the user: fetch the exact URLs the shipped
+      # app and the website hit, unauthenticated, and fail if they aren't live.
+      - name: Verify the update feed is publicly reachable
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
+          fail=0
+
+          fetch() { # url outfile -> echoes the status code, retrying a few times
+            local code=000
+            for _ in 1 2 3 4 5; do
+              code=$(curl -sSL -o "$2" -w '%{http_code}' "$1" || echo 000)
+              [ "$code" = "200" ] && break
+              sleep 5
+            done
+            echo "$code"
+          }
+
+          for f in "latest-mac.yml" \
+                   "PomoIsland-${version}-arm64-mac.zip" \
+                   "PomoIsland-${version}-arm64.dmg"; do
+            code=$(fetch "${base}/${f}" "$RUNNER_TEMP/$(basename "$f")")
+            if [ "$code" = "200" ]; then
+              echo "  ok  200  $f"
+            else
+              echo "::error::${base}/${f} returned $code"
+              fail=1
+            fi
+          done
+
+          # A 200 only proves a file is there. Check it actually advertises this
+          # release, so a stale or truncated feed can't pass as healthy.
+          if [ "$fail" -eq 0 ]; then
+            if grep -q "^version: ${version}\$" "$RUNNER_TEMP/latest-mac.yml"; then
+              echo "  ok       latest-mac.yml advertises ${version}"
+            else
+              echo "::error::latest-mac.yml does not advertise version ${version}"
+              cat "$RUNNER_TEMP/latest-mac.yml"
+              fail=1
+            fi
+          fi
+
+          # electron-updater and site/main.js both read /releases/latest; make sure
+          # publishing actually moved it.
+          latest=$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)
+          if [ "$latest" = "${TAG}" ]; then
+            echo "  ok       /releases/latest is ${TAG}"
+          else
+            echo "::error::/releases/latest is ${latest}, expected ${TAG}"
+            fail=1
+          fi
+
+          [ "$fail" -eq 0 ] || { echo "Update feed is NOT healthy."; exit 1; }

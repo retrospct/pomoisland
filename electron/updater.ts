@@ -9,7 +9,7 @@
 // silently.
 //
 // macOS auto-update only works on a *signed* build, and only from the `.zip` artifact
-// — see electron-builder.yml (mac.target includes zip) and the `publish` block.
+// — see electron-builder.js (mac.target includes zip) and the `publish` block.
 
 import { app, BrowserWindow, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
@@ -59,6 +59,32 @@ function info(message: string, detail?: string): void {
   })
 }
 
+/**
+ * Turn an electron-updater failure into something worth showing a person.
+ *
+ * Its errors arrive as raw transport dumps — an `HttpError: 404` followed by the
+ * full response-header block and a stack through `main.js`. That is the right
+ * thing to log and the wrong thing to put in a dialog, so translate the two cases
+ * a user can actually act on and keep the raw text only as a last resort.
+ */
+function explainUpdateError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err)
+
+  // A release exists but its artifacts aren't reachable — the feed file is missing
+  // or the release is still private. Nothing the user can fix; say so plainly
+  // rather than implying their machine is at fault.
+  if (/Cannot find .*\.ya?ml|HttpError: 4\d\d/i.test(raw)) {
+    return "The latest release is missing its update files, so there's nothing to download yet. This is a problem on our end — please try again later."
+  }
+
+  if (/ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|ECONNREFUSED|ENETUNREACH|net::ERR_/i.test(raw)) {
+    return 'Could not reach GitHub to check for updates. Check your internet connection and try again.'
+  }
+
+  // Unrecognized: the first line carries the message, the rest is header noise.
+  return raw.split('\n')[0]
+}
+
 /** Register update listeners and kick off the silent startup + interval checks. */
 export function initAutoUpdater(): void {
   if (!app.isPackaged) return
@@ -67,15 +93,26 @@ export function initAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('update-not-available', () => {
-    if (interactive) info("You're up to date", `PomoIsland ${app.getVersion()} is the latest version.`)
+    if (interactive)
+      info("You're up to date", `PomoIsland ${app.getVersion()} is the latest version.`)
     interactive = false
     checking = false
   })
 
   autoUpdater.on('update-available', (i) => {
+    // The *check* is over here — what follows is a download, tracked separately by
+    // `updateReady`. Clearing `checking` matters because a download that neither
+    // completes nor errors (a stalled connection, a suspended machine) fires no
+    // further event: leaving the flag set would make every later check, background
+    // and manual alike, return early at the guards below — the menu item would just
+    // do nothing, forever, with no way back short of a relaunch.
+    checking = false
     // autoDownload is on, so the download starts automatically; just acknowledge.
     if (interactive) {
-      info('Downloading update…', `PomoIsland ${i?.version ?? ''} is downloading. You'll be prompted to restart when it's ready.`)
+      info(
+        'Downloading update…',
+        `PomoIsland ${i?.version ?? ''} is downloading. You'll be prompted to restart when it's ready.`,
+      )
       interactive = false
     }
   })
@@ -92,7 +129,7 @@ export function initAutoUpdater(): void {
 
   autoUpdater.on('error', (err) => {
     console.error('[updater] error:', err)
-    if (interactive) info('Update check failed', err?.message ?? String(err))
+    if (interactive) info('Update check failed', explainUpdateError(err))
     interactive = false
     checking = false
   })
@@ -110,7 +147,10 @@ export function initAutoUpdater(): void {
 /** User-triggered check (menu / tray). Always gives clear feedback. */
 export function checkForUpdatesInteractive(): void {
   if (!app.isPackaged) {
-    info('Updates unavailable in development', 'Check for updates works in the packaged, signed app.')
+    info(
+      'Updates unavailable in development',
+      'Check for updates works in the packaged, signed app.',
+    )
     return
   }
   if (checking) return
