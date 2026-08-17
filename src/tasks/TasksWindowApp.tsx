@@ -80,6 +80,13 @@ export function TasksWindowApp() {
         accent={accent}
         mode="detached"
         onPopIn={() => window.api.windows.tasksWindow('popIn')}
+        // The pin is its own pref, not the island's alwaysTop — the two levels
+        // are deliberately different (see Prefs.tasksAlwaysOnTop). Written
+        // straight through prefs.set: the main process re-applies the window
+        // level from its own onPrefsChange, and the broadcast comes back here to
+        // update the glyph, so there is no second source of truth to keep.
+        pinned={prefs.tasksAlwaysOnTop}
+        onTogglePin={() => window.api.prefs.set({ tasksAlwaysOnTop: !prefs.tasksAlwaysOnTop })}
         // Close means pop in: one bit for where the list lives, and it can never
         // point at a window that isn't there. See TasksWindowAction.
         onClose={() => window.api.windows.tasksWindow('popIn')}

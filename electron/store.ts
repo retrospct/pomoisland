@@ -61,6 +61,11 @@ export const DEFAULT_PREFS: Prefs = {
   magnetic: true,
   // The list starts docked inside the island; popping it out is opt-in.
   tasksDetached: false,
+  // A window that outranks every other app is opt-in too.
+  tasksAlwaysOnTop: false,
+  // No geometry until the window has been placed once. Never trusted on read —
+  // electron/windows.ts sanitizes it against the live displays.
+  tasksWindowBounds: null,
   hoverRetractMs: 200,
   expandRetractMs: 800,
 }

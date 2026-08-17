@@ -10,7 +10,9 @@
 // Drag-reorder is a separate fast-follow issue.
 
 import { useRef, useState, type CSSProperties } from 'react'
+import { hexToRgba } from '@shared/accent'
 import type { Task, TasksState } from '@shared/types'
+import { ThumbtackGlyph } from './Glyphs'
 
 const SANS = "'Inter', sans-serif"
 const MONO = "'IBM Plex Mono', monospace"
@@ -35,6 +37,10 @@ interface TaskListProps {
   onPopOut?: () => void
   /** Detached only: move the list back into the island. */
   onPopIn?: () => void
+  /** Detached only: Prefs.tasksAlwaysOnTop — is the window pinned above other apps? */
+  pinned?: boolean
+  /** Detached only: flip the pin. */
+  onTogglePin?: () => void
   /** Docked: dismiss the inline panel. Detached: close the window, which pops in. */
   onClose: () => void
 }
@@ -46,6 +52,8 @@ export function TaskList({
   mode = 'docked',
   onPopOut,
   onPopIn,
+  pinned = false,
+  onTogglePin,
   onClose,
 }: TaskListProps) {
   const detached = mode === 'detached'
@@ -98,6 +106,9 @@ export function TaskList({
         height: detached ? '100%' : undefined,
         display: detached ? 'flex' : undefined,
         flexDirection: detached ? 'column' : undefined,
+        // Anchors the corner grip, which is absolutely positioned in the
+        // bottom-right of the window rather than laid out in the column.
+        position: detached ? 'relative' : undefined,
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
@@ -155,9 +166,7 @@ export function TaskList({
               >
                 <PopInGlyph />
               </button>
-              {/* Reserved slot for the pin (always-on-top) control — ticket 24.
-                  Held open now so adding it doesn't reflow the header. */}
-              <span aria-hidden style={{ flex: '0 0 20px' }} />
+              <PinButton pinned={pinned} accent={accent} onToggle={() => onTogglePin?.()} />
             </>
           ) : (
             <button
@@ -181,11 +190,18 @@ export function TaskList({
       </div>
 
       {/* Task rows */}
+      {/* Rows. Detached, the scroll box is inset 8px on both sides: its 6px
+          scrollbar would otherwise sit flush against the window's right edge,
+          inside AppKit's resize band, and that band's true width is private on a
+          non-MAS build (ticket-02 research §2a) — so the same ~8px clearance the
+          header's drag region keeps, for the same reason. Symmetric so the rows
+          stay centered, and it brings their inset closer to the add form's.
+          Docked, the panel has a border and no resize band, so it is unchanged. */}
       <div
         className="il-task-scroll"
         style={
           detached
-            ? { flex: 1, minHeight: 0, overflowY: 'auto' }
+            ? { flex: 1, minHeight: 0, overflowY: 'auto', margin: '0 8px' }
             : { maxHeight: 220, overflowY: 'auto' }
         }
       >
@@ -392,6 +408,8 @@ export function TaskList({
           />
         )}
       </form>
+
+      {detached && <ResizeGrip />}
     </div>
   )
 }
@@ -440,6 +458,107 @@ function PopInGlyph() {
         strokeWidth="1.3"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/**
+ * Pin — always-on-top for the detached window, and nothing else.
+ *
+ * Reuses the shipped idiom rather than inventing a second one: the same
+ * thumbtack the ⋯ dropdown's row draws (one shared glyph, see Glyphs.tsx) and
+ * the same "Always on Top" wording the dropdown and the tray both use. The label
+ * stays put across states — `aria-pressed` carries on vs off, which is the
+ * standard toggle-button contract and the closest thing outside a menu to the
+ * dropdown's `menuitemcheckbox` + `aria-checked`.
+ *
+ * On vs off is drawn on TWO channels, because the app has no icon-toggle
+ * precedent to lean on and this is a 14px mark with no room for a label:
+ *
+ *   1. **Color.** The glyph takes the accent when pinned, `--il-muted` when not
+ *      — the same "accent means on" the dropdown's check mark uses.
+ *   2. **A filled chip behind it.** Color alone is a weak signal at this size
+ *      and fails outright for a color-blind user, so "on" also grows a tinted
+ *      rounded background. The button reads visibly pressed, matching
+ *      `aria-pressed`, and the state survives with color ignored entirely.
+ *
+ * Sized to land at 20px overall (14px glyph + 3px padding), which is exactly the
+ * slot ticket 23 reserved — adding it reflows nothing.
+ */
+function PinButton({
+  pinned,
+  accent,
+  onToggle,
+}: {
+  pinned: boolean
+  accent: string
+  onToggle: () => void
+}) {
+  return (
+    <button
+      aria-label="Always on Top"
+      aria-pressed={pinned}
+      title="Always on Top"
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle()
+      }}
+      style={{
+        ...headerBtn,
+        ...noDrag,
+        padding: 3,
+        borderRadius: 7,
+        background: pinned ? hexToRgba(accent, 0.18) : 'transparent',
+        transition: 'background .14s',
+      }}
+    >
+      <ThumbtackGlyph size={14} color={pinned ? accent : 'var(--il-muted)'} />
+    </button>
+  )
+}
+
+/**
+ * Corner grip — decoration, not a handle.
+ *
+ * On macOS the resize interaction belongs entirely to AppKit: the window is
+ * `resizable: true`, which becomes NSWindowStyleMaskResizable, and Electron's
+ * cross-platform frameless resize hit-testing is compiled out of macOS builds
+ * (`#if !BUILDFLAG(IS_MAC)`), so there is no hit region for the renderer to
+ * claim and no API to widen it. `NSWindow.showsResizeIndicator` is documented as
+ * doing nothing at all, so macOS draws no grow box for any window either — hence
+ * a hand-drawn glyph.
+ *
+ * `pointer-events: none` is therefore mandatory, not tidiness: the glyph's only
+ * job is to sit inside AppKit's corner zone and say "drag here", and anything it
+ * intercepted would be a mouse-down AppKit never sees. There are no handlers
+ * here for the same reason, and the header's drag region stops 6px short of
+ * every window edge so it cannot shadow the band either. The exact width of that
+ * band is AppKit-private on a non-MAS build, so the glyph stays inside ~10px of
+ * the corner where the zone is widest.
+ */
+function ResizeGrip() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden
+      style={{
+        position: 'absolute',
+        right: 3,
+        bottom: 3,
+        pointerEvents: 'none',
+        color: 'var(--il-muted)',
+        opacity: 0.55,
+      }}
+    >
+      <path
+        d="M10.5 4.5 4.5 10.5M10.5 8.2 8.2 10.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
       />
     </svg>
   )

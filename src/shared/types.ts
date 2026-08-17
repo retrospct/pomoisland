@@ -110,6 +110,18 @@ export interface TimerState {
 }
 
 /**
+ * A persisted window rectangle, in screen coordinates. Structurally Electron's
+ * `Rectangle`, redeclared here because `src/shared` is imported by the renderers
+ * and must not depend on `electron`.
+ */
+export interface WindowBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
  * Persisted user preferences, owned by the main process. The field set mirrors
  * the SettingsPanel.dc.html design (General + Preferences tabs). `alwaysTop` and
  * `magnetic` are not surfaced in that panel but the main process reads them to
@@ -199,6 +211,39 @@ export interface Prefs {
    * launch: a `true` value re-opens the window, so the bit is never dangling.
    */
   tasksDetached: boolean
+  /**
+   * **Pin** the detached task window: always-on-top, and nothing else.
+   *
+   * Deliberately NOT `alwaysTop`. The two are not interchangeable: `alwaysTop`
+   * is inert while the island is snapped, because `applyIslandWindowLevel()`
+   * forces `'screen-saver'` so the island can paint over the menu bar
+   * (ADR-0006). The detached window sits at level 1 instead, deliberately below
+   * the island in all three of its levels — so one bit could not mean the same
+   * thing in both places, and the ⋯ menu's "Floating only" sub-label would be a
+   * lie for the window half. Two windows, two z-order bits.
+   *
+   * Off by default: a window that outranks every other app is opt-in.
+   * Persisted with no Settings UI, following `alwaysTop` (toggled from the
+   * island's ⋯ menu and the tray, never from Settings) — here the control is
+   * the detached header's thumbtack.
+   */
+  tasksAlwaysOnTop: boolean
+  /**
+   * Size and position of the detached task window, or `null` before it has ever
+   * been placed. The first window geometry in `prefs.json`.
+   *
+   * One top-level key holding the whole rect, rather than four scalars: it is
+   * flat in the sense the rest of `Prefs` is flat (no `tasksWindow` grouping
+   * object), and keeping the rect atomic means "never placed yet" is exactly one
+   * state. Four nullable scalars would make half-written geometry representable,
+   * and `Prefs` already has object-valued keys (`shortcuts`, `islandPlacement`).
+   *
+   * Written from `getNormalBounds()`, debounced. NOT trusted on read — a saved
+   * rect outlives the display that produced it, so `electron/windows.ts`
+   * validates, intersects it against a live display, then clamps size and origin
+   * in that order before it reaches a constructor.
+   */
+  tasksWindowBounds: WindowBounds | null
   /** Delay (ms) before collapsing from peek after cursor leaves. */
   hoverRetractMs: number
   /** Delay (ms) before collapsing from expanded after cursor leaves. */
