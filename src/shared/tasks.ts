@@ -105,10 +105,23 @@ export function normalizeTasksState(parsed: unknown, today: string): TasksState 
   }
 }
 
+/**
+ * The currently active task, or null.
+ *
+ * The one place the lookup happens. It was open-coded as
+ * `tasks.find((t) => t.id === activeTaskId) ?? null` in Peek, in ExpandedBody and
+ * again inside activeTaskAtEstimate below — the same "separate paths choosing
+ * independently is how they drift" this file already guards for `firstIncompleteId`,
+ * so it gets the same treatment.
+ */
+export function activeTask(state: TasksState): Task | null {
+  if (!state.activeTaskId) return null
+  return state.tasks.find((t) => t.id === state.activeTaskId) ?? null
+}
+
 /** Title of the currently active task, or an empty string if none. */
 export function activeTaskTitle(state: TasksState): string {
-  if (!state.activeTaskId) return ''
-  return state.tasks.find((t) => t.id === state.activeTaskId)?.title ?? ''
+  return activeTask(state)?.title ?? ''
 }
 
 /** Why a focus block ended, and whether the user has asked for skips to count. */
@@ -170,8 +183,8 @@ export function recordFocusComplete(
  * Auto-start" pref, because that is this one turned off.
  */
 export function activeTaskAtEstimate(state: TasksState, pauseAtEstimate: boolean): boolean {
-  if (!pauseAtEstimate || !state.activeTaskId) return false
-  const active = state.tasks.find((t) => t.id === state.activeTaskId)
+  if (!pauseAtEstimate) return false
+  const active = activeTask(state)
   if (!active) return false
   return active.completedSessions >= active.estimateSessions
 }

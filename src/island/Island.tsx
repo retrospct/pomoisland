@@ -1,5 +1,9 @@
 import { RIPPLE_DEFS } from '@shared/ripple'
 import type { IslandElement, Ripple, Task, TasksState, TimerStyle } from '@shared/types'
+// Aliased on import: `activeTask` is also the natural name for the local holding
+// the result at both call sites, and shadowing the function with its own output
+// reads worse than naming the lookup.
+import { activeTask as activeTaskOf } from '@shared/tasks'
 import { useReducedMotion } from '@shared/useReducedMotion'
 import { renderProgressTrace } from '@shared/progressTrace'
 import type { CSSProperties } from 'react'
@@ -1360,6 +1364,58 @@ function taskSlot(
 }
 
 /**
+ * The task slot's contents: the segmented bar, or the resume controls, or nothing.
+ *
+ * One component rather than the same ternary in Peek and ExpandedBody, which is
+ * where it started — identical but for the bottom margin, so the two would have
+ * drifted the first time only one of them was updated. The margin is the only real
+ * difference and it is a prop.
+ */
+function TaskSlotRow({
+  slot,
+  task,
+  tasks,
+  accent,
+  rm,
+  marginBottom,
+  onResumeSession,
+  onFinishTask,
+}: {
+  slot: TaskSlot
+  task: Task | null
+  tasks: TasksState | null
+  accent: string
+  rm: boolean
+  marginBottom: number
+  onResumeSession: () => void
+  onFinishTask: () => void
+}) {
+  if (slot === 'none' || !task) return null
+  return (
+    <div style={{ marginBottom }}>
+      {slot === 'controls' ? (
+        <ResumeControls
+          accent={accent}
+          completed={task.completedSessions}
+          estimate={task.estimateSessions}
+          hasNextTask={nextTaskExists(tasks, task)}
+          rm={rm}
+          onResumeSession={onResumeSession}
+          onFinishTask={onFinishTask}
+        />
+      ) : (
+        <TaskProgressBar
+          completed={task.completedSessions}
+          estimate={task.estimateSessions}
+          accent={accent}
+          rm={rm}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
  * Is there an incomplete task other than the active one? Drives only ✓'s label,
  * so the copy never promises a next task that isn't there.
  *
@@ -1388,13 +1444,12 @@ function Peek({
   onFinishTask,
 }: IslandProps) {
   const rm = useReducedMotion()
-  const activeTask = tasks?.tasks.find((t) => t.id === tasks?.activeTaskId) ?? null
+  const activeTask = tasks ? activeTaskOf(tasks) : null
   // The slot exists only with an active task — no reserved gap, no empty track
   // (ticket 03 §7): a task-less island keeps its old height, and an empty track
   // would promise a measure of a task that isn't there. With a task it is
   // fixed-height, so the swap below can't reflow the card mid-hover.
   const slot = taskSlot(taskProgressOn, atEstimate, activeTask)
-  const hasNextTask = nextTaskExists(tasks, activeTask)
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card. On a real-notch display, widen and
   // clear the physical notch height/width — same fix as ExpandedBody — so the
@@ -1467,28 +1522,16 @@ function Peek({
           />
         )}
       </div>
-      {slot !== 'none' && activeTask && (
-        <div style={{ marginBottom: 8 }}>
-          {slot === 'controls' ? (
-            <ResumeControls
-              accent={view.accentBase}
-              completed={activeTask.completedSessions}
-              estimate={activeTask.estimateSessions}
-              hasNextTask={hasNextTask}
-              rm={rm}
-              onResumeSession={onResumeSession}
-              onFinishTask={onFinishTask}
-            />
-          ) : (
-            <TaskProgressBar
-              completed={activeTask.completedSessions}
-              estimate={activeTask.estimateSessions}
-              accent={view.accentBase}
-              rm={rm}
-            />
-          )}
-        </div>
-      )}
+      <TaskSlotRow
+        slot={slot}
+        task={activeTask}
+        tasks={tasks}
+        accent={view.accentBase}
+        rm={rm}
+        marginBottom={8}
+        onResumeSession={onResumeSession}
+        onFinishTask={onFinishTask}
+      />
       <div
         style={{
           display: 'flex',
@@ -1646,9 +1689,10 @@ function TaskSessions({
  * is a known past bug (MO-50).
  *
  * They sit at the leading edge, where the bar's first segment was, so the swap
- * doesn't move the eye. Two 20px buttons and a gap is 46px of Peek's 232px content
- * width, so the narrow host is not a constraint — which is what settles the
- * "degrade under pressure" question ticket 11 left to whoever built these.
+ * doesn't move the eye. Two 20px buttons, their gap and the count come to roughly
+ * 110px of Peek's 232px content width, so the narrow host is not a constraint —
+ * which is what settles the "degrade under pressure" question ticket 11 left to
+ * whoever built these.
  *
  * Neither control skips a break: the stop only ever fires after the break has run
  * (ticket 18 reads the predicate inside the break → focus branch), so by the time
@@ -1673,7 +1717,16 @@ function ResumeControls({
   onFinishTask: () => void
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: TASK_BAR_SLOT_H }}>
+    <div
+      // The ticket asked for a crossfade. A replacement cannot literally cross-fade
+      // — there is nothing on screen to fade FROM once the bar is unmounted — so
+      // what it gets is the half a replacement permits: the controls fade in over
+      // the vacated slot. Keeping the bar mounted at opacity 0 to fade it out would
+      // reinstate the thing the resolution deleted (a bar on screen at the stop),
+      // and would leave its hover-count layer live underneath the buttons.
+      className={rm ? undefined : 'il-resume-in'}
+      style={{ display: 'flex', alignItems: 'center', gap: 8, height: TASK_BAR_SLOT_H }}
+    >
       <div
         className={rm ? undefined : 'il-resume-pulse'}
         style={{ display: 'flex', alignItems: 'center', gap: 6 }}
@@ -1766,11 +1819,10 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   // task label. An empty mirror means no active task, and displayTask renders the
   // "No task set" / "Break time" fallback for it; the hint below is simply
   // omitted, because there is no task whose sessions could be counted.
-  const activeTask = props.tasks?.tasks.find((t) => t.id === props.tasks?.activeTaskId) ?? null
+  const activeTask = props.tasks ? activeTaskOf(props.tasks) : null
   // See Peek: the slot exists only with an active task, and is fixed-height when
   // it does (ticket 03 §7). Same decision function, so the two hosts cannot drift.
   const slot = taskSlot(taskProgressOn, atEstimate, activeTask)
-  const hasNextTask = nextTaskExists(props.tasks, activeTask)
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card.
   const wrapNotch = notch && hasNotch
@@ -1873,28 +1925,16 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         )}
       </div>
 
-      {slot !== 'none' && activeTask && (
-        <div style={{ marginBottom: 13 }}>
-          {slot === 'controls' ? (
-            <ResumeControls
-              accent={view.accentBase}
-              completed={activeTask.completedSessions}
-              estimate={activeTask.estimateSessions}
-              hasNextTask={hasNextTask}
-              rm={rm}
-              onResumeSession={onResumeSession}
-              onFinishTask={onFinishTask}
-            />
-          ) : (
-            <TaskProgressBar
-              completed={activeTask.completedSessions}
-              estimate={activeTask.estimateSessions}
-              accent={view.accentBase}
-              rm={rm}
-            />
-          )}
-        </div>
-      )}
+      <TaskSlotRow
+        slot={slot}
+        task={activeTask}
+        tasks={props.tasks}
+        accent={view.accentBase}
+        rm={rm}
+        marginBottom={13}
+        onResumeSession={onResumeSession}
+        onFinishTask={onFinishTask}
+      />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
         <Ring

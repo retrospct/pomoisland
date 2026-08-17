@@ -60,6 +60,33 @@ function dropTargetAt(clientY: number, from: HTMLElement): string | null {
   return null
 }
 
+/** An in-flight reorder: the task being dragged, and where it would land. */
+interface ReorderDrag {
+  id: string
+  /** Id to drop before, or null for last among the incomplete tasks. */
+  beforeId: string | null
+}
+
+/**
+ * Would this drop actually move the task? Used both to skip a pointless write and
+ * to decide whether to draw the landing line at all — a line promising a move that
+ * won't happen is worse than no line.
+ *
+ * `incomplete` is the rendered incomplete group, in render order.
+ */
+function isRealMove(incomplete: Task[], drag: ReorderDrag): boolean {
+  const from = incomplete.findIndex((t) => t.id === drag.id)
+  if (from === -1) return false
+  const to =
+    drag.beforeId === null
+      ? incomplete.length
+      : incomplete.findIndex((t) => t.id === drag.beforeId)
+  if (to === -1) return false
+  // Landing on your own index, or on the one just after it, both leave the order
+  // unchanged: "before the task that already follows me" is where I already am.
+  return to !== from && to !== from + 1
+}
+
 /** Where this list is living. See Prefs.tasksDetached. */
 export type TaskListMode = 'docked' | 'detached'
 
@@ -142,14 +169,21 @@ export function TaskList({
   }
 
   /**
-   * Commit the drag, or don't. Dropping a task onto itself is the one case worth
-   * catching here rather than in the reducer: the reducer already returns an
-   * unchanged state for it, but taskStore persists and broadcasts on every
-   * mutation regardless, so letting it through would write the file and wake all
-   * three renderers to say nothing happened.
+   * Commit the drag, unless it wouldn't move anything.
+   *
+   * The reducer already returns an unchanged state for a no-op drop, but taskStore
+   * persists and broadcasts on *every* mutation regardless, so letting one through
+   * writes the file and wakes every renderer to announce that nothing happened.
+   *
+   * Two arrangements are no-ops, and only one of them is obvious. Dropping a task
+   * on itself is `beforeId === id`. But dropping it immediately *before the row
+   * that already follows it* is the same position with a different id, so an
+   * id-only check misses it — which is precisely the seam the id-based interface
+   * trades for not carrying indices. Resolved by comparing positions in the
+   * rendered incomplete list, which the view has to hand and the reducer does not.
    */
   function endReorder() {
-    if (reorder && reorder.beforeId !== reorder.id) {
+    if (reorder && isRealMove(active, reorder)) {
       mutate({ type: 'reorder', id: reorder.id, beforeId: reorder.beforeId })
     }
     setReorder(null)
@@ -293,10 +327,24 @@ export function TaskList({
             draggable
             dragging={reorder !== null}
             isDragSubject={reorder?.id === task.id}
-            dropBefore={reorder !== null && reorder.beforeId === task.id}
+            // Only drawn for a drop that would actually move something. That also
+            // fixes a rendering bug rather than just a semantic one: the two no-op
+            // arrangements are exactly the ones where the line lands on the dragged
+            // row itself, and the dragged row is faded to 0.4 — so the line was
+            // inheriting that fade through its parent and rendering half-visible.
+            dropBefore={
+              reorder !== null &&
+              reorder.beforeId === task.id &&
+              isRealMove(active, reorder)
+            }
             // The landing line for "past every row" has nowhere of its own to
             // live, so the last row draws it below itself.
-            dropAfter={reorder !== null && reorder.beforeId === null && i === active.length - 1}
+            dropAfter={
+              reorder !== null &&
+              reorder.beforeId === null &&
+              i === active.length - 1 &&
+              isRealMove(active, reorder)
+            }
             onDragStart={() => setReorder({ id: task.id, beforeId: task.id })}
             onDragMove={(beforeId) =>
               setReorder((d) => (d && d.beforeId !== beforeId ? { ...d, beforeId } : d))
@@ -750,6 +798,29 @@ function TaskRow({
   // and the pending timeout would fire into a dead component.
   useEffect(() => cancelTitlePopover, [cancelTitlePopover])
 
+  // A drag starting cancels every row's popover, pending or open. The guard inside
+  // openTitlePopover only runs when the timeout is SCHEDULED, so grabbing the grip
+  // within the 400ms delay of having hovered a title would otherwise pop it in the
+  // middle of the drag. Driving it from the flag rather than the schedule means the
+  // rule is "no popovers during a drag" instead of "no popovers started during a
+  // drag".
+  useEffect(() => {
+    if (dragging) cancelTitlePopover()
+  }, [dragging, cancelTitlePopover])
+
+  // Scrolling dismisses it. The popover is anchored to the row, so it does travel
+  // correctly with a scroll — but the up/down direction was chosen once from the
+  // row's position in the viewport, and scrolling is exactly what invalidates that
+  // choice. Dismissing is also what the pointer is saying: a scroll is a move to
+  // somewhere else in the list, not a request to keep reading this title.
+  useEffect(() => {
+    if (!titlePop) return
+    const scroller = titleRef.current?.closest('.il-task-scroll')
+    if (!scroller) return
+    scroller.addEventListener('scroll', cancelTitlePopover, { passive: true })
+    return () => scroller.removeEventListener('scroll', cancelTitlePopover)
+  }, [titlePop, cancelTitlePopover])
+
   /**
    * Decide whether this title needs a popover, and which way it opens, by
    * measuring at the moment of hover (ticket 21).
@@ -801,7 +872,13 @@ function TaskRow({
       // where the pointer actually goes. That attribute is gone — the popover
       // below replaces it, and every control carries its own `title` so none of
       // them inherit this one and claim to deselect anything.
-      title={isActive && !task.done ? 'Click to deselect' : undefined}
+      //
+      // Dropped while the truncation popover is up, so the two never stack. Ours
+      // appears at 400ms and the OS waits about a second, so clearing the attribute
+      // when the popover opens means the native one never gets to fire over a
+      // truncated title — and on a title that fits, which is the case where "Click
+      // to deselect" is the only thing worth saying, nothing changes.
+      title={isActive && !task.done && !titlePop ? 'Click to deselect' : undefined}
       // The drop-target scan reads these off the DOM (see dropTargetAt) rather
       // than being handed a measured table at drag start.
       data-drag-row={draggable ? task.id : undefined}
@@ -823,6 +900,13 @@ function TaskRow({
       }}
       onClick={onSetActive}
     >
+      {/* Completed rows are not draggable, so they hold the grip's column open with
+          a spacer instead. Without it their checkboxes start 14px left of the
+          incomplete rows' and the two groups read as two different lists — the same
+          alignment argument as the session count's padding further down, at the
+          other end of the row. */}
+      {!draggable && <span aria-hidden style={{ width: GRIP_W, flexShrink: 0 }} />}
+
       {draggable && (
         <DragGrip
           onPointerDown={(e) => {
@@ -839,14 +923,18 @@ function TaskRow({
             if (!isDragSubject) return
             onDragMove?.(dropTargetAt(e.clientY, e.currentTarget))
           }}
-          onPointerUp={(e) => {
-            if (!isDragSubject) return
-            e.currentTarget.releasePointerCapture(e.pointerId)
-            onDragEnd?.()
-          }}
-          // Losing capture without a pointerup — a window blur mid-drag, or the
-          // OS taking the pointer — has to end the drag too, or the row stays
-          // faded and the indicator stays on screen with nothing driving them.
+          // `lostpointercapture` is the ONLY commit path, deliberately. It is the
+          // one signal that means "this drag is over however it ended": the
+          // Pointer Events spec releases capture implicitly on pointerup and on
+          // pointercancel, and dispatches this either way, so it also covers the
+          // OS taking the pointer or the window losing focus mid-drag.
+          //
+          // Committing on pointerup as well was a double write. Calling
+          // releasePointerCapture there fired this handler in the same tick, and
+          // both reads of `isDragSubject` saw the pre-update closure, so the
+          // reorder mutation went out twice — persisting and broadcasting to every
+          // renderer twice for one gesture. Reorder happens to be idempotent, which
+          // is exactly why it would never have shown up as a bug.
           onLostPointerCapture={() => {
             if (isDragSubject) onDragEnd?.()
           }}
@@ -1068,24 +1156,27 @@ function TaskRow({
 function DragGrip(props: {
   onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void
   onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => void
-  onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => void
-  onLostPointerCapture: (e: React.PointerEvent<HTMLDivElement>) => void
+  /** The single end-of-drag signal — see the call site for why there is no pointerup. */
+  onLostPointerCapture: () => void
 }) {
   return (
     <div
-      className="il-task-reveal"
-      role="button"
-      aria-label="Drag to reorder"
+      className="il-task-reveal il-task-grip"
       title="Drag to reorder"
-      // Keyboard reorder is out of scope for this ticket, so the grip is
-      // deliberately not tab-focusable — a focusable control that does nothing on
-      // Enter is worse than one a keyboard user never lands on. The row's own
-      // controls remain reachable.
+      // `aria-hidden`, and deliberately NOT role="button" with a label.
+      //
+      // Keyboard reorder and screen-reader drag announcements are both out of scope
+      // for ticket 22, so a labelled button role would advertise focus and an Enter
+      // action this element cannot honor — worse than being absent, because it
+      // promises a way through that dead-ends. The mouse affordance (the grip mark,
+      // the grab cursor, the native tooltip) is unaffected, and every actual verb on
+      // the row stays reachable and labelled.
+      aria-hidden="true"
       style={{
         flexShrink: 0,
         display: 'grid',
         placeItems: 'center',
-        width: 9,
+        width: GRIP_W,
         height: 16,
         cursor: 'grab',
         touchAction: 'none',
@@ -1145,6 +1236,21 @@ function SessionCount({
   estimate: number
   accent: string
 }) {
+  // The unit word appears in the add form ("3 sessions", where the number needs
+  // saying what it counts) and NOT on task rows ("3/5", where it does not).
+  //
+  // Measured, not guessed: with ticket 20 holding the steppers' space permanently
+  // and ticket 22 adding the grip, a 320px docked row left the title just 98px of
+  // its 288px — enough to truncate "Write the release notes". The word costs ~38px
+  // on every row and is the same word on every row, so it is the cheapest 38px in
+  // the layout to reclaim, and a list is exactly the context where a repeated noun
+  // carries least: "3/5" and "1/8" compare on the numbers (ticket 03 §2).
+  //
+  // `completed === undefined` is the existing discriminator between the two uses,
+  // so this needs no new prop. The word still appears where it reads well: the
+  // progress bar's hover reveal in Peek, which is one instance rather than one per
+  // row.
+  const showUnit = completed === undefined
   const label = estimate === 1 ? 'session' : 'sessions'
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3, whiteSpace: 'nowrap' }}>
@@ -1156,9 +1262,11 @@ function SessionCount({
           /{estimate}
         </span>
       )}
-      <span style={{ fontFamily: SANS, fontSize: 8.5, color: 'var(--il-muted)', lineHeight: 1 }}>
-        {label}
-      </span>
+      {showUnit && (
+        <span style={{ fontFamily: SANS, fontSize: 8.5, color: 'var(--il-muted)', lineHeight: 1 }}>
+          {label}
+        </span>
+      )}
     </span>
   )
 }
@@ -1167,9 +1275,9 @@ function SessionCount({
  * SessionCount flanked by − / + estimate steppers.
  *
  * `reveal` puts the two buttons in the row's hover-revealed set (ticket 20) —
- * always in layout, faded out until the row is hovered. The add form passes it
- * false: there is no row to hover there, and its stepper is the point of the
- * form's second line rather than an incidental control.
+ * always in layout, faded out until the row is hovered. The add form omits it:
+ * there is no row to hover there, and its stepper is the point of the form's
+ * second line rather than an incidental control.
  *
  * The buttons are always *rendered* either way. Mounting them on hover is what
  * made rows reflow under the pointer, and it is the bug ticket 20 exists to fix.
@@ -1216,6 +1324,9 @@ function SessionStepper({
     </div>
   )
 }
+
+/** Width of the reorder grip's column. Completed rows reserve it without a grip. */
+const GRIP_W = 9
 
 const PIP_W = 16
 const PIP_GAP = 6
