@@ -48,6 +48,7 @@ const api: PomApi = {
   windows: {
     openSettings: () => ipcRenderer.send(IPC.openSettings),
     settingsControl: (action) => ipcRenderer.send(IPC.settingsControl, action),
+    tasksWindow: (action) => ipcRenderer.send(IPC.tasksWindow, action),
   },
   app: {
     quit: () => ipcRenderer.send(IPC.appQuit),

@@ -10,7 +10,12 @@ import { getPrefs, onPrefsChange } from './store'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
 import { initAutoUpdater, onUpdateReady } from './updater'
-import { createIslandWindow, createSnapOverlayWindow, toggleIslandVisibility } from './windows'
+import {
+  createIslandWindow,
+  createSnapOverlayWindow,
+  createTasksWindow,
+  toggleIslandVisibility,
+} from './windows'
 
 let timer: Timer | null = null
 
@@ -36,6 +41,10 @@ function bootstrap(): void {
   startIdleWatcher(timer)
   createIslandWindow()
   createSnapOverlayWindow()
+  // The list was detached when we last quit — re-open its window, so the
+  // persisted bit never points at a window that isn't there (the island refuses
+  // to render the inline panel while detached).
+  if (getPrefs().tasksDetached) createTasksWindow()
   createTray(timer)
   timer.start()
 }

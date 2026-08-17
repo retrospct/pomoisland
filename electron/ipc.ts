@@ -6,6 +6,7 @@ import type {
   SettingsControl,
   ShortcutAction,
   TaskMutation,
+  TasksWindowAction,
   TimerAction,
 } from '../src/shared/types'
 import { resetShortcuts, trySetShortcut } from './shortcuts'
@@ -24,8 +25,11 @@ import {
   dragEnd,
   dragMove,
   dragStart,
+  focusTasksWindow,
   getPlacement,
   getSettingsWindow,
+  popInTasks,
+  popOutTasks,
   resizeIsland,
 } from './windows'
 import type { Timer } from './timer'
@@ -84,6 +88,16 @@ export function registerIpc(timer: Timer): void {
         return win.minimize()
       case 'zoom':
         return win.isMaximized() ? win.unmaximize() : win.maximize()
+    }
+  })
+  ipcMain.on(IPC.tasksWindow, (_e, action: TasksWindowAction) => {
+    switch (action) {
+      case 'popOut':
+        return popOutTasks()
+      case 'popIn':
+        return popInTasks()
+      case 'focus':
+        return focusTasksWindow()
     }
   })
 

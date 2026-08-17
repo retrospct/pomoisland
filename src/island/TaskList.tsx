@@ -1,22 +1,54 @@
-// Task list panel — drops below the timer in the island (MO-6).
+// Task list panel — one component, two homes (ticket 23).
+//
+// **Docked** it drops below the timer inside the island window, at a fixed width
+// matched to the expanded card, with the rows in a short scroll area.
+// **Detached** it fills its own window (see src/tasks/), the rows take all the
+// height the user gives them, and its header doubles as the window's drag region
+// since the window is frameless.
+//
 // v1 verbs: add / edit title / set estimate / mark done / delete / set active.
 // Drag-reorder is a separate fast-follow issue.
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import type { Task, TasksState } from '@shared/types'
 
 const SANS = "'Inter', sans-serif"
 const MONO = "'IBM Plex Mono', monospace"
+
+/** Where this list is living. See Prefs.tasksDetached. */
+export type TaskListMode = 'docked' | 'detached'
+
+// A drag region swallows every pointer event over its rectangle, so each control
+// inside the header has to opt back out explicitly — see the ticket-02 research
+// note §2d. `user-select: none` is the documented companion (dragging otherwise
+// fights text selection).
+const drag = { WebkitAppRegion: 'drag', userSelect: 'none' } as CSSProperties
+const noDrag = { WebkitAppRegion: 'no-drag' } as CSSProperties
 
 interface TaskListProps {
   tasks: TasksState
   accent: string
   /** Panel width (px) — matched to the expanded timer body so their edges line up. */
   width?: number
+  mode?: TaskListMode
+  /** Docked only: move the list out into its own window. */
+  onPopOut?: () => void
+  /** Detached only: move the list back into the island. */
+  onPopIn?: () => void
+  /** Docked: dismiss the inline panel. Detached: close the window, which pops in. */
   onClose: () => void
 }
 
-export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps) {
+export function TaskList({
+  tasks,
+  accent,
+  width = 320,
+  mode = 'docked',
+  onPopOut,
+  onPopIn,
+  onClose,
+}: TaskListProps) {
+  const detached = mode === 'detached'
   const [addText, setAddText] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -60,25 +92,45 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
     <div
       data-hover-target="1"
       style={{
-        width,
+        // Detached: fill the window and let the rows absorb the spare height.
+        // Docked: a fixed-width slab hanging off the bottom of the island card.
+        width: detached ? '100%' : width,
+        height: detached ? '100%' : undefined,
+        display: detached ? 'flex' : undefined,
+        flexDirection: detached ? 'column' : undefined,
         boxSizing: 'border-box',
         background: 'var(--il-bg)',
         color: 'var(--il-text)',
         fontFamily: SANS,
-        borderTop: '1px solid var(--il-border)',
-        borderRadius: '0 0 26px 26px',
+        borderTop: detached ? undefined : '1px solid var(--il-border)',
+        borderRadius: detached ? undefined : '0 0 26px 26px',
         paddingBottom: 16,
       }}
       onClick={stopProp}
       onMouseDown={stopProp}
     >
-      {/* Header */}
+      {/* Header — title left, controls right.
+          Docked: pop out, then close. Detached: pop in, pin, close, close
+          outermost; and the whole strip is the frameless window's drag region.
+          Its vertical footprint is unchanged from before the controls were
+          added, so the docked panel's height budget inside the island is
+          untouched — same padding, same single line of 15px-tall glyphs as the
+          existing 12px MONO title.
+          Inset 6px from the window edges when detached: AppKit owns the resize
+          band and its width is private/unknowable on a non-MAS build, so keep
+          the drag rectangle clear of it (ticket-02 research §2a). */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '13px 24px 9px',
+          flexShrink: detached ? 0 : undefined,
+          ...(detached
+            ? // 6 margin + 7 padding = the docked 13px above the title, and
+              // 6 + 18 = its 24px inset, so the header reads identically in
+              // both homes while the drag rect keeps clear of the resize band.
+              { margin: '6px 6px 0', padding: '7px 18px 9px', ...drag }
+            : { padding: '13px 24px 9px' }),
         }}
       >
         <span
@@ -92,27 +144,51 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
         >
           TASKS
         </span>
-        <button
-          aria-label="Close task list"
-          onClick={(e) => { e.stopPropagation(); onClose() }}
-          style={{
-          background: 'transparent',
-          border: 'none',
-          color: 'var(--il-muted)',
-          cursor: 'pointer',
-          padding: '2px 2px',
-          fontSize: 13,
-          lineHeight: 1,
-          display: 'grid',
-          placeItems: 'center',
-        }}
-        >
-          ✕
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {detached ? (
+            <>
+              <button
+                aria-label="Pop task list back into the timer"
+                title="Pop in"
+                onClick={(e) => { e.stopPropagation(); onPopIn?.() }}
+                style={{ ...headerBtn, ...noDrag }}
+              >
+                <PopInGlyph />
+              </button>
+              {/* Reserved slot for the pin (always-on-top) control — ticket 24.
+                  Held open now so adding it doesn't reflow the header. */}
+              <span aria-hidden style={{ flex: '0 0 20px' }} />
+            </>
+          ) : (
+            <button
+              aria-label="Pop task list out into its own window"
+              title="Pop out"
+              onClick={(e) => { e.stopPropagation(); onPopOut?.() }}
+              style={headerBtn}
+            >
+              <PopOutGlyph />
+            </button>
+          )}
+          <button
+            aria-label={detached ? 'Close task window' : 'Close task list'}
+            title="Close"
+            onClick={(e) => { e.stopPropagation(); onClose() }}
+            style={{ ...headerBtn, fontSize: 13, ...(detached ? noDrag : null) }}
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Task rows */}
-      <div className="il-task-scroll" style={{ maxHeight: 220, overflowY: 'auto' }}>
+      <div
+        className="il-task-scroll"
+        style={
+          detached
+            ? { flex: 1, minHeight: 0, overflowY: 'auto' }
+            : { maxHeight: 220, overflowY: 'auto' }
+        }
+      >
         {active.length === 0 && done.length === 0 && (
           <p
             style={{
@@ -253,7 +329,13 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
       {/* Add task */}
       <form
         onSubmit={handleAdd}
-        style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '9px 20px 0' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          padding: '9px 20px 0',
+          flexShrink: detached ? 0 : undefined,
+        }}
       >
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
@@ -312,6 +394,67 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
       </form>
     </div>
   )
+}
+
+// ---- Header controls ----
+
+/**
+ * Pop out — a card lifting away from a frame, with the arrow leaving toward the
+ * top-right. Reads as "this moves somewhere else", not "open a link".
+ */
+function PopOutGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path
+        d="M6 2.5H2.5v9h9V8"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.5 2.5h3v3M11.5 2.5 7 7"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Pop in — the same frame, arrow travelling back into it. */
+function PopInGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path
+        d="M6 2.5H2.5v9h9V8"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 7h3.5v3.5M11 11 7 7"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+const headerBtn: CSSProperties = {
+  flexShrink: 0,
+  background: 'transparent',
+  border: 'none',
+  color: 'var(--il-muted)',
+  cursor: 'pointer',
+  padding: '2px 2px',
+  lineHeight: 1,
+  display: 'grid',
+  placeItems: 'center',
 }
 
 // ---- TaskRow ----

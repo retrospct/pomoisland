@@ -1,10 +1,10 @@
-import { BrowserWindow, screen } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import type { Display } from 'electron'
 import { join } from 'node:path'
 import type { IslandResizeSize, IslandSize, Placement } from '../src/shared/types'
 import { IPC } from '../src/shared/types'
 import { getNotchMetrics } from './notch'
-import { getPrefs } from './store'
+import { getPrefs, setPrefs } from './store'
 
 const RENDERER_URL = process.env['ELECTRON_RENDERER_URL']
 const PRELOAD = join(__dirname, '../preload/preload.js')
@@ -16,6 +16,15 @@ const SNAP_Y_TOLERANCE = 56
 let islandWin: BrowserWindow | null = null
 let settingsWin: BrowserWindow | null = null
 let snapOverlayWin: BrowserWindow | null = null
+let tasksWin: BrowserWindow | null = null
+
+// Closing the detached task window pops the list back in (clears Prefs.tasksDetached)
+// — see TasksWindowAction. App shutdown closes every window too, and that must NOT
+// be read as a pop-in, or quitting while detached would silently re-dock the list.
+let quitting = false
+app.on('before-quit', () => {
+  quitting = true
+})
 
 const placement: Placement = {
   snapped: true,
@@ -502,6 +511,130 @@ export function createSettingsWindow(): BrowserWindow {
 
 export function getSettingsWindow(): BrowserWindow | null {
   return settingsWin
+}
+
+// ---------------------------------------------------------------------------
+// Detached task window (ticket 23)
+// ---------------------------------------------------------------------------
+
+/**
+ * Floor size for the detached list. Also the floor ticket 24's restore path must
+ * clamp to, or Electron's own minimum enforcement fights the restored origin.
+ */
+const TASKS_MIN = { width: 300, height: 320 }
+
+/**
+ * Size the window opens at. Ticket 24 replaces this with bounds persisted in
+ * prefs (`getNormalBounds()`, debounced, validated + display-intersected +
+ * size-then-origin clamped on restore); until then every pop-out starts here,
+ * centered. The width matches the docked panel's 320px so the list doesn't
+ * reflow when it moves out of the island.
+ */
+const TASKS_DEFAULT = { width: 340, height: 460 }
+
+/**
+ * Create (or re-show) the detached task list window.
+ *
+ * Follows the Settings singleton pattern — module-level ref, show/focus an
+ * existing window on re-open — plus the ticket-02 research recipe: frameless
+ * with a custom header, opaque `backgroundColor` so there's no white flash,
+ * `show: false` + `ready-to-show`, the shared hardened preload.
+ *
+ * Deliberately NOT set, each for a researched reason:
+ * - `transparent` stays false — transparent windows are not resizable.
+ * - no `parent: islandWin` — attaching a child NSWindow resets the child's
+ *   window level on every show (electron#44150).
+ * - no `type: 'panel'` — that's the island's non-activating trick; this window
+ *   holds a text field and *should* take focus.
+ * - no `setVisibleOnAllWorkspaces` (triggers `app.dock.hide()`), no
+ *   `enableLargerThanScreen` (island-only menu-bar hack).
+ * - no always-on-top: **pin is ticket 24**. When it lands it must use
+ *   `setAlwaysOnTop(true, 'normal', 1)` so the window sits above ordinary apps
+ *   but below the island in all three of the island's levels.
+ *
+ * State needs no wiring: TasksState already lives in the main process and
+ * broadcasts to every window (`broadcastToAll`), so this window is fed for free.
+ */
+export function createTasksWindow(): BrowserWindow {
+  if (tasksWin) {
+    tasksWin.show()
+    tasksWin.focus()
+    return tasksWin
+  }
+
+  tasksWin = new BrowserWindow({
+    width: TASKS_DEFAULT.width,
+    height: TASKS_DEFAULT.height,
+    minWidth: TASKS_MIN.width,
+    minHeight: TASKS_MIN.height,
+    center: true,
+    frame: false,
+    resizable: true,
+    transparent: false,
+    backgroundColor: '#191b1f',
+    show: false,
+    title: 'Tasks',
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: PRELOAD,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  loadRoute(tasksWin, 'tasks.html')
+  tasksWin.once('ready-to-show', () => tasksWin?.show())
+  // Every close path — the header's ✕, ⌘W from the Window menu — pops the list
+  // back in, so the pref never points at a window that isn't there. App shutdown
+  // is exempt (see `quitting`), leaving the list detached for the next launch.
+  tasksWin.on('close', () => {
+    if (!quitting) setPrefs({ tasksDetached: false })
+  })
+  tasksWin.on('closed', () => {
+    tasksWin = null
+  })
+  return tasksWin
+}
+
+export function getTasksWindow(): BrowserWindow | null {
+  return tasksWin
+}
+
+/** Pop the list out of the island: set the pref, then open/raise the window. */
+export function popOutTasks(): void {
+  setPrefs({ tasksDetached: true })
+  createTasksWindow()
+}
+
+/**
+ * Pop the list back into the island: close the window. The window's own `close`
+ * handler clears the pref, so both routes (this and a bare ⌘W) agree.
+ */
+export function popInTasks(): void {
+  if (tasksWin) {
+    tasksWin.close()
+    return
+  }
+  // No window to close (shouldn't happen) — clear the pref anyway so the island
+  // can't be left refusing to render the docked panel.
+  setPrefs({ tasksDetached: false })
+}
+
+/**
+ * Show + focus the detached window. This is what the island's ⋯ → Tasks item and
+ * its clickable task label do while detached — the inline panel is unreachable,
+ * so those routes point at the window instead of opening a second copy.
+ */
+export function focusTasksWindow(): void {
+  if (!tasksWin) {
+    // Detached but somehow window-less: re-open rather than dead-ending.
+    createTasksWindow()
+    return
+  }
+  tasksWin.show()
+  tasksWin.focus()
 }
 
 export function broadcastToAll(channel: string, payload: unknown): void {

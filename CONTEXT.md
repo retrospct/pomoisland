@@ -31,8 +31,14 @@ Use these terms exactly; avoid the synonyms in parentheses.
 
 ### Task domain
 
-- **Task** — a named thing to work on, with an estimate and a completion state. The list lives
-  in the island; the main process owns it. (not: "todo", "item")
+- **Task** — a named thing to work on, with an estimate and a completion state. The main process
+  owns the list; it renders either **docked** or **detached**. (not: "todo", "item")
+- **Docked / detached** — where the task list lives. Docked is the inline panel below the timer
+  in the island; detached is the list's own window. Detach is **exclusive**: while detached the
+  island never renders the inline panel, and every route that used to open it focuses the window
+  instead. Moving between the two is **pop out** / **pop in**. (not: "pinned" for this axis)
+- **Pin** — always-on-top, and nothing else. It says where a window sits in the z-order, never
+  where the task list lives.
 - **Active task** — the one task a completed focus session is credited to. At most one, and
   possibly none: no active task is a normal state, not an error, and a session can run without
   one, crediting nothing.

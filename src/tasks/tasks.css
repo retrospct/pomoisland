@@ -1,0 +1,23 @@
+/* Detached task window (ticket 23).
+   Unlike the island and the snap overlay this window is OPAQUE — transparent
+   windows are not resizable on macOS, and this one is (ticket 24 draws the
+   corner grip). The background comes from --il-bg, set on the root by
+   TasksWindowApp, so light/dark follow the same palette as the docked panel. */
+html,
+body.tasks-body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* island.css is imported for the shared .il-* row/scrollbar/hover rules the task
+   list depends on, but its #root rule centers a content-sized island inside a
+   transparent window. This window is the opposite: one opaque panel that fills
+   its frame. Same specificity, imported later, so this wins. */
+#root {
+  display: block;
+  height: 100%;
+}
