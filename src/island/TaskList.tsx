@@ -144,7 +144,7 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
               mutate({
                 type: 'update',
                 id: task.id,
-                patch: { estimatePomodoros: Math.max(1, task.estimatePomodoros + d) },
+                patch: { estimateSessions: Math.max(1, task.estimateSessions + d) },
               })
             }
           />
@@ -235,7 +235,7 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
                   mutate({
                     type: 'update',
                     id: task.id,
-                    patch: { estimatePomodoros: Math.max(1, task.estimatePomodoros + d) },
+                    patch: { estimateSessions: Math.max(1, task.estimateSessions + d) },
                   })
                 }
               />
@@ -472,14 +472,14 @@ function TaskRow({
       {!isEditing &&
         (task.done ? (
           <SessionCount
-            completed={task.completedPomodoros}
-            estimate={task.estimatePomodoros}
+            completed={task.completedSessions}
+            estimate={task.estimateSessions}
             accent={accent}
           />
         ) : (
           <SessionStepper
-            completed={task.completedPomodoros}
-            estimate={task.estimatePomodoros}
+            completed={task.completedSessions}
+            estimate={task.estimateSessions}
             accent={accent}
             onDec={() => onAdjustEstimate(-1)}
             onInc={() => onAdjustEstimate(1)}

@@ -23,9 +23,24 @@ Use these terms exactly; avoid the synonyms in parentheses.
 - **Status** — the runtime lifecycle: `idle` → `running` → `paused` → `complete`. (not: "phase")
 - **Mode** — what is being timed: `focus` or `break`. A break can be short or long.
 - **Session** — one focus block. (not: "pomodoro" in code; "pomodoro" is fine in user copy)
-- **Round** — a group of focus sessions; a **long break** follows every `longEvery` sessions.
+  A session belongs to a **round**, and when a task is active, to that **task** as well.
+- **Round** — a group of focus sessions; a **long break** follows every `cSessions` sessions
+  (user-configurable, 2–8). Settings calls this "Sessions until long break".
 - **Total / remaining** — block duration and time left, in seconds.
 - **Preset** — a bundle of durations: `classic` (25/5/15), `focus` (50/10/20), `custom`.
+
+### Task domain
+
+- **Task** — a named thing to work on, with an estimate and a completion state. The list lives
+  in the island; the main process owns it. (not: "todo", "item")
+- **Active task** — the one task a completed focus session is credited to. At most one, and
+  possibly none: no active task is a normal state, not an error, and a session can run without
+  one, crediting nothing.
+- **Estimate / estimated sessions** — how many focus sessions a task is expected to take. It is
+  a guess the user revises, not a commitment, so a task may exceed it (e.g. 8/7).
+  (not: "planned sessions", "pomodoros")
+- **Completed sessions** — focus sessions credited to a task so far. Distinct from a session's
+  place in a **round** — the two counters are independent, and the receiver disambiguates them.
 
 ### Shortcuts
 

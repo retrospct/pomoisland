@@ -1,6 +1,8 @@
 // Pure task logic — no Electron, no filesystem, no listeners, so it can be driven
-// from a plain Node assertion script (scripts/task-check.ts) and imported by both
-// renderers as well as the main process.
+// from a plain Node assertion script (scripts/task-check.ts). It lives in shared/
+// rather than electron/ because the at-estimate predicate that ADR-0008 keeps
+// derived has to be evaluated by the renderers too; today the only importers are
+// electron/taskStore.ts and the check script.
 //
 // electron/taskStore.ts is the shell around this: it owns the JSON file, the cache
 // and the subscriber list, and calls through to these functions for every decision.
@@ -13,6 +15,25 @@ import type { Task, TaskMutation, TasksState } from './types'
 /** Mints ids for newly added tasks. Injected so tests can be deterministic. */
 export type NewId = () => string
 
+/**
+ * Which task should be active once `tasks` is the list. Keeps the current one if
+ * it's still there, otherwise falls through to the first incomplete task,
+ * otherwise nothing.
+ *
+ * The trigger is the active task going *missing*, not its being done — marking a
+ * task done doesn't clear it today, so a completed task can legitimately be the
+ * active one and must survive an unrelated delete. Ticket 15 changes the done
+ * path deliberately; it must not change this in passing.
+ *
+ * Shared by every path that can orphan the active task (delete, clearCompleted,
+ * and the done path once 15 lands) — separate paths choosing "the next task"
+ * independently is how they drift apart.
+ */
+function nextActiveId(tasks: Task[], current: string | null): string | null {
+  if (tasks.some((t) => t.id === current)) return current
+  return tasks.find((t) => !t.done)?.id ?? null
+}
+
 /** A fresh, empty task list. `today` is an ISO date string (YYYY-MM-DD). */
 export function emptyTasksState(today: string): TasksState {
   return {
@@ -24,20 +45,56 @@ export function emptyTasksState(today: string): TasksState {
   }
 }
 
+function finiteOr(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
+/**
+ * Coerce one persisted entry into a Task, or null if it isn't one.
+ *
+ * The count fields were once `estimatePomodoros` / `completedPomodoros`. Those
+ * keys are read forever as fallbacks and never written back, so the new shape
+ * lands on the next persist and the migration is self-healing. There is no
+ * `version` field on TasksState: versioning machinery earns its place when a
+ * *shape* changes, not when a key is renamed (cf. store.ts, which merges prefs
+ * over defaults with no version — ADR-0004).
+ */
+function normalizeTask(raw: unknown): Task | null {
+  if (!raw || typeof raw !== 'object') return null
+  const t = raw as Record<string, unknown>
+  if (typeof t.id !== 'string' || !t.id) return null
+  return {
+    id: t.id,
+    title: typeof t.title === 'string' ? t.title : 'Untitled task',
+    estimateSessions: finiteOr(t.estimateSessions, finiteOr(t.estimatePomodoros, 1)),
+    completedSessions: finiteOr(t.completedSessions, finiteOr(t.completedPomodoros, 0)),
+    done: t.done === true,
+  }
+}
+
 /**
  * Coerce whatever was read off disk into a valid TasksState. tasks.json is
  * user-writable and outlives app versions, so nothing about its shape is
- * guaranteed — missing keys fall back to defaults, and a tasks value that isn't
- * an array is discarded rather than trusted.
+ * guaranteed — every field is validated, a tasks value that isn't an array is
+ * discarded rather than trusted, and entries that aren't tasks are dropped
+ * rather than repaired into id-less ghosts.
+ *
+ * The top-level scalars are checked as strictly as the per-task fields:
+ * `defaultEstimate` feeds Math.round() in the add path, so a junk value here
+ * would mint tasks with a NaN estimate.
  */
 export function normalizeTasksState(parsed: unknown, today: string): TasksState {
   const base = emptyTasksState(today)
   if (!parsed || typeof parsed !== 'object') return base
-  const p = parsed as Partial<TasksState>
+  const p = parsed as Record<string, unknown>
   return {
-    ...base,
-    ...p,
-    tasks: Array.isArray(p.tasks) ? p.tasks : [],
+    tasks: Array.isArray(p.tasks)
+      ? p.tasks.map(normalizeTask).filter((t): t is Task => t !== null)
+      : [],
+    activeTaskId: typeof p.activeTaskId === 'string' ? p.activeTaskId : null,
+    completedToday: finiteOr(p.completedToday, base.completedToday),
+    completedDate: typeof p.completedDate === 'string' ? p.completedDate : today,
+    defaultEstimate: finiteOr(p.defaultEstimate, base.defaultEstimate),
   }
 }
 
@@ -56,7 +113,7 @@ export function activeTaskTitle(state: TasksState): string {
 export function recordFocusComplete(state: TasksState, today: string): TasksState {
   const completedToday = state.completedDate === today ? state.completedToday + 1 : 1
   const tasks = state.tasks.map((t) =>
-    t.id === state.activeTaskId ? { ...t, completedPomodoros: t.completedPomodoros + 1 } : t,
+    t.id === state.activeTaskId ? { ...t, completedSessions: t.completedSessions + 1 } : t,
   )
   return { ...state, tasks, completedToday, completedDate: today }
 }
@@ -70,8 +127,8 @@ export function applyMutation(state: TasksState, m: TaskMutation, newId: NewId):
       const task: Task = {
         id: newId(),
         title: m.title.trim() || 'Untitled task',
-        estimatePomodoros: estimate,
-        completedPomodoros: 0,
+        estimateSessions: estimate,
+        completedSessions: 0,
         done: false,
       }
       return {
@@ -92,21 +149,11 @@ export function applyMutation(state: TasksState, m: TaskMutation, newId: NewId):
       return { ...state, activeTaskId: m.id }
     case 'delete': {
       const tasks = state.tasks.filter((t) => t.id !== m.id)
-      // Fall back to the first remaining incomplete task if the active one was deleted.
-      const activeTaskId =
-        state.activeTaskId === m.id
-          ? (tasks.find((t) => !t.done)?.id ?? null)
-          : state.activeTaskId
-      return { ...state, tasks, activeTaskId }
+      return { ...state, tasks, activeTaskId: nextActiveId(tasks, state.activeTaskId) }
     }
     case 'clearCompleted': {
       const tasks = state.tasks.filter((t) => !t.done)
-      // If the active task was among those cleared, fall back to the first
-      // remaining incomplete task (same pattern as 'delete').
-      const activeTaskId = tasks.some((t) => t.id === state.activeTaskId)
-        ? state.activeTaskId
-        : (tasks.find((t) => !t.done)?.id ?? null)
-      return { ...state, tasks, activeTaskId }
+      return { ...state, tasks, activeTaskId: nextActiveId(tasks, state.activeTaskId) }
     }
     default: {
       const _exhaustive: never = m

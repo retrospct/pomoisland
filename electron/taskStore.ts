@@ -12,13 +12,7 @@ import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import {
-  activeTaskTitle as titleOf,
-  applyMutation as reduce,
-  emptyTasksState,
-  normalizeTasksState,
-  recordFocusComplete as credit,
-} from '../src/shared/tasks'
+import * as tasks from '../src/shared/tasks'
 import type { TaskMutation, TasksState } from '../src/shared/types'
 
 type Listener = (s: TasksState) => void
@@ -37,9 +31,9 @@ function filePath(): string {
 function load(): TasksState {
   try {
     const raw = readFileSync(filePath(), 'utf8')
-    return normalizeTasksState(JSON.parse(raw), todayString())
+    return tasks.normalizeTasksState(JSON.parse(raw), todayString())
   } catch {
-    return emptyTasksState(todayString())
+    return tasks.emptyTasksState(todayString())
   }
 }
 
@@ -77,14 +71,14 @@ export function onTasksChange(cb: Listener): () => void {
 
 /** Title of the currently active task, or empty string if none. */
 export function activeTaskTitle(): string {
-  return titleOf(getTasks())
+  return tasks.activeTaskTitle(getTasks())
 }
 
 /** Called when a focus block completes — credits the active task and the day. */
 export function recordFocusComplete(): void {
-  commit(credit(getTasks(), todayString()))
+  commit(tasks.recordFocusComplete(getTasks(), todayString()))
 }
 
 export function applyMutation(m: TaskMutation): void {
-  commit(reduce(getTasks(), m, randomUUID))
+  commit(tasks.applyMutation(getTasks(), m, randomUUID))
 }

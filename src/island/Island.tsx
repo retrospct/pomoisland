@@ -1337,8 +1337,8 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleE
         {view.displayTask}
         {activeTask && (
           <TaskSessions
-            completed={activeTask.completedPomodoros}
-            estimate={activeTask.estimatePomodoros}
+            completed={activeTask.completedSessions}
+            estimate={activeTask.estimateSessions}
             accent={view.accent}
           />
         )}
@@ -1567,8 +1567,8 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         {view.displayTask}
         {activeTask && (
           <TaskSessions
-            completed={activeTask.completedPomodoros}
-            estimate={activeTask.estimatePomodoros}
+            completed={activeTask.completedSessions}
+            estimate={activeTask.estimateSessions}
             accent={view.accent}
           />
         )}

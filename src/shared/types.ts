@@ -227,10 +227,10 @@ export interface IslandResizeSize extends IslandSize {
 export interface Task {
   id: string
   title: string
-  /** Target focus sessions for this task. */
-  estimatePomodoros: number
+  /** Target focus sessions for this task — the user's estimate, which they revise. */
+  estimateSessions: number
   /** Focus sessions completed while this task was active. */
-  completedPomodoros: number
+  completedSessions: number
   done: boolean
 }
 
@@ -252,7 +252,7 @@ export type TaskMutation =
   | {
       type: 'update'
       id: string
-      patch: Partial<Pick<Task, 'title' | 'estimatePomodoros' | 'done'>>
+      patch: Partial<Pick<Task, 'title' | 'estimateSessions' | 'done'>>
     }
   | { type: 'delete'; id: string }
   | { type: 'setActive'; id: string | null }

@@ -67,8 +67,8 @@ function testAdd(): void {
   eq('added task has the given title and estimate, zero completed, not done', one.tasks[0], {
     id: 'id-1',
     title: 'Write spec',
-    estimatePomodoros: 3,
-    completedPomodoros: 0,
+    estimateSessions: 3,
+    completedSessions: 0,
     done: false,
   })
   assert(one.activeTaskId === 'id-1', 'first added task auto-activates')
@@ -77,15 +77,15 @@ function testAdd(): void {
   const two = applyMutation(one, { type: 'add', title: 'Second' }, newId)
   assert(two.activeTaskId === 'id-1', 'adding a second task does not steal the active task')
   assert(
-    two.tasks[1]?.estimatePomodoros === 3,
-    `omitted estimate falls back to the remembered default; got ${two.tasks[1]?.estimatePomodoros}`,
+    two.tasks[1]?.estimateSessions === 3,
+    `omitted estimate falls back to the remembered default; got ${two.tasks[1]?.estimateSessions}`,
   )
 
   const blank = applyMutation(empty, { type: 'add', title: '   ' }, ids())
   assert(blank.tasks[0]?.title === 'Untitled task', 'a blank title becomes "Untitled task"')
 
   const zero = applyMutation(empty, { type: 'add', title: 'Clamped', estimate: 0 }, ids())
-  assert(zero.tasks[0]?.estimatePomodoros === 1, 'an estimate below 1 clamps to 1')
+  assert(zero.tasks[0]?.estimateSessions === 1, 'an estimate below 1 clamps to 1')
 }
 
 /** Three incomplete tasks (id-1..id-3), id-1 active, default estimate 1. */
@@ -120,6 +120,22 @@ function testDelete(): void {
   const soleTask = applyMutation(emptyTasksState(TODAY), { type: 'add', title: 'Only' }, ids())
   const afterLast = applyMutation(soleTask, { type: 'delete', id: 'id-1' }, ids())
   assert(afterLast.activeTaskId === null, 'deleting the last task leaves nothing active')
+
+  // Today, marking the active task done does NOT clear it, so the active task can
+  // legitimately be a completed one. Deleting some *other* task must not quietly
+  // re-aim it — the fall-through triggers on the active task going missing, not on
+  // it being done. Ticket 15 deliberately changes what happens when a task is
+  // marked done; it must not change this by accident on the way past.
+  const activeIsDone = applyMutation(
+    threeTasks(),
+    { type: 'update', id: 'id-1', patch: { done: true } },
+    ids(),
+  )
+  const afterUnrelated = applyMutation(activeIsDone, { type: 'delete', id: 'id-3' }, ids())
+  assert(
+    afterUnrelated.activeTaskId === 'id-1',
+    `deleting an unrelated task leaves a completed active task alone; got ${afterUnrelated.activeTaskId}`,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -137,10 +153,10 @@ function testUpdateAndSetActive(): void {
 
   const estimated = applyMutation(
     s,
-    { type: 'update', id: 'id-1', patch: { estimatePomodoros: 9 } },
+    { type: 'update', id: 'id-1', patch: { estimateSessions: 9 } },
     ids(),
   )
-  assert(estimated.tasks[0]?.estimatePomodoros === 9, 'update can change an estimate')
+  assert(estimated.tasks[0]?.estimateSessions === 9, 'update can change an estimate')
   assert(estimated.tasks[0]?.done === false, 'changing an estimate never auto-completes a task')
 
   const activated = applyMutation(s, { type: 'setActive', id: 'id-3' }, ids())
@@ -190,25 +206,25 @@ function testFocusComplete(): void {
   const s = threeTasks()
 
   const once = recordFocusComplete(s, TODAY)
-  assert(once.tasks[0]?.completedPomodoros === 1, 'the active task is credited')
-  assert(once.tasks[1]?.completedPomodoros === 0, 'other tasks are not credited')
+  assert(once.tasks[0]?.completedSessions === 1, 'the active task is credited')
+  assert(once.tasks[1]?.completedSessions === 0, 'other tasks are not credited')
   assert(once.completedToday === 1, `the daily total is credited; got ${once.completedToday}`)
 
   const twice = recordFocusComplete(once, TODAY)
-  assert(twice.tasks[0]?.completedPomodoros === 2, 'credit accumulates on the same task')
+  assert(twice.tasks[0]?.completedSessions === 2, 'credit accumulates on the same task')
   assert(twice.completedToday === 2, 'the daily total accumulates')
 
   // Reaching the estimate must not complete the task — deliberate, so a task can
   // read 8/7 rather than silently closing itself.
   const atEstimate = recordFocusComplete(twice, TODAY)
   assert(
-    atEstimate.tasks[0]?.completedPomodoros === 3 && atEstimate.tasks[0]?.done === false,
+    atEstimate.tasks[0]?.completedSessions === 3 && atEstimate.tasks[0]?.done === false,
     'passing the estimate never auto-completes the task',
   )
 
   const untasked = recordFocusComplete({ ...s, activeTaskId: null }, TODAY)
   assert(
-    untasked.tasks.every((t) => t.completedPomodoros === 0),
+    untasked.tasks.every((t) => t.completedSessions === 0),
     'with no active task, no task is credited',
   )
   assert(untasked.completedToday === 1, 'the daily total is still credited with no active task')
@@ -240,6 +256,25 @@ function testNormalize(): void {
 
   const badTasks = normalizeTasksState({ tasks: 'not an array' }, TODAY)
   assert(badTasks.tasks.length === 0, 'a non-array tasks value becomes an empty array')
+
+  // The top-level scalars need the same treatment as the per-task fields, or the
+  // function hardens half its output and passes the rest through. defaultEstimate
+  // is the one with teeth: it feeds Math.round() in the add path, so a junk value
+  // mints tasks with a NaN estimate.
+  const junk = normalizeTasksState(
+    { defaultEstimate: 'x', completedToday: 'many', completedDate: 5, activeTaskId: 42 },
+    TODAY,
+  )
+  assert(junk.defaultEstimate === 1, `a junk defaultEstimate falls back to 1; got ${junk.defaultEstimate}`)
+  assert(junk.completedToday === 0, `a junk daily total falls back to 0; got ${junk.completedToday}`)
+  assert(junk.completedDate === TODAY, "a junk date falls back to today's")
+  assert(junk.activeTaskId === null, `a non-string active id becomes null; got ${junk.activeTaskId}`)
+
+  const addedAfterJunk = applyMutation(junk, { type: 'add', title: 'Sane' }, ids())
+  assert(
+    addedAfterJunk.tasks[0]?.estimateSessions === 1,
+    `a task added after a junk defaultEstimate has a real estimate, not NaN; got ${addedAfterJunk.tasks[0]?.estimateSessions}`,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -259,6 +294,82 @@ function testActiveTaskTitle(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Case 8: reading tasks written before the estimateSessions rename
+// ---------------------------------------------------------------------------
+// The count fields were once estimatePomodoros / completedPomodoros. Old keys
+// are read forever and never written back, so the new shape lands on the next
+// persist and the migration is self-healing. Without this, an upgraded user's
+// tasks arrive with `undefined` where a number belongs and surface as NaN in the
+// stepper and the progress bar.
+function testCountFieldMigration(): void {
+  console.log('\nCase 8: estimateSessions migration')
+
+  const old = normalizeTasksState(
+    { tasks: [{ id: 'a', title: 'Old', estimatePomodoros: 5, completedPomodoros: 2, done: false }] },
+    TODAY,
+  )
+  assert(old.tasks[0]?.estimateSessions === 5, `an old estimate key is read; got ${old.tasks[0]?.estimateSessions}`)
+  assert(old.tasks[0]?.completedSessions === 2, `an old completed key is read; got ${old.tasks[0]?.completedSessions}`)
+  assert(
+    !JSON.stringify(old.tasks[0]).includes('Pomodoros'),
+    'old keys are dropped, not carried alongside the new ones',
+  )
+
+  const current = normalizeTasksState(
+    { tasks: [{ id: 'a', title: 'New', estimateSessions: 4, completedSessions: 1, done: false }] },
+    TODAY,
+  )
+  assert(current.tasks[0]?.estimateSessions === 4, 'a new estimate key is read')
+  assert(current.tasks[0]?.completedSessions === 1, 'a new completed key is read')
+
+  const both = normalizeTasksState(
+    {
+      tasks: [
+        {
+          id: 'a',
+          title: 'Both',
+          estimateSessions: 4,
+          completedSessions: 1,
+          estimatePomodoros: 99,
+          completedPomodoros: 99,
+          done: false,
+        },
+      ],
+    },
+    TODAY,
+  )
+  assert(
+    both.tasks[0]?.estimateSessions === 4 && both.tasks[0]?.completedSessions === 1,
+    'when both key generations are present, the new one wins',
+  )
+
+  const neither = normalizeTasksState({ tasks: [{ id: 'a', title: 'Bare', done: false }] }, TODAY)
+  assert(
+    neither.tasks[0]?.estimateSessions === 1,
+    `a task with no estimate at all defaults to 1, never NaN; got ${neither.tasks[0]?.estimateSessions}`,
+  )
+  assert(
+    neither.tasks[0]?.completedSessions === 0,
+    `a task with no completed count at all defaults to 0, never NaN; got ${neither.tasks[0]?.completedSessions}`,
+  )
+
+  const garbage = normalizeTasksState({ tasks: [{ id: 'a', title: 'Junk', estimateSessions: 'lots', done: false }] }, TODAY)
+  assert(
+    garbage.tasks[0]?.estimateSessions === 1,
+    'a non-numeric estimate falls back to the default rather than poisoning the bar',
+  )
+
+  const malformed = normalizeTasksState(
+    { tasks: [null, 'nope', { title: 'No id' }, { id: 'a', title: 'Fine', done: false }] },
+    TODAY,
+  )
+  assert(
+    malformed.tasks.length === 1 && malformed.tasks[0]?.id === 'a',
+    `entries that are not tasks are dropped, not repaired into id-less ghosts; got ${malformed.tasks.length}`,
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Run all cases
 // ---------------------------------------------------------------------------
 console.log('\nTask reducer check\n' + '-'.repeat(50))
@@ -269,6 +380,7 @@ testClearCompleted()
 testFocusComplete()
 testNormalize()
 testActiveTaskTitle()
+testCountFieldMigration()
 
 if (process.exitCode === 1) {
   console.log('\n✗ One or more task assertions failed.\n')
