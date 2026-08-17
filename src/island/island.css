@@ -129,6 +129,18 @@ body.island-body {
   pointer-events: auto;
 }
 
+/* Header control labels. Same one-shot entry fade as the title popover below, and
+   for the same reason: they mount on a delay, so there is nothing to transition
+   from. */
+.il-header-tip {
+  animation: islandTitlePopIn 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-header-tip {
+    animation: none;
+  }
+}
+
 /* Truncated-title popover (ticket 21). It mounts on a delay rather than fading in
    from a hover selector, so this is a one-shot entry animation, not a transition
    — there is nothing on screen to transition FROM. No exit animation for the same

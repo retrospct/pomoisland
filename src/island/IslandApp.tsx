@@ -279,11 +279,6 @@ export function IslandApp() {
     window.api.windows.tasksWindow('popOut')
   }
 
-  const popInTasks = (e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    setMenuOpen(false)
-    window.api.windows.tasksWindow('popIn')
-  }
 
   // --- Peek-trigger hover region (MO-45) ---
   // The wrapper window is much larger than the visible island (it reserves
@@ -390,7 +385,6 @@ export function IslandApp() {
           onOpenTasks={openTasks}
           onCloseTasks={closeTasks}
           onPopOutTasks={popOutTasks}
-          onPopInTasks={popInTasks}
           tasksDetached={tasksDetached}
           onSettings={(e) => {
             e.stopPropagation()

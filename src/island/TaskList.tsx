@@ -29,6 +29,13 @@ const MONO = "'IBM Plex Mono', monospace"
 const TITLE_POPOVER_DELAY_MS = 400
 
 /**
+ * Hover delay for the header control labels. Shorter than the title popover's 400ms:
+ * these are three fixed controls a user is deliberately pointing at to find out what
+ * they do, not text encountered while scanning a list.
+ */
+const HEADER_TIP_DELAY_MS = 250
+
+/**
  * Which incomplete row the pointer is currently above, as the id to drop *before*,
  * or null for "past them all" — the argument shape `reorder` takes (ticket 22).
  *
@@ -254,34 +261,39 @@ export function TaskList({
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {detached ? (
             <>
-              <button
-                aria-label="Pop task list back into the timer"
-                title="Pop in"
-                onClick={(e) => { e.stopPropagation(); onPopIn?.() }}
-                style={{ ...headerBtn, ...noDrag }}
-              >
-                <PopInGlyph />
-              </button>
-              <PinButton pinned={pinned} accent={accent} onToggle={() => onTogglePin?.()} />
+              <HeaderTip label="Pop back into the timer">
+                <button
+                  aria-label="Pop task list back into the timer"
+                  onClick={(e) => { e.stopPropagation(); onPopIn?.() }}
+                  style={{ ...headerBtn, ...noDrag }}
+                >
+                  <PopInGlyph />
+                </button>
+              </HeaderTip>
+              <HeaderTip label="Keep above other windows">
+                <PinButton pinned={pinned} accent={accent} onToggle={() => onTogglePin?.()} />
+              </HeaderTip>
             </>
           ) : (
-            <button
-              aria-label="Pop task list out into its own window"
-              title="Pop out"
-              onClick={(e) => { e.stopPropagation(); onPopOut?.() }}
-              style={headerBtn}
-            >
-              <PopOutGlyph />
-            </button>
+            <HeaderTip label="Pop out into its own window">
+              <button
+                aria-label="Pop task list out into its own window"
+                onClick={(e) => { e.stopPropagation(); onPopOut?.() }}
+                style={headerBtn}
+              >
+                <PopOutGlyph />
+              </button>
+            </HeaderTip>
           )}
-          <button
-            aria-label={detached ? 'Close task window' : 'Close task list'}
-            title="Close"
-            onClick={(e) => { e.stopPropagation(); onClose() }}
-            style={{ ...headerBtn, fontSize: 13, ...(detached ? noDrag : null) }}
-          >
-            ✕
-          </button>
+          <HeaderTip label={detached ? 'Close window' : 'Close task list'}>
+            <button
+              aria-label={detached ? 'Close task window' : 'Close task list'}
+              onClick={(e) => { e.stopPropagation(); onClose() }}
+              style={{ ...headerBtn, fontSize: 13, ...(detached ? noDrag : null) }}
+            >
+              ✕
+            </button>
+          </HeaderTip>
         </div>
       </div>
 
@@ -541,6 +553,84 @@ export function TaskList({
 }
 
 // ---- Header controls ----
+
+/**
+ * Hover label for a header control. Hand-rolled, because the native `title` these
+ * buttons used to carry never appeared in the detached window.
+ *
+ * The header is the frameless window's drag region (`-webkit-app-region: drag`),
+ * and inside one macOS owns mouse tracking for the window drag. `no-drag` on each
+ * button restores clicks, which is why they work, but it does not restore
+ * Chromium's tooltip timer — that wants a sustained mouseover the OS is busy
+ * interpreting as a possible window drag. So the attribute was present and correct
+ * and silently did nothing.
+ *
+ * Opens DOWNWARD, the only direction with room: the header is the top edge of the
+ * window. Right-aligned to the control, so a label wider than its 20px button
+ * grows leftward into the panel instead of off the right edge, which is where all
+ * of these live. `pointer-events: none` and `no-drag` keep it from extending either
+ * the hover target or the drag rectangle.
+ *
+ * `aria-label` stays on the buttons and is not duplicated here: this is a visual
+ * affordance, and the accessible name already exists.
+ */
+function HeaderTip({ label, children }: { label: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const cancel = useCallback(() => {
+    if (timer.current !== null) {
+      clearTimeout(timer.current)
+      timer.current = null
+    }
+    setShow(false)
+  }, [])
+
+  useEffect(() => cancel, [cancel])
+
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-flex', ...noDrag }}
+      onMouseEnter={() => {
+        if (timer.current !== null) clearTimeout(timer.current)
+        timer.current = setTimeout(() => {
+          timer.current = null
+          setShow(true)
+        }, HEADER_TIP_DELAY_MS)
+      }}
+      onMouseLeave={cancel}
+    >
+      {children}
+      {show && (
+        <span
+          className="il-header-tip"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: 5,
+            zIndex: 6,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            background: 'var(--il-bg-menu)',
+            border: '1px solid var(--il-border)',
+            borderRadius: 7,
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
+            padding: '4px 7px',
+            fontSize: 11,
+            lineHeight: 1.2,
+            color: 'var(--il-text)',
+            ...noDrag,
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </span>
+  )
+}
+
 
 /**
  * Pop out — a card lifting away from a frame, with the arrow leaving toward the

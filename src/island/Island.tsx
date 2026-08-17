@@ -49,8 +49,6 @@ interface Handlers {
    *  The event is optional so the same handler serves the menu row (which needs
    *  to stop propagation) and the header button (which already has). */
   onPopOutTasks: (e?: React.MouseEvent) => void
-  /** Detached → docked, from the ⋯ menu (the window has its own control). */
-  onPopInTasks: (e?: React.MouseEvent) => void
   /** Prefs.tasksDetached — while true the inline panel is unreachable. */
   tasksDetached: boolean
   /**
@@ -143,6 +141,11 @@ function stop(e: React.MouseEvent) {
 // Six items: 210 + 22 + 14 + 15 = 261px of popover snapped. Clearance needed is
 // 261 + 6 - 20 = 247. The 264 in place carried 264 - 212 = 52px of slack; the
 // same slack over 247 gives 299.
+//
+// The Pop out row is now docked-only, so the menu is six rows docked and five
+// detached. This constant sizes the WORST case, which is still the docked six, so
+// it does not move — and a detached menu simply reserves 36px it does not use,
+// which costs nothing visible because the reserved block is an invisible spacer.
 const MENU_ALLOWANCE = 299
 
 export function Island(props: IslandProps) {
@@ -2046,7 +2049,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
                 snapped={notch}
                 accent={view.accent}
                 onTasks={props.onOpenTasks}
-                onPopTasks={props.tasksDetached ? props.onPopInTasks : props.onPopOutTasks}
+                onPopTasks={props.onPopOutTasks}
                 tasksDetached={props.tasksDetached}
                 onSettings={props.onSettings}
                 onCheckUpdates={props.onCheckUpdates}
