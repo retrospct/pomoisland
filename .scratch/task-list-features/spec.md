@@ -25,7 +25,7 @@ and the app never once asks whether that was the plan. The estimate is decoratio
 signal you were over is a number you have to go and look at.
 
 **You can't tell how far through a task you are without opening the list.** The Island shows
-which cycle you're in — the session dots — but a task's own progress is a small "3/5" tacked
+which round you're in — the session dots — but a task's own progress is a small "3/5" tacked
 onto the end of the task name in two views, and absent everywhere else.
 
 **Finishing your last task leaves the app lying to you.** Tick off the last incomplete task
@@ -94,7 +94,7 @@ pencil joins the hover set. Tasks can be dragged into a new order.
 
 **"Estimate" becomes the single word** for how many sessions a task is expected to take, in
 the model and in copy. "Pomodoro" leaves the task model entirely. The run of focus sessions
-ending in a long break gains a name it never had: a **cycle**.
+ending in a long break keeps the name it already had: a **round**.
 
 ---
 
@@ -121,7 +121,7 @@ ending in a long break gains a name it never had: a **cycle**.
 9. As someone who turned the bar off, I want the app to look exactly as it did before the
    feature shipped, so that "off" is a real escape hatch and not a degraded third state.
 10. As someone who has turned the session dots off, I want that to have no effect on the task
-    bar, so that switching off the cycle counter doesn't silently remove an unrelated feature.
+    bar, so that switching off the round counter doesn't silently remove an unrelated feature.
 11. As someone using a collapsed floating layout, I want the bar *not* to appear there and
     grow the pill, so that a layout I chose for being small stays small.
 12. As someone reading the task list, I want rows to keep their numeric count rather than each
@@ -134,7 +134,7 @@ ending in a long break gains a name it never had: a **cycle**.
 14. As someone who has just finished a task's last session, I want my break to run normally
     first, so that hitting an estimate never costs me a break.
 15. As someone whose final session lands on a long break, I want the long break to run as it
-    normally would, so that the cycle isn't disrupted by the task.
+    normally would, so that the round isn't disrupted by the task.
 16. As someone at the stop, I want the completion flourish, sound and notification to fire
     exactly as they do for every other session, so that the last session of a task isn't the
     only uncelebrated one.
@@ -384,7 +384,7 @@ ending in a long break gains a name it never had: a **cycle**.
   that already name the active task and already hold it in scope — **Peek and Expanded**.
   - Rejected: **inside the session-dots component**, which would reach all five of its call
     sites free but put an unlabelled task bar in three views that never name a task, and would
-    require feeding task state into a component that is about the cycle counter.
+    require feeding task state into a component that is about the round counter.
   - Rejected: **a fifth placeable island element**, which touches the element union, the
     placement derivation, the view derivation, an exhaustive switch, two content guards, the
     prefs defaults and migration, the Settings placement grid and every assertion in the
@@ -395,7 +395,7 @@ ending in a long break gains a name it never had: a **cycle**.
 - **Excluded**: the collapsed floating layout that has a task line (a collapsed presentation
   should not grow), and the task rows (a list is a comparison context — numbers compare, bars
   of differing segment counts don't).
-- **The dots placement slot has no relationship to the bar.** The slot governs the cycle
+- **The dots placement slot has no relationship to the bar.** The slot governs the round
   counter; the bar is task progress with its own pref.
 - **Position**: between the task line and the timer's own progress bar, giving a
   specific-to-general reading order of task name → this task's progress → this block's
@@ -478,9 +478,14 @@ defaults.
 - **Task** — a list entry with a title, an estimate and a completion state.
 - **Estimated sessions** — how many focus sessions a task is expected to take. Prose qualifies
   the task side; row copy is unchanged and needs no adjective.
-- **Cycle** — the run of focus sessions ending in a long break. This is the name that was
-  missing; it makes the existing "sessions until long break" setting legible.
-- The existing **Session** entry gains a clarification: a session belongs both to a cycle and,
+- **Round** — the run of focus sessions ending in a long break. **Already in the glossary**;
+  an earlier draft of this spec proposed coining "cycle" for it on the false premise that it
+  was unnamed. Resolved 2026-08-17 in favour of the existing term. Its entry is corrected in
+  passing: it referenced a pref `longEvery` that does not exist, where the real one is
+  `cSessions`.
+- **Active task** — the one task a completed focus session is credited to. At most one, and
+  possibly none.
+- The existing **Session** entry gains a clarification: a session belongs both to a round and,
   when a task is active, to that task.
 - **Docked / detached** for where the list lives; **pop out / pop in** for the control.
   **Pin** means always-on-top and nothing else — "pinned" is retired for the docked axis.
@@ -582,8 +587,8 @@ Through the timer, extending the existing completion-reason script's approach:
 - **The task list in the snap overlay window.** It renders none of this today.
 - **Neighbour animation on drag** (the drop-indicator line is in scope; reflowing neighbours
   are not) and **pop-out/pop-in window choreography**. Both belong to the global motion pass.
-- **The session index never wrapping at the cycle length.** After the first cycle every dot
-  reads done and none reads current until reset. A real bug, but it belongs to the cycle
+- **The session index never wrapping at the round length.** After the first round every dot
+  reads done and none reads current until reset. A real bug, but it belongs to the round
   counter, not the task bar.
 - **Documentation rot** unrelated to this work: an ADR that names a store library the repo
   doesn't use, and two ADRs sharing a number.
@@ -692,7 +697,7 @@ with no explanation. Revisit if it bites.
 
 Three independent decisions in this effort landed on the same answer: **derive it, don't model
 it.** At-estimate is a predicate, not a status. No-active-task is a null id, not a mode. The
-progress bar's relationship to the cycle dots is nothing at all, rather than a shared
+progress bar's relationship to the round dots is nothing at all, rather than a shared
 component. In each case the modelled alternative was available and rejected for the same
 reason — a stored flag has to be cleared on every path that can invalidate it, and each of
 those paths is a place to forget.

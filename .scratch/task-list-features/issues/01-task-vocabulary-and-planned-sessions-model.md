@@ -87,16 +87,25 @@ task side would be a lie in the model. Instead:
   `TaskList.tsx:506` already renders `"3/5 sessions"` with no adjective, and it reads fine.
 - **Global side** keeps plain "sessions". Existing settings copy `'Sessions until long
   break'` (`sections.tsx:705`, `cSessions`, range 2–8) stands.
-- **The gap was never the counters — it was the grouping.** The run of `cSessions` focus
-  sessions ending in a long break has never had a name. It is now a **cycle**, which also
-  makes "Sessions until long break" legible as "sessions in a cycle".
+- **~~The gap was never the counters — it was the grouping.~~ Retracted 2026-08-17.** This
+  claimed the run of `cSessions` focus sessions ending in a long break "has never had a name"
+  and coined **cycle** for it. **The premise was false**: `CONTEXT.md` already names it
+  **Round** ("a group of focus sessions; a long break follows every ... sessions"), and has
+  since before this effort. Coining "cycle" minted a synonym for an existing glossary term,
+  which is the one thing a glossary exists to prevent.
+  **The word is Round.** It was found during ticket 14's implementation, when the glossary
+  edit this ticket deferred was finally written, and resolved by the owner in favour of the
+  existing term. "Sessions until long break" reads as "sessions in a round".
+  Fixed in passing: that glossary entry referenced a pref `longEvery` which does not exist
+  anywhere in the codebase — the real one is `cSessions`.
 - **Code needs no prefixing.** The receiver disambiguates: `task.completedSessions` vs
   `timer.sessionIndex`. No `taskSessions` / `cycleSessions` renaming.
 
 **Terms for `CONTEXT.md`** (the edit itself is spec/implementation work, per this ticket):
-**Task**, **Estimated sessions**, **Cycle**, plus a clarification under the existing
-**Session** entry that a session belongs both to a cycle and, when a task is active, to that
-task.
+**Task**, **Estimated sessions**, plus a clarification under the existing **Session** entry
+that a session belongs both to a **round** and, when a task is active, to that task. No new
+name for the grouping — see the retraction above. Landed in ticket 14, which also added
+**Active task** and **Completed sessions**.
 
 ### 4. No `order` field on `Task`
 

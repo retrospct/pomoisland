@@ -123,7 +123,7 @@ there is only ever one task there.
 
 ### 3. `dots: 'off'` has no effect on the bar
 
-§1 decouples them structurally. The dots slot controls the global **cycle** counter; the bar
+§1 decouples them structurally. The dots slot controls the global **round** counter; the bar
 is task progress with its own pref. Coupling them would mean a user who turned off the dots
 silently loses an unrelated feature.
 

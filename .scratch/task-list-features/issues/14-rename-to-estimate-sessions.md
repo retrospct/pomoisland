@@ -35,7 +35,11 @@ is deliberately **unchanged**; that was the point of choosing estimate over plan
       in the stepper or the row count
 - [ ] The check script from 13 gains cases for: old keys only, new keys only, both present, and
       neither
-- [ ] The glossary gains **Task**, **Estimated sessions** and **Cycle**, and the existing
-      **Session** entry notes that a session belongs both to a cycle and, when a task is active,
-      to that task
+- [x] The glossary gains **Task**, **Active task**, **Estimated sessions** and **Completed
+      sessions**, and the existing **Session** entry notes that a session belongs both to a
+      **round** and, when a task is active, to that task.
+      **Amended 2026-08-17**: this originally asked for a new term **Cycle** for the run of
+      sessions ending in a long break. `CONTEXT.md` already named that **Round**, so the
+      coinage was dropped rather than minting a synonym. That entry's stale `longEvery`
+      reference was corrected to `cSessions` in passing.
 - [ ] Type-check and lint pass

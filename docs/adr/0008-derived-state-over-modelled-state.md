@@ -12,7 +12,7 @@ render differently, and each one arrived looking like it wanted its own state:
   the timer stops and offers two resume controls instead of rolling on.
 - **No active task** — the user has deselected, or completed their last task, and a session may
   run crediting nothing.
-- **Task progress vs the cycle dots** — a new segmented task-progress bar sits near the existing
+- **Task progress vs the round dots** — a new segmented task-progress bar sits near the existing
   session dots and could plausibly have been part of the same placeable-element system.
 
 Each was decided independently, on its own merits, in tickets 04, 05 and 03. All three landed on
@@ -35,7 +35,7 @@ that already exists:
   type.
 - **The task progress bar** is task-adjacent, not dots-adjacent: it renders where the active
   task is already named and already in scope, and has no structural relationship to
-  `IslandPlacement` at all. `islandPlacement.dots` governs the cycle counter and means nothing
+  `IslandPlacement` at all. `islandPlacement.dots` governs the round counter and means nothing
   to the bar.
 
 The general rule, for this codebase: **if a state can be computed from state that already

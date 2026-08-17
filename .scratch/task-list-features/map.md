@@ -206,8 +206,9 @@ Four consequences for open tickets:
   right and don't move). Rename requires a tolerant per-task read in `taskStore.ts` `load()`
   (`?? t.estimatePomodoros ?? 1`) — there is no per-task normalizer today — but **no `version`
   field**. **No `order` field** on `Task`; array position stays the order. The dot grouping is
-  now named a **cycle**; the task side is qualified in prose as *estimated sessions* and row copy
-  is unchanged. Consequently **`pause-at-planned` → `pause-at-estimate`** across the map.
+  named a **round**, which it already was — an attempt to coin "cycle" for it was retracted
+  2026-08-17 on discovering `CONTEXT.md` had named it all along; the task side is qualified in
+  prose as *estimated sessions* and row copy is unchanged. Consequently **`pause-at-planned` → `pause-at-estimate`** across the map.
 
 - [04 — Pause-at-estimate: boundary, timer state, and the resume controls](issues/04-pause-at-planned-boundary-and-timer-state.md)
   — **The pause lands after the break**, at the break→focus boundary, as one branch in
@@ -303,7 +304,7 @@ of that ticket.
 
 - **`sessionIndex` never wrapping modulo `cSessions`** (`electron/timer.ts:179`) — after
   round one every global dot reads *done* and none reads *current* until reset. A real
-  bug, but it is the global dot cycle, not the task bar. Separate effort.
+  bug, but it is the global dot round, not the task bar. Separate effort.
 - **Docs rot**: ADR-0002 claims `electron-store` when the store is hand-rolled JSON; two
   files are numbered ADR-0006. Unrelated housekeeping.
 - **Motion tuning proper** — neighbour FLIP reordering on drag, and pop-out/pop-in window
