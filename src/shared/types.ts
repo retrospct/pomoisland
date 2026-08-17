@@ -262,9 +262,21 @@ export interface Prefs {
    * in that order before it reaches a constructor.
    */
   tasksWindowBounds: WindowBounds | null
-  /** Delay (ms) before collapsing from peek after cursor leaves. */
+  /**
+   * Does the island collapse itself? On (the default) is the shipped behaviour:
+   * it retracts to the collapsed pill when the cursor leaves and when the app
+   * loses focus. Off pins it at whatever size it is currently showing.
+   *
+   * Only AUTOMATIC collapse is suppressed. Clicking the island still toggles it
+   * shut, so the user never loses the way back to a small island — which is what
+   * keeps this a preference rather than a trap.
+   *
+   * The two delays below are this pref's parameters, and are dead while it is off.
+   */
+  autoRetract: boolean
+  /** Delay (ms) before collapsing from peek after cursor leaves. Needs autoRetract. */
   hoverRetractMs: number
-  /** Delay (ms) before collapsing from expanded after cursor leaves. */
+  /** Delay (ms) before collapsing from expanded after cursor leaves. Needs autoRetract. */
   expandRetractMs: number
 }
 

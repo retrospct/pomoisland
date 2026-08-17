@@ -1344,24 +1344,49 @@ export function PreferencesTab({ prefs, set }: TabProps) {
         <div style={{ marginTop: 24 }}>
           <SectionLabel>Auto-retract</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            <RetractControl
-              label="On hover"
-              desc="Collapse delay when cursor leaves the peek view"
-              value={prefs.hoverRetractMs}
-              defaultValue={200}
-              min={100}
-              max={2000}
-              onChange={(v) => set({ hoverRetractMs: v })}
+            {/* Master switch for the section. Also on the island's ⋯ menu, because
+                whether the timer should stay put is a decision made while looking
+                at it, not while in Settings. */}
+            <ToggleRow
+              title="Collapse automatically"
+              desc="Shrink the island when the cursor leaves or the app loses focus. Off keeps it at its current size until you click it."
+              on={prefs.autoRetract}
+              onClick={() => set({ autoRetract: !prefs.autoRetract })}
             />
-            <RetractControl
-              label="When expanded"
-              desc="Collapse delay when cursor leaves the expanded view"
-              value={prefs.expandRetractMs}
-              defaultValue={800}
-              min={300}
-              max={5000}
-              onChange={(v) => set({ expandRetractMs: v })}
-            />
+            {/* The two delays are this pref's parameters, so they are dimmed and
+                inert while it is off rather than hidden: a control that vanishes
+                takes its own explanation with it, and someone who set a 3s expanded
+                delay should still be able to see it waiting there. */}
+            <div
+              aria-disabled={!prefs.autoRetract}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 13,
+                opacity: prefs.autoRetract ? 1 : 0.4,
+                pointerEvents: prefs.autoRetract ? undefined : 'none',
+                transition: 'opacity .15s',
+              }}
+            >
+              <RetractControl
+                label="On hover"
+                desc="Collapse delay when cursor leaves the peek view"
+                value={prefs.hoverRetractMs}
+                defaultValue={200}
+                min={100}
+                max={2000}
+                onChange={(v) => set({ hoverRetractMs: v })}
+              />
+              <RetractControl
+                label="When expanded"
+                desc="Collapse delay when cursor leaves the expanded view"
+                value={prefs.expandRetractMs}
+                defaultValue={800}
+                min={300}
+                max={5000}
+                onChange={(v) => set({ expandRetractMs: v })}
+              />
+            </div>
           </div>
         </div>
       </div>

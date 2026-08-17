@@ -69,6 +69,7 @@ export const DEFAULT_PREFS: Prefs = {
   // No geometry until the window has been placed once. Never trusted on read —
   // electron/windows.ts sanitizes it against the live displays.
   tasksWindowBounds: null,
+  autoRetract: true,
   hoverRetractMs: 200,
   expandRetractMs: 800,
 }
