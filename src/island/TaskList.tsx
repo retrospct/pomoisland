@@ -122,7 +122,7 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
               fontStyle: 'italic',
             }}
           >
-            No tasks yet — add one below.
+            No tasks yet. Add one below.
           </p>
         )}
 
@@ -137,7 +137,12 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
             onEditTextChange={setEditText}
             onStartEdit={startEdit}
             onCommitEdit={commitEdit}
-            onSetActive={() => mutate({ type: 'setActive', id: task.id })}
+            // Clicking the row you are already on deselects it — the only way to
+            // say "I'm not working on anything". The timer runs on regardless;
+            // that session simply credits no task.
+            onSetActive={() =>
+              mutate({ type: 'setActive', id: task.id === tasks.activeTaskId ? null : task.id })
+            }
             onToggleDone={() => mutate({ type: 'update', id: task.id, patch: { done: true } })}
             onDelete={() => mutate({ type: 'delete', id: task.id })}
             onAdjustEstimate={(d) =>
@@ -223,10 +228,11 @@ export function TaskList({ tasks, accent, width = 320, onClose }: TaskListProps)
                 onEditTextChange={setEditText}
                 onStartEdit={startEdit}
                 onCommitEdit={commitEdit}
-                onSetActive={() => {
-                  mutate({ type: 'update', id: task.id, patch: { done: false } })
-                  mutate({ type: 'setActive', id: task.id })
-                }}
+                // Completed rows render isActive={false} always, so their click
+                // can never mean deselect. It means "pick this up again", which
+                // setActive does in one mutation: activating a completed task
+                // un-completes it, with no intermediate state to draw.
+                onSetActive={() => mutate({ type: 'setActive', id: task.id })}
                 onToggleDone={() =>
                   mutate({ type: 'update', id: task.id, patch: { done: false } })
                 }

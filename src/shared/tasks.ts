@@ -16,22 +16,29 @@ import type { Task, TaskMutation, TasksState } from './types'
 export type NewId = () => string
 
 /**
- * Which task should be active once `tasks` is the list. Keeps the current one if
- * it's still there, otherwise falls through to the first incomplete task,
- * otherwise nothing.
+ * The task to work on next: the first incomplete one, or nothing.
  *
- * The trigger is the active task going *missing*, not its being done — marking a
- * task done doesn't clear it today, so a completed task can legitimately be the
- * active one and must survive an unrelated delete. Ticket 15 changes the done
- * path deliberately; it must not change this in passing.
- *
- * Shared by every path that can orphan the active task (delete, clearCompleted,
- * and the done path once 15 lands) — separate paths choosing "the next task"
+ * The single answer to "which task now?", shared by every path that has to pick
+ * one (delete, clearCompleted, and the done path) — separate paths choosing
  * independently is how they drift apart.
+ */
+function firstIncompleteId(tasks: Task[]): string | null {
+  return tasks.find((t) => !t.done)?.id ?? null
+}
+
+/**
+ * Which task should be active once `tasks` is the list. Keeps the current one if
+ * it's still there, otherwise falls through to `firstIncompleteId`.
+ *
+ * The trigger is the active task going *missing*, not its being done. Since the
+ * done path advances (see the `update` case) a live state shouldn't reach here
+ * with a completed active task — but a tasks.json written before that, or edited
+ * by hand, loads that way, and normalizeTasksState doesn't reconcile it. Such a
+ * state must survive an unrelated delete rather than being quietly re-aimed.
  */
 function nextActiveId(tasks: Task[], current: string | null): string | null {
   if (tasks.some((t) => t.id === current)) return current
-  return tasks.find((t) => !t.done)?.id ?? null
+  return firstIncompleteId(tasks)
 }
 
 /** A fresh, empty task list. `today` is an ISO date string (YYYY-MM-DD). */
@@ -143,10 +150,25 @@ export function applyMutation(state: TasksState, m: TaskMutation, newId: NewId):
       // Done is manual-only: estimate changes never auto-complete or un-complete
       // a task, so it can keep counting past its estimate (e.g. 8/7).
       const tasks = state.tasks.map((t) => (t.id === m.id ? { ...t, ...m.patch } : t))
-      return { ...state, tasks }
+      // Completing the task you were working on hands the active slot to the
+      // next incomplete one, matching delete and clearCompleted — otherwise the
+      // island keeps naming a task you just ticked off. The identity test is the
+      // whole guard: without it, ticking *any* row would re-aim the active task,
+      // so housekeeping would hijack the session.
+      const completedTheActiveTask = m.patch.done === true && state.activeTaskId === m.id
+      if (!completedTheActiveTask) return { ...state, tasks }
+      return { ...state, tasks, activeTaskId: firstIncompleteId(tasks) }
     }
-    case 'setActive':
-      return { ...state, activeTaskId: m.id }
+    case 'setActive': {
+      // Activating a completed task un-completes it in the same breath: you
+      // cannot be working on something you have finished. Doing it as two
+      // mutations would commit, persist and broadcast an intermediate state that
+      // is incomplete but not yet active — one no user action asked for.
+      const tasks = state.tasks.map((t) =>
+        t.id === m.id && t.done ? { ...t, done: false } : t,
+      )
+      return { ...state, tasks, activeTaskId: m.id }
+    }
     case 'delete': {
       const tasks = state.tasks.filter((t) => t.id !== m.id)
       return { ...state, tasks, activeTaskId: nextActiveId(tasks, state.activeTaskId) }
