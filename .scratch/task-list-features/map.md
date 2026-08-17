@@ -4,8 +4,40 @@
 
 **Reached 2026-08-16.** The spec is written: [spec.md](spec.md), `Status: ready-for-agent`.
 The derived-not-modelled pattern that recurred across tickets 03, 04 and 05 is recorded as
-`docs/adr/0008-derived-state-over-modelled-state.md`. What remains is implementation, starting
-with the seven deferred tickets.
+`docs/adr/0008-derived-state-over-modelled-state.md`. Implementation is broken into **twelve
+tickets, 13 through 24** — see *Implementation tickets* below. Tickets 01 through 12 are the
+map's own decision tickets and are closed, resolved or deferred-into-13-24; nothing new is
+numbered below 13.
+
+### Implementation tickets
+
+Vertical slices in dependency order. Blockers are **semantic**: 15, 20 and 23 all edit the task
+list and will conflict on merge, but none gates the others, so they run in parallel.
+
+| # | Ticket | Blocked by |
+|---|---|---|
+| [13](issues/13-extract-pure-task-reducer.md) | Extract the pure task reducer, with a characterization check script | — |
+| [14](issues/14-rename-to-estimate-sessions.md) | Rename to `estimateSessions` / `completedSessions`, tolerant read | 13 |
+| [15](issues/15-active-task-lifecycle.md) | Active-task lifecycle: done-path advance, click-to-deselect, no-task rendering | 13 |
+| [16](issues/16-skipped-sessions-credit-nothing.md) | Skipped sessions credit nothing, plus the toggle | 13 |
+| [17](issues/17-task-progress-bar.md) | Task progress bar in Peek and Expanded, plus the toggle | 14 |
+| [18](issues/18-pause-at-estimate-the-stop.md) | Pause at estimate: the stop | 14 |
+| [19](issues/19-resume-controls.md) | The + and ✓ resume controls | 15, 17, 18 |
+| [20](issues/20-row-layout-hover-reveal.md) | Task row layout: opacity hover-reveal and the edit pencil | — |
+| [21](issues/21-truncation-popover.md) | Truncation popover, and the deselect tooltip it unblocks | 15, 20 |
+| [22](issues/22-drag-reorder.md) | Drag-reorder | 13, 20 |
+| [23](issues/23-detached-window-pop-out.md) | Detached task window: pop out and pop in | — |
+| [24](issues/24-detached-window-geometry-and-pin.md) | Detached window: geometry persistence, resize grip, pin | 23 |
+
+Four can start immediately: **13, 20, 23** — and 13 unblocks the widest.
+
+Two deliberate splits: **18 ships the estimate stop without its buttons** (19 adds them), and
+**23 ships a working detached window without geometry or pin** (24 adds them). Both intermediate
+states are usable and each half fits one context window.
+
+**No horizontal Settings ticket.** Each feature ships its own toggle; whichever of 16, 17, 18
+lands first creates the Tasks section. The deferred decision ticket
+[12](issues/12-tasks-settings-section.md) is absorbed into those three.
 
 A written spec at `.scratch/task-list-features/spec.md` plus implementation issues under
 `.scratch/task-list-features/issues/`, covering the task-list UI batch (detach, resize,

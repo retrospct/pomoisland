@@ -597,12 +597,22 @@ Through the timer, extending the existing completion-reason script's approach:
 
 ## Further Notes
 
+### Implementation tickets
+
+This spec is broken into **twelve vertical slices, tickets 13 through 24** — see the map's
+*Implementation tickets* table for the dependency graph. Tickets 13, 20 and 23 have no blockers
+and can start immediately.
+
 ### Work deferred to implementation, not out of scope
 
 Seven questions were consciously moved off the decision phase to shorten it. **These ship** —
 their questions are real and are written up in full in their ticket files, to be answered by an
 implementation session with the code in front of it. If any turns out to be a genuine product
 call rather than a build call, escalate it rather than guessing.
+
+Each is absorbed by an implementation ticket, which is where it gets answered: **06** → 21,
+**07** → 17, **09** → 22, **10** → 23 and 24, **11** → 20 (with the resume-control half in 19),
+**12** → 16, 17 and 18.
 
 File anchors below are resolved against commit `2aabf28` and may drift.
 
