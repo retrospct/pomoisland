@@ -5,6 +5,17 @@ All notable changes to PomoIsland will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1](https://github.com/retrospct/pomoisland/compare/v0.4.0...v0.4.1) (2026-08-17)
+
+
+### Bug Fixes
+
+* create the release tag eagerly, and verify the published feed ([4d57607](https://github.com/retrospct/pomoisland/commit/4d57607a31c7d29f1211852f1069860192b41d99))
+* **deps:** pull js-yaml 4.3.1 into the shipped updater ([7951842](https://github.com/retrospct/pomoisland/commit/79518427b808c2f248dd1173435de3d6c9f6019f))
+* **deps:** pull js-yaml 4.3.1 into the shipped updater ([6622c86](https://github.com/retrospct/pomoisland/commit/6622c863933b5853ac6b711558d7473b29cb75b3))
+* publish releases only once their artifacts are in place ([a1abb75](https://github.com/retrospct/pomoisland/commit/a1abb758412c2c0da412273f9507263222eb43c8))
+* publish the release only once its artifacts are in place ([f92989e](https://github.com/retrospct/pomoisland/commit/f92989e5468a73e1166ad95fb37172158f799f2c))
+
 ## [0.4.0](https://github.com/retrospct/pomoisland/compare/v0.3.1...v0.4.0) (2026-08-17)
 
 
