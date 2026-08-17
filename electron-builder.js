@@ -6,8 +6,15 @@
 //                       credentials in the environment — see README "Packaging").
 //
 // Only production `dependencies` are ever bundled by electron-builder, and this
-// app has none — all runtime code is compiled into `out/` by electron-vite — so
-// dev-only tools like `node-web-audio-api` cannot ship.
+// app has none — so a dev-only tool that nothing imports, like
+// `node-web-audio-api`, cannot ship.
+//
+// That is NOT the same as "devDependencies never reach users". electron-vite
+// compiles `electron/` and `src/` into `out/`, pulling in whatever they import —
+// so `electron-updater` (a devDependency) and its own deps, `js-yaml` among them,
+// are inlined into `out/main/main.js` and do ship. Read Dependabot's
+// `scope: development` label with that in mind: for anything reachable from main
+// or renderer code, it means build-time *and* runtime.
 //
 // This is a JS config (not YAML) specifically so `.env` gets loaded here, before
 // electron-builder reads `process.env.APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/
