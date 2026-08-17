@@ -23,15 +23,15 @@ it; drag it away to float.
 
 ## Scripts
 
-| Script              | What it does                                            |
-| ------------------- | ------------------------------------------------------- |
-| `npm run dev`       | electron-vite dev with HMR for both renderers           |
-| `npm run build`     | Build main, preload, and both renderers into `out/`     |
-| `npm run preview`   | Run the production build locally                         |
-| `npm run typecheck` | `tsc --noEmit` for the renderer and the node projects   |
-| `npm run lint`      | ESLint over `*.ts/*.tsx`                                 |
+| Script              | What it does                                                              |
+| ------------------- | ------------------------------------------------------------------------- |
+| `npm run dev`       | electron-vite dev with HMR for both renderers                             |
+| `npm run build`     | Build main, preload, and both renderers into `out/`                       |
+| `npm run preview`   | Run the production build locally                                          |
+| `npm run typecheck` | `tsc --noEmit` for the renderer and the node projects                     |
+| `npm run lint`      | ESLint over `*.ts/*.tsx`                                                  |
 | `npm run package`   | Build + `electron-builder --mac --dir` (unsigned `.app`, for smoke tests) |
-| `npm run dist:mac`  | Build + signed/notarized `.dmg` + `.zip` (needs Apple creds — see below) |
+| `npm run dist:mac`  | Build + signed/notarized `.dmg` + `.zip` (needs Apple creds — see below)  |
 
 ## Packaging & distribution
 
@@ -85,7 +85,7 @@ locally launchable, unquarantined `.app`. A distributable, Gatekeeper-passing bu
 
 Hardened runtime is on, with entitlements in `build/entitlements.mac.plist` (the minimal
 JIT/unsigned-memory/library-validation set Electron needs; no mic/camera/network — PomoIsland
-only *plays* synthesized audio). Verify a finished build with `spctl --assess --type execute -vv`.
+only _plays_ synthesized audio). Verify a finished build with `spctl --assess --type execute -vv`.
 
 > **App icon.** Ships from the design handoff (`design-reference/project/Icon Export.dc.html` →
 > Variant D / `pill-top`, exported as `build/icon.png`). Alternate variants (E and others) live in
@@ -107,8 +107,27 @@ Versioning and the changelog are managed by [release-please](https://github.com/
    that bumps `package.json`'s `version` and finalizes `CHANGELOG.md`'s `[Unreleased]` section.
 3. Merging that Release PR is what ships: release-please tags `vX.Y.Z` and creates a **draft**
    GitHub Release, then a gated `publish` job builds, signs, and notarizes the app on a
-   `macos-latest` runner and uploads the `.dmg`/`.zip`/`latest-mac.yml` to that same draft.
-4. Once you've smoke-tested the uploaded build, publish the draft release on GitHub.
+   `macos-latest` runner and uploads the `.dmg`/`.zip`/`latest-mac.yml` into that draft.
+4. Only once every artifact is present does CI un-draft the release. Nothing to do by hand.
+
+Publishing last is deliberate. A draft release has no public download URLs, so a build that
+fails leaves nothing user-visible; un-drafting first (as CI used to) meant any downstream failure
+left a _published_ release with no artifacts, which 404s both the in-app updater and the Download
+button on the site. CI therefore refuses to un-draft until all five artifacts are attached, and
+afterwards fetches the public feed URLs unauthenticated to confirm they're live.
+
+`force-tag-creation` in `release-please-config.json` is what makes that ordering safe: GitHub
+normally won't create a git tag for a draft release until it's published, and release-please
+can't see its own untagged drafts — so without it, the tag would be missing for the whole
+20-minute notarized build and any push to `main` in that window would generate a changelog from
+the wrong boundary.
+
+**If a release goes wrong.** Re-running the whole workflow is the wrong move: release-please
+can't see its own draft (drafts have no tag to diff against), so it creates a _second_ draft on
+the same tag — and from there `gh` and electron-builder resolve that tag to different releases.
+Instead, run the workflow via **Run workflow** with the `tag` input set (e.g. `v0.4.0`), which
+skips release-please and rebuilds/publishes the existing release. If two releases already share
+a tag, CI stops and names both IDs; delete the stale one first.
 
 `pnpm run release:mac` also still works locally (using your `.env` credentials) if you want to
 build a release manually instead of waiting on CI.

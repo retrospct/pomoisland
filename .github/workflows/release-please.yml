@@ -61,8 +61,10 @@ jobs:
           fi
 
           # List /releases rather than /releases/tags/<tag>: the release is still a
-          # draft here, and drafts have no git tag ref for the by-tag endpoint to find.
-          # Filter with --arg rather than string interpolation, so the tag is data.
+          # draft here, and the by-tag endpoint only ever returns published releases
+          # (true even with force-tag-creation, which gives the tag a ref but leaves
+          # the release itself a draft). Listing is also what makes the count check
+          # below possible at all. Filter with --arg, so the tag stays data.
           matches=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases" --jq '.[]' \
             | jq -s --arg tag "$TAG" '[.[] | select(.tag_name == $tag)]')
           count=$(jq 'length' <<<"$matches")
@@ -104,10 +106,10 @@ jobs:
         env:
           RP_SHA: ${{ needs.release-please.outputs.sha }}
 
-      # Check out by commit SHA, not by tag: the release is still a draft at this
-      # point (see release-please-config.json) and GitHub doesn't materialize
-      # refs/tags/<tag> until it's published — which now happens at the very end.
-      # The commit itself is on `main` immediately, so SHA checkout is unaffected.
+      # Check out by commit SHA rather than by tag. `force-tag-creation` means the tag
+      # ref does now exist this early, but the SHA is the thing we actually want to
+      # build and it stays correct on the recovery path too, where the resolve step
+      # derives it independently.
       - uses: actions/checkout@v7
         with:
           ref: ${{ steps.resolve.outputs.sha }}
@@ -120,6 +122,20 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # The artifact names, and the version the updater will advertise, come from
+      # package.json — not from the tag. If the checked-out tree disagrees with the
+      # release it is being uploaded into, everything downstream is subtly wrong.
+      - name: Assert the checkout matches the release version
+        run: |
+          set -euo pipefail
+          have=$(node -p "require('./package.json').version")
+          want="${TAG#v}"
+          [ "$have" = "$want" ] || {
+            echo "::error::package.json is $have but the release is $want (tag ${TAG})"
+            exit 1
+          }
+          echo "package.json $have matches ${TAG}"
 
       # notarytool wants a file path here, not base64 content — decode once per run.
       - name: Materialize App Store Connect API key
@@ -138,6 +154,11 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron-builder refuses to upload to a release published more than two
+          # hours ago, and — as ever — skips silently and exits 0. Irrelevant while the
+          # release is a draft (it has no published_at), but a recovery run targets an
+          # already-published release, which is exactly when that rule would bite.
+          EP_GH_IGNORE_TIME: 'true'
 
       # electron-builder FAILS OPEN: when it can't resolve a release to upload to,
       # it logs `"skipped publishing"` at warn level and still exits 0. That is how
@@ -165,13 +186,16 @@ jobs:
         env:
           RELEASE_ID: ${{ steps.resolve.outputs.release_id }}
 
-      # Un-draft LAST, and by ID. This is the step that materializes refs/tags/<tag>,
-      # so the git tag and the public release now appear only once every artifact is
-      # in place. A failed build leaves an invisible draft instead of a published,
-      # asset-less release that 404s both the in-app updater and the site's
-      # /releases/latest Download button.
-      - name: Publish the release (materializes the tag)
-        run: gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" -F draft=false --jq .html_url
+      # Un-draft LAST, and by ID. Until this runs the release has no public download
+      # URLs and /releases/latest still points at the previous good version, so a
+      # failure anywhere above leaves an invisible draft rather than a published,
+      # asset-less release that 404s both the in-app updater and the site's Download
+      # button. The git tag is not created here — release-please already made it at the
+      # start, via `force-tag-creation` (README "Releasing" explains why that matters).
+      - name: Publish the release
+        run: |
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+            -F draft=false -f make_latest=true --jq .html_url
         env:
           RELEASE_ID: ${{ steps.resolve.outputs.release_id }}
 
@@ -181,22 +205,51 @@ jobs:
         run: |
           set -euo pipefail
           version=$(node -p "require('./package.json').version")
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}"
           fail=0
-          for f in "latest-mac.yml" \
-                   "PomoIsland-${version}-arm64-mac.zip" \
-                   "PomoIsland-${version}-arm64.dmg"; do
-            url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${f}"
-            code=000
-            for _ in 1 2 3; do
-              code=$(curl -sSL -o /dev/null -w '%{http_code}' "$url" || echo 000)
+
+          fetch() { # url outfile -> echoes the status code, retrying a few times
+            local code=000
+            for _ in 1 2 3 4 5; do
+              code=$(curl -sSL -o "$2" -w '%{http_code}' "$1" || echo 000)
               [ "$code" = "200" ] && break
               sleep 5
             done
+            echo "$code"
+          }
+
+          for f in "latest-mac.yml" \
+                   "PomoIsland-${version}-arm64-mac.zip" \
+                   "PomoIsland-${version}-arm64.dmg"; do
+            code=$(fetch "${base}/${f}" "$RUNNER_TEMP/$(basename "$f")")
             if [ "$code" = "200" ]; then
               echo "  ok  200  $f"
             else
-              echo "::error::$url returned $code"
+              echo "::error::${base}/${f} returned $code"
               fail=1
             fi
           done
-          [ "$fail" -eq 0 ] || { echo "Update feed is NOT publicly reachable."; exit 1; }
+
+          # A 200 only proves a file is there. Check it actually advertises this
+          # release, so a stale or truncated feed can't pass as healthy.
+          if [ "$fail" -eq 0 ]; then
+            if grep -q "^version: ${version}\$" "$RUNNER_TEMP/latest-mac.yml"; then
+              echo "  ok       latest-mac.yml advertises ${version}"
+            else
+              echo "::error::latest-mac.yml does not advertise version ${version}"
+              cat "$RUNNER_TEMP/latest-mac.yml"
+              fail=1
+            fi
+          fi
+
+          # electron-updater and site/main.js both read /releases/latest; make sure
+          # publishing actually moved it.
+          latest=$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)
+          if [ "$latest" = "${TAG}" ]; then
+            echo "  ok       /releases/latest is ${TAG}"
+          else
+            echo "::error::/releases/latest is ${latest}, expected ${TAG}"
+            fail=1
+          fi
+
+          [ "$fail" -eq 0 ] || { echo "Update feed is NOT healthy."; exit 1; }

@@ -9,7 +9,7 @@
 // silently.
 //
 // macOS auto-update only works on a *signed* build, and only from the `.zip` artifact
-// — see electron-builder.yml (mac.target includes zip) and the `publish` block.
+// — see electron-builder.js (mac.target includes zip) and the `publish` block.
 
 import { app, BrowserWindow, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
@@ -93,7 +93,8 @@ export function initAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('update-not-available', () => {
-    if (interactive) info("You're up to date", `PomoIsland ${app.getVersion()} is the latest version.`)
+    if (interactive)
+      info("You're up to date", `PomoIsland ${app.getVersion()} is the latest version.`)
     interactive = false
     checking = false
   })
@@ -108,7 +109,10 @@ export function initAutoUpdater(): void {
     checking = false
     // autoDownload is on, so the download starts automatically; just acknowledge.
     if (interactive) {
-      info('Downloading update…', `PomoIsland ${i?.version ?? ''} is downloading. You'll be prompted to restart when it's ready.`)
+      info(
+        'Downloading update…',
+        `PomoIsland ${i?.version ?? ''} is downloading. You'll be prompted to restart when it's ready.`,
+      )
       interactive = false
     }
   })
@@ -143,7 +147,10 @@ export function initAutoUpdater(): void {
 /** User-triggered check (menu / tray). Always gives clear feedback. */
 export function checkForUpdatesInteractive(): void {
   if (!app.isPackaged) {
-    info('Updates unavailable in development', 'Check for updates works in the packaged, signed app.')
+    info(
+      'Updates unavailable in development',
+      'Check for updates works in the packaged, signed app.',
+    )
     return
   }
   if (checking) return

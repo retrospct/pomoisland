@@ -79,12 +79,21 @@ module.exports = {
   // and `--publish` uploads the dmg/zip/latest-mac.yml + blockmaps here. Requires GH_TOKEN
   // (a repo-scoped PAT) in the environment when publishing.
   //
-  // release-please owns creating the GitHub Release now (as a draft — see
+  // release-please owns creating the GitHub Release (as a draft — see
   // release-please-config.json), and the CI publish job un-drafts it as its very
-  // first step, before this ever runs (see .github/workflows/release-please.yml).
-  // So by the time electron-builder gets here the release already exists and is
-  // already published — releaseType must say 'release' to match, or electron-builder
-  // refuses to upload with "existing type not compatible with publishing type".
+  // *last* step, after this has run (see .github/workflows/release-please.yml).
+  // So the release this uploads into is normally still a draft.
+  //
+  // `releaseType` stays 'release' regardless, and that is not a contradiction:
+  // electron-builder's getOrCreateRelease returns a draft release immediately,
+  // before releaseType is consulted at all. The setting only decides what to
+  // create when no release exists, and whether to refuse an *already published*
+  // one — 'draft' refuses it, which is exactly how v0.2.3 shipped with zero
+  // assets (7c0ee57). 'release' is therefore the safe value in both orderings.
+  //
+  // Worth knowing when debugging: if this cannot resolve a release it logs
+  // "skipped publishing" as a warning and still exits 0, so a green build proves
+  // nothing. CI asserts the uploaded assets separately for that reason.
   publish: {
     provider: 'github',
     owner: 'retrospct',
