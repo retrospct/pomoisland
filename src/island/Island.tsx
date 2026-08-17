@@ -1475,9 +1475,12 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
     props
   const br = bottomRadius ?? 26
-  // The task list's active task (for the completed/planned session hint below) —
-  // distinct from view.displayTask, which is the free-text timer label and isn't
-  // always backed by a task-list entry.
+  // The task list's active task (for the completed/estimated session hint below).
+  // view.displayTask is derived from TimerState.task, a denormalized mirror of
+  // this task's title written only by the ipc.ts sync — there is no free-text
+  // task label. An empty mirror means no active task, and displayTask renders the
+  // "No task set" / "Break time" fallback for it; the hint below is simply
+  // omitted, because there is no task whose sessions could be counted.
   const activeTask = props.tasks?.tasks.find((t) => t.id === props.tasks?.activeTaskId) ?? null
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card.

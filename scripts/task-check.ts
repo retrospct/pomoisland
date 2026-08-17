@@ -98,6 +98,17 @@ function threeTasks(): TasksState {
   return s
 }
 
+/**
+ * `state` with `id` marked done, built directly rather than through the update
+ * mutation. Used only where the *active* task must end up complete: the done
+ * path advances now (Case 9), so no mutation can produce that state, but a
+ * tasks.json written before it did — or edited by hand — loads exactly that way
+ * and normalizeTasksState doesn't reconcile it.
+ */
+function withDoneTask(state: TasksState, id: string): TasksState {
+  return { ...state, tasks: state.tasks.map((t) => (t.id === id ? { ...t, done: true } : t)) }
+}
+
 // ---------------------------------------------------------------------------
 // Case 2: deleting a task
 // ---------------------------------------------------------------------------
@@ -121,16 +132,10 @@ function testDelete(): void {
   const afterLast = applyMutation(soleTask, { type: 'delete', id: 'id-1' }, ids())
   assert(afterLast.activeTaskId === null, 'deleting the last task leaves nothing active')
 
-  // Today, marking the active task done does NOT clear it, so the active task can
-  // legitimately be a completed one. Deleting some *other* task must not quietly
-  // re-aim it — the fall-through triggers on the active task going missing, not on
-  // it being done. Ticket 15 deliberately changes what happens when a task is
-  // marked done; it must not change this by accident on the way past.
-  const activeIsDone = applyMutation(
-    threeTasks(),
-    { type: 'update', id: 'id-1', patch: { done: true } },
-    ids(),
-  )
+  // A completed task can still be the active one (see withDoneTask). Deleting
+  // some *other* task must not quietly re-aim it: the fall-through triggers on
+  // the active task going missing, not on it being done.
+  const activeIsDone = withDoneTask(threeTasks(), 'id-1')
   const afterUnrelated = applyMutation(activeIsDone, { type: 'delete', id: 'id-3' }, ids())
   assert(
     afterUnrelated.activeTaskId === 'id-1',
@@ -178,8 +183,10 @@ function testClearCompleted(): void {
   assert(cleared.tasks.length === 2, `completed tasks are removed; got ${cleared.tasks.length}`)
   assert(cleared.activeTaskId === 'id-1', 'clearing tasks you were not working on keeps the active one')
 
-  // The active task itself being cleared must fall through, same as delete.
-  const activeDone = applyMutation(s, { type: 'update', id: 'id-1', patch: { done: true } }, ids())
+  // The active task itself being cleared must fall through, same as delete. The
+  // done path advances before clearCompleted ever sees it now, so the state is
+  // built directly to keep this covering clearCompleted rather than Case 9.
+  const activeDone = withDoneTask(s, 'id-1')
   const clearedActive = applyMutation(activeDone, { type: 'clearCompleted' }, ids())
   assert(
     clearedActive.activeTaskId === 'id-2',
@@ -446,6 +453,98 @@ function testSkippedCredit(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Case 10: the active task's lifecycle (ticket 15)
+// ---------------------------------------------------------------------------
+// Completing the task you are working on hands the active slot to the next
+// incomplete task, so the island never claims you are working on something you
+// just ticked off. The guard is the interesting half: ticking a task you were
+// *not* working on is housekeeping and must not hijack the active slot.
+function testActiveTaskLifecycle(): void {
+  console.log('\nCase 10: active task lifecycle')
+  const s = threeTasks()
+
+  const activeDone = applyMutation(s, { type: 'update', id: 'id-1', patch: { done: true } }, ids())
+  assert(
+    activeDone.activeTaskId === 'id-2',
+    `completing the active task advances to the next incomplete one; got ${activeDone.activeTaskId}`,
+  )
+  assert(activeDone.tasks[0]?.done === true, 'the completed task is still marked done')
+
+  // The active task is deliberately *not* the first incomplete one here: with
+  // id-1 active, a naive unguarded advance would re-aim to id-1 and look correct.
+  // Working on id-2 is what separates "left alone" from "recomputed".
+  const workingOnSecond = applyMutation(s, { type: 'setActive', id: 'id-2' }, ids())
+  const otherDone = applyMutation(
+    workingOnSecond,
+    { type: 'update', id: 'id-3', patch: { done: true } },
+    ids(),
+  )
+  assert(
+    otherDone.activeTaskId === 'id-2',
+    `completing a task you were not working on leaves the active one alone; got ${otherDone.activeTaskId}`,
+  )
+
+  // Only completion advances. Renaming or re-estimating the active task, or
+  // un-completing something, must not re-aim it.
+  const renamed = applyMutation(s, { type: 'update', id: 'id-1', patch: { title: 'Renamed' } }, ids())
+  assert(renamed.activeTaskId === 'id-1', 'editing the active task does not re-aim it')
+  const unDone = applyMutation(withDoneTask(s, 'id-2'), { type: 'update', id: 'id-2', patch: { done: false } }, ids())
+  assert(unDone.activeTaskId === 'id-1', 'un-completing a task does not re-aim the active one')
+
+  // Ticking the last one off is the whole point: no active task, rather than the
+  // island naming a task you have finished. Nothing is deleted — the list still
+  // holds all three, all done.
+  const allDone = ['id-1', 'id-2', 'id-3'].reduce(
+    (acc, id) => applyMutation(acc, { type: 'update', id, patch: { done: true } }, ids()),
+    s,
+  )
+  assert(
+    allDone.activeTaskId === null,
+    `completing the last incomplete task leaves nothing active; got ${allDone.activeTaskId}`,
+  )
+  assert(allDone.tasks.length === 3, 'completing tasks never removes them from the list')
+
+  // The daily total still counts an untasked block; no task is credited. This is
+  // what "deselect mid-session and the session credits nothing" means for the
+  // task side, and it is the same code path a completed-last-task session takes.
+  const untaskedBlock = recordFocusComplete(allDone, TODAY)
+  assert(
+    untaskedBlock.tasks.every((t) => t.completedSessions === 0),
+    'a session finished with no active task credits no task',
+  )
+
+  // Picking up a completed task again un-completes it and activates it in ONE
+  // mutation. Two in sequence would commit, persist and broadcast a state where
+  // the task is incomplete but not yet active — a state no user action produced,
+  // and one the renderers would briefly draw.
+  const revived = applyMutation(allDone, { type: 'setActive', id: 'id-2' }, ids())
+  assert(revived.activeTaskId === 'id-2', 'reactivating a completed task makes it active')
+  assert(
+    revived.tasks[1]?.done === false,
+    'reactivating a completed task un-completes it in the same mutation',
+  )
+  assert(
+    revived.tasks[0]?.done === true && revived.tasks[2]?.done === true,
+    'reactivating one completed task leaves the other completed tasks alone',
+  )
+  assert(
+    revived.tasks[1]?.completedSessions === allDone.tasks[1]?.completedSessions,
+    'reactivating a task keeps the sessions it already earned',
+  )
+
+  // Deselect, the round trip. Which of the two mutations a row click sends is the
+  // task list's decision (it sends null for the row that is already active);
+  // what the reducer owes is that both halves work and that clearing the active
+  // task is *only* that — no task completed, no list edited, nothing to undo.
+  const deselected = applyMutation(s, { type: 'setActive', id: null }, ids())
+  assert(deselected.activeTaskId === null, 'deselecting leaves no active task')
+  eq('deselecting changes nothing else about the list', deselected.tasks, s.tasks)
+
+  const reselected = applyMutation(deselected, { type: 'setActive', id: 'id-3' }, ids())
+  assert(reselected.activeTaskId === 'id-3', 'selecting again after a deselect works')
+}
+
+// ---------------------------------------------------------------------------
 // Run all cases
 // ---------------------------------------------------------------------------
 console.log('\nTask reducer check\n' + '-'.repeat(50))
@@ -458,6 +557,7 @@ testNormalize()
 testActiveTaskTitle()
 testCountFieldMigration()
 testSkippedCredit()
+testActiveTaskLifecycle()
 
 if (process.exitCode === 1) {
   console.log('\n✗ One or more task assertions failed.\n')

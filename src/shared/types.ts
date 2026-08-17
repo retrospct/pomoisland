@@ -97,6 +97,15 @@ export interface TimerState {
   sessionTotal: number
   /** Whether the current break is the long break. */
   isLongBreak: boolean
+  /**
+   * Denormalized mirror of the active task's title, written only by the sync in
+   * electron/ipc.ts. There is no free-text task label. An empty string means no
+   * active task — a state the user reaches by deselecting or by completing their
+   * last task, and one in which a block runs normally and credits no task.
+   *
+   * The duplication is deliberate: it gives the tray and the island's view
+   * derivation the title without either depending on the task store (ADR-0008).
+   */
   task: string
 }
 

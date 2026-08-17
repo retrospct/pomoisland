@@ -100,6 +100,13 @@ export function deriveIsland(
   else if (frac < 0.85) micro = 'Nice, past the halfway mark.'
   else micro = 'Almost there \u2014 hold the line.'
 
+  // No active task is a state the user reaches deliberately — by deselecting the
+  // active row, or by completing their last task — so it is rendered, not left
+  // blank. `state.task` is the mirror of the active task's title, so an empty
+  // string is the whole signal; there is nothing else to consult (ADR-0008).
+  // One string covers both an empty list and a fully completed one: the nuance
+  // isn't readable in a truncating single line, and it stays in the task list,
+  // which is where it is actionable.
   const rawTask = (state.task ?? '').trim()
   const hasTask = rawTask.length > 0
   const displayTask = hasTask ? rawTask : isBreak ? 'Break time' : 'No task set'
