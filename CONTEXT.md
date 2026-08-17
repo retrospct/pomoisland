@@ -91,7 +91,8 @@ Use these terms exactly; avoid the synonyms in parentheses.
 
 ## Architecture in one breath
 
-The **main process** owns the timer runtime and persisted **prefs** (single source of truth).
-Two renderer windows — the **island** and **Settings** — subscribe via IPC and render; all
-mutations flow back through IPC. Changing accent/theme in Settings instantly reskins the island
-because both windows read the same broadcast state. See `docs/adr/`.
+The **main process** owns the timer runtime, persisted **prefs** and the **task** list (single
+source of truth). The renderer windows — the **island**, **Settings**, the snap overlay, and the
+task list when **detached** — subscribe via IPC and render; all mutations flow back through IPC.
+Changing accent/theme in Settings instantly reskins the island because every window reads the
+same broadcast state. See `docs/adr/`.
