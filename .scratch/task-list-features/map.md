@@ -15,7 +15,9 @@ answered, just by `/implement` sessions with the code in front of them rather th
 map session. `/to-spec` **must** carry them into the spec as implementation notes — see
 **Deferred to implementation** below.
 
-The map is done when those four are resolved. **01, 04 and 05 are closed**; only 03 remains.
+The map is done when those four are resolved. **All four are closed — the map is done.**
+01, 04, 05 and 03 all carry resolutions; what remains is `/to-spec` and the seven deferred
+tickets, which are implementation work.
 **No production code is written on this map** — the map produces decisions and a spec, not
 the feature.
 
@@ -200,6 +202,24 @@ Four consequences for open tickets:
   `title`. Selection stays **pointer-only** (Out of Scope, listbox refactor named as the
   fix). Finishing a task mid-block **donates that block to the next task** — intended, and
   spelled out so nobody "fixes" it.
+
+- [03 — Where the task progress bar renders](issues/03-where-the-task-progress-bar-renders.md)
+  — **Neither candidate home.** The bar is **task-adjacent, not dots-adjacent**: a small
+  component at the two sites that already name the task and already hold `activeTask` in
+  scope — **Peek and ExpandedBody only**. The ticket's framing was wrong because the dots
+  sites and the task-text sites are *different lists* overlapping at just those two; "any
+  view with dots" would put the bar in three views that never say whose progress it is.
+  Placement, `migrateIslandPlacement` and `placement-check.ts` are all **untouched** — the
+  fifth-`IslandElement` option was eight files to reach one view. **L2 and the task rows are
+  excluded**; rows keep the numeric count because a list is a comparison context.
+  **`dots: 'off'` no longer means anything to the bar.** `prefs.taskProgress` off **falls
+  back to the existing `TaskSessions` text**, so off is byte-for-byte today's app and
+  `TaskSessions` becomes the off-state rather than dead code. Position: **between the task
+  line and the timer's own progress bar**. The row **vanishes** with no task, but the slot is
+  **fixed-height** with one, so 04's bar→buttons swap never reflows a hover-revealed card.
+  Bar **stays through breaks**. Also fixes a live leak: ExpandedBody's unguarded `SessionDots`
+  keeps a daily-goal hover target alive when `dots: 'off'`. Accepted deviation from the brief:
+  the bar sits below the *task line*, not below the global dots.
 
 - [02 — RESEARCH: Electron frameless resizable window on macOS](issues/02-research-electron-frameless-resizable-macos.md)
   — AppKit owns resize on macOS (Electron's hit test is compiled out); the corner grip is a

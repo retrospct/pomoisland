@@ -4,6 +4,19 @@ Type: prototype
 Status: deferred — decided during implementation, not on the map
 Blocked by: 06, 09
 
+**From ticket 03 §2 (resolved 2026-08-16):** the segmented bar does **not** come to the task
+rows — they keep the numeric `SessionCount`. One less thing to fit in 320px than Q1 assumed.
+
+**From ticket 03 §7 + 04 §B3:** the bar/buttons slot in Peek and ExpandedBody is
+**fixed-height**, sized by whichever of the bar or the two resume buttons is taller. This
+ticket fits the buttons *inside* that height rather than the slot growing to them, so the
+at-estimate crossfade never reflows a hover-revealed card (the MO-50 hazard,
+`SessionDots.tsx:47-50`). This is the "where the two buttons render in each host" question
+ticket 04 deferred here.
+
+**From ticket 05 §7:** the *active* row gains a native `title="Click to deselect"`, which
+only works once ticket 06 removes the title span's own `title` attribute.
+
 ## Question
 
 The task row is about to carry six things in a 320px-wide docked panel

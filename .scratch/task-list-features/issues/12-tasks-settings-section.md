@@ -2,7 +2,7 @@
 
 Type: grilling
 Status: deferred — decided during implementation, not on the map
-Blocked by: 03 (04 resolved 2026-08-16)
+Blocked by: nothing — 03 and 04 both resolved 2026-08-16
 
 **Ticket 04 settled the pref keys and defaults**, and added a third toggle that does *not*
 live here. Q4 below is answered; Q1–Q3 and Q5 stand.
@@ -22,6 +22,14 @@ question was sized against.
 
 Q2's copy now also has to describe a `pauseAtEstimate` that pauses **after the break**, and
 whose **+** deliberately never raises the estimate.
+
+**Ticket 03 §4 amends Q2's stated constraint.** It said the progress-bar toggle's description
+"must make clear it only hides the bar next to the session dots: counts stay visible in the
+hover and expanded views and in the task list itself." That is now wrong on two counts: the
+bar is never next to the session dots (03 §1), and off does not merely hide it — it **falls
+back to the existing `TaskSessions` "• 3/5" text** at the same two sites. So `taskProgress`
+off is byte-for-byte today's app. The description is closer to *"Show task progress as a bar
+instead of a count."*
 
 ## Question
 

@@ -2,7 +2,24 @@
 
 Type: prototype
 Status: deferred — decided during implementation, not on the map
-Blocked by: 03
+Blocked by: 03 (resolved 2026-08-16)
+
+**Ticket 03 answered the host question, and narrowed this one.** The bar renders in **Peek
+and ExpandedBody only** — not in the collapsed cluster, not in L2, not in the task rows. So
+Q1's "the answer differs sharply by host width" collapses: there are two hosts, both card-
+width (Peek is 272px or `notchWidth + 170`; ExpandedBody uses `expandedCardWidth()`), and
+neither is narrow. Q5's "the dots directly above it" is also gone — the dots are not adjacent
+to the bar in either host.
+
+**Two new obligations from 03:**
+
+- **§6** — in Peek the bar sits directly between the task line and the timer's own 4px
+  *continuous* progress bar, roughly 15px apart. Distinguishing the two stacked bars is this
+  ticket's job. Segmented-vs-continuous is most of the answer already.
+- **§4** — the hover reveal now carries the count outright, because the bar *replaces* the
+  `TaskSessions` "• 3/5" text at both sites. It is no longer a nicety; it is the only place
+  the exact numbers appear in the island while `taskProgress` is on.
+- **§7** — the bar's slot is **fixed-height**, shared with ticket 04's two resume buttons.
 
 ## Question
 
