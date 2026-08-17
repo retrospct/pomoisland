@@ -236,34 +236,39 @@ body.island-body {
   opacity: 1;
 }
 
-/* At-estimate attention treatment (ticket 04 §B3): the bar breathes while the
-   task sits on its estimate and the timer is stopped. Opacity only — no
-   geometry — so it can never reflow the slot it shares with the resume
-   controls. */
-@keyframes islandTaskBarPulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-.il-task-bar-at-estimate {
-  animation: islandTaskBarPulse 1.6s ease-in-out infinite;
-}
-/* An animated opacity would outrank the hover rule above, leaving both layers
-   half-visible; stop the pulse while the count is being read. */
-.il-task-bar:hover .il-task-bar-at-estimate {
-  animation: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .il-task-bar-layer,
   .il-task-count-layer {
     transition: none;
   }
-  .il-task-bar-at-estimate {
+}
+
+/* The resume controls breathe while the timer sits stopped at a task's estimate
+   (ticket 19). This replaces the at-estimate treatment ticket 17 designed for the
+   BAR, which is deleted rather than wired: the swap is a replacement, so the bar
+   is not on screen at the moment overrun matters, and capping the bar at the
+   estimate left no distinct over state to draw in the first place.
+
+   The pulse is the whole "come back to this" signal, and it does not stop on its
+   own — the nag is the feature. Opacity only, so it cannot reflow the slot, and
+   applied to the pair rather than each button so they breathe together. The class
+   is omitted entirely under reduced motion (see ResumeControls) rather than
+   suppressed here, because an infinite animation is exactly what that setting is
+   asking about. */
+@keyframes islandResumePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.il-resume-pulse {
+  animation: islandResumePulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-resume-pulse {
     animation: none;
   }
 }

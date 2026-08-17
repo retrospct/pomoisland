@@ -81,17 +81,8 @@ interface TaskProgressBarProps {
   estimate: number
   /** Stable (block-independent) accent — see note 4. */
   accent: string
-  /** Prefers-reduced-motion: drops the fill transition and the pulse. */
+  /** Prefers-reduced-motion: drops the fill transition. */
   rm: boolean
-  /**
-   * At-estimate attention treatment (ticket 04 §B3) — the filled segments breathe
-   * (island.css, rm-guarded). Left off deliberately: ticket 18 landed the
-   * predicate (`isAtEstimate` in shared/tasks.ts) and ticket 19 owns the two
-   * resume controls that share this slot, so 19 decides whether the bar is on
-   * screen at that moment at all and wires this in one line if it is. This file
-   * owns only what the state looks like.
-   */
-  atEstimate?: boolean
 }
 
 /**
@@ -122,7 +113,6 @@ export function TaskProgressBar({
   estimate,
   accent,
   rm,
-  atEstimate = false,
 }: TaskProgressBarProps) {
   const segments = taskBarSegments(completed, estimate)
   const fillTransition = rm ? undefined : 'width .35s ease'
@@ -138,7 +128,7 @@ export function TaskProgressBar({
       }}
     >
       <div
-        className={`il-task-bar-layer${atEstimate ? ' il-task-bar-at-estimate' : ''}`}
+        className="il-task-bar-layer"
         style={{ gridArea: '1 / 1', display: 'flex', alignItems: 'center' }}
         role="img"
         aria-label={`${completed} of ${estimate} ${label} complete`}

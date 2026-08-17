@@ -1,5 +1,5 @@
 import { RIPPLE_DEFS } from '@shared/ripple'
-import type { IslandElement, Ripple, TasksState, TimerStyle } from '@shared/types'
+import type { IslandElement, Ripple, Task, TasksState, TimerStyle } from '@shared/types'
 import { useReducedMotion } from '@shared/useReducedMotion'
 import { renderProgressTrace } from '@shared/progressTrace'
 import type { CSSProperties } from 'react'
@@ -18,7 +18,7 @@ import { Menu, MenuDropdown } from './Menu'
 import { Ring } from './Ring'
 import { SessionDots } from './SessionDots'
 import { TaskList } from './TaskList'
-import { TaskProgressBar } from './TaskProgressBar'
+import { TASK_BAR_SLOT_H, TaskProgressBar } from './TaskProgressBar'
 
 export type Present = 'collapsed' | 'peek' | 'expanded' | 'tasks'
 
@@ -49,6 +49,20 @@ interface Handlers {
   onPopInTasks: (e?: React.MouseEvent) => void
   /** Prefs.tasksDetached — while true the inline panel is unreachable. */
   tasksDetached: boolean
+  /**
+   * The **+** resume control (ticket 19): start another focus session on the task
+   * that has already met its estimate. Deliberately does NOT raise the estimate —
+   * the nag is the feature, and a number that quietly rewrites itself would make
+   * 10/4 cost nothing.
+   */
+  onResumeSession: () => void
+  /**
+   * The **✓** resume control (ticket 19): finish the task and start the timer on
+   * whatever comes next. Owns no advance logic of its own — marking done is what
+   * hands the active slot on (ticket 15), and two code paths independently
+   * choosing "the next task" is how they drift.
+   */
+  onFinishTask: () => void
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
   onInstallRestart: (e: React.MouseEvent) => void
@@ -80,6 +94,17 @@ interface IslandProps extends Handlers {
    * pixels apart reads as a rendering mistake, not emphasis (ticket 03 §4).
    */
   taskProgressOn: boolean
+  /**
+   * Is the app sitting at the stop right now — `isAtEstimate` in shared/tasks.ts
+   * (ticket 18), derived per render rather than stored (ADR-0008).
+   *
+   * When true, Peek and Expanded put ticket 19's two resume controls in the
+   * progress bar's slot INSTEAD of the bar. Independent of `taskProgressOn`: the
+   * stop belongs to `pauseAtEstimate`, and tying its only affordance to the bar's
+   * pref would leave someone who prefers the count text with a stopped timer and
+   * nothing to press but the generic play button.
+   */
+  atEstimate: boolean
   tasks: TasksState | null
 }
 
@@ -1309,6 +1334,44 @@ function OutlinedCard({
   )
 }
 
+/** What occupies the task slot under the task line, if anything. */
+type TaskSlot = 'none' | 'bar' | 'controls'
+
+/**
+ * Decide the task slot's contents once, for both hosts.
+ *
+ * Peek and ExpandedBody are separate components rendering the same slot from the
+ * same three inputs, so the decision lives here rather than twice — the class of
+ * bug this whole effort keeps hitting is two call sites choosing independently and
+ * drifting (see the active-task pick in shared/tasks.ts).
+ *
+ * `controls` beats `bar`: the swap is a replacement (ticket 19), so at the stop
+ * the bar is not rendered at all. And `controls` does not consult
+ * `taskProgressOn`, because the stop is pause-at-estimate's, not the bar's.
+ */
+function taskSlot(
+  taskProgressOn: boolean,
+  atEstimate: boolean,
+  activeTask: Task | null,
+): TaskSlot {
+  if (!activeTask) return 'none'
+  if (atEstimate) return 'controls'
+  return taskProgressOn ? 'bar' : 'none'
+}
+
+/**
+ * Is there an incomplete task other than the active one? Drives only ✓'s label,
+ * so the copy never promises a next task that isn't there.
+ *
+ * Deliberately not used to decide whether ✓ appears or what it does: with nothing
+ * left it still finishes the task and starts a focus block, one that credits no
+ * task at the end.
+ */
+function nextTaskExists(tasks: TasksState | null, activeTask: Task | null): boolean {
+  if (!tasks) return false
+  return tasks.tasks.some((t) => !t.done && t.id !== activeTask?.id)
+}
+
 function Peek({
   view,
   notch,
@@ -1317,18 +1380,21 @@ function Peek({
   notchWidth,
   tasks,
   taskProgressOn,
+  atEstimate,
   onToggleExpand,
   onPlayPause,
   onSkip,
+  onResumeSession,
+  onFinishTask,
 }: IslandProps) {
   const rm = useReducedMotion()
   const activeTask = tasks?.tasks.find((t) => t.id === tasks?.activeTaskId) ?? null
-  // The bar's row exists only with an active task — no reserved gap, no empty
-  // track (ticket 03 §7): a task-less island keeps its old height, and an empty
-  // track would promise a measure of a task that isn't there. With a task the slot
-  // is fixed-height, so ticket 19's swap to the resume controls can't reflow the
-  // card mid-hover.
-  const showBar = taskProgressOn && activeTask !== null
+  // The slot exists only with an active task — no reserved gap, no empty track
+  // (ticket 03 §7): a task-less island keeps its old height, and an empty track
+  // would promise a measure of a task that isn't there. With a task it is
+  // fixed-height, so the swap below can't reflow the card mid-hover.
+  const slot = taskSlot(taskProgressOn, atEstimate, activeTask)
+  const hasNextTask = nextTaskExists(tasks, activeTask)
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card. On a real-notch display, widen and
   // clear the physical notch height/width — same fix as ExpandedBody — so the
@@ -1383,10 +1449,10 @@ function Peek({
           color: view.taskColor,
           fontStyle: 'normal',
           letterSpacing: '-0.005em',
-          // Tightened above the bar so the two read as one task block; the
-          // original 13 when there is no bar, so a task-less card keeps exactly
+          // Tightened above the slot so the two read as one task block; the
+          // original 13 when there is no slot, so a task-less card keeps exactly
           // its old height.
-          marginBottom: showBar ? 7 : 13,
+          marginBottom: slot === 'none' ? 13 : 7,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -1401,14 +1467,26 @@ function Peek({
           />
         )}
       </div>
-      {showBar && activeTask && (
+      {slot !== 'none' && activeTask && (
         <div style={{ marginBottom: 8 }}>
-          <TaskProgressBar
-            completed={activeTask.completedSessions}
-            estimate={activeTask.estimateSessions}
-            accent={view.accentBase}
-            rm={rm}
-          />
+          {slot === 'controls' ? (
+            <ResumeControls
+              accent={view.accentBase}
+              completed={activeTask.completedSessions}
+              estimate={activeTask.estimateSessions}
+              hasNextTask={hasNextTask}
+              rm={rm}
+              onResumeSession={onResumeSession}
+              onFinishTask={onFinishTask}
+            />
+          ) : (
+            <TaskProgressBar
+              completed={activeTask.completedSessions}
+              estimate={activeTask.estimateSessions}
+              accent={view.accentBase}
+              rm={rm}
+            />
+          )}
         </div>
       )}
       <div
@@ -1549,9 +1627,137 @@ function TaskSessions({
   )
 }
 
+/**
+ * The two resume controls that take the progress bar's place at the stop
+ * (ticket 19). **+** runs another session; **✓** finishes the task and starts on
+ * the next one.
+ *
+ * THE SWAP IS A REPLACEMENT, not two things sharing a row. At the stop the bar is
+ * not rendered and these are, which is why ticket 17's designed-but-unwired
+ * over-estimate treatment has been deleted rather than connected: the bar is off
+ * screen at exactly the moment an overrun starts to matter, and the owner's
+ * cap-at-estimate decision left no distinct over state to draw anyway (4/4 and
+ * 40/4 are one picture). Only these controls pulse.
+ *
+ * Sized 20px square to match TASK_BAR_SLOT_H, which ticket 17 set to the taller of
+ * the bar and these buttons for this reason — so the slot's height is identical
+ * either way and the swap can never reflow the card. That matters most in Peek,
+ * which is hover-revealed, and where a card that changes height under the pointer
+ * is a known past bug (MO-50).
+ *
+ * They sit at the leading edge, where the bar's first segment was, so the swap
+ * doesn't move the eye. Two 20px buttons and a gap is 46px of Peek's 232px content
+ * width, so the narrow host is not a constraint — which is what settles the
+ * "degrade under pressure" question ticket 11 left to whoever built these.
+ *
+ * Neither control skips a break: the stop only ever fires after the break has run
+ * (ticket 18 reads the predicate inside the break → focus branch), so by the time
+ * either is on screen there is no break left to skip.
+ */
+function ResumeControls({
+  accent,
+  completed,
+  estimate,
+  hasNextTask,
+  rm,
+  onResumeSession,
+  onFinishTask,
+}: {
+  accent: string
+  completed: number
+  estimate: number
+  /** Is there another incomplete task for ✓ to start on? Drives its label only. */
+  hasNextTask: boolean
+  rm: boolean
+  onResumeSession: () => void
+  onFinishTask: () => void
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: TASK_BAR_SLOT_H }}>
+      <div
+        className={rm ? undefined : 'il-resume-pulse'}
+        style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+      >
+      <button
+        aria-label="Start another session"
+        title="Start another session"
+        onClick={(e) => {
+          stop(e)
+          onResumeSession()
+        }}
+        style={{ ...resumeBtn, background: accent, color: 'var(--il-bg)' }}
+      >
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden>
+          <path
+            d="M6 2.2v7.6M2.2 6h7.6"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+      <button
+        // The copy never promises a next task that doesn't exist — with nothing
+        // incomplete left, ✓ still starts a focus block, just one crediting no
+        // task at the end.
+        aria-label={hasNextTask ? 'Finish task and start the next' : 'Finish task'}
+        title={hasNextTask ? 'Finish task and start the next' : 'Finish task'}
+        onClick={(e) => {
+          stop(e)
+          onFinishTask()
+        }}
+        style={{ ...resumeBtn, border: `1px solid ${accent}`, color: accent }}
+      >
+        <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden>
+          <path
+            d="M1.2 4.6 4 7.4 9.8 1.6"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      </div>
+      {/* The overrun, in figures, and the one place the island shows it.
+          Not in ticket 19's checklist — added because the replacement would
+          otherwise take the numbers off screen at the exact moment they carry the
+          most weight. The bar caps at the estimate (4/4 and 40/4 draw the same),
+          and its hover reveal was the only readout of the real count; replacing the
+          bar takes that with it. Since the whole point of + refusing to raise the
+          estimate is that you stay aware of working past it, "6/4" climbing while
+          the controls nag is the signal, and losing it would leave the nag saying
+          only "again?" rather than "this is your sixth of four".
+          Outside the pulsing wrapper: a number you are meant to read should not
+          breathe. */}
+      <span style={{ display: 'inline-flex', alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 600, color: accent, lineHeight: 1 }}>
+          {completed}
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--il-body)', lineHeight: 1 }}>
+          /{estimate}
+        </span>
+      </span>
+    </div>
+  )
+}
+
+const resumeBtn: React.CSSProperties = {
+  width: TASK_BAR_SLOT_H,
+  height: TASK_BAR_SLOT_H,
+  flexShrink: 0,
+  borderRadius: 6,
+  border: 'none',
+  background: 'transparent',
+  display: 'grid',
+  placeItems: 'center',
+  padding: 0,
+  cursor: 'pointer',
+}
+
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const rm = useReducedMotion()
-  const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, taskProgressOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
+  const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, taskProgressOn, atEstimate, onToggleExpand, onPlayPause, onReset, onSkip, onResumeSession, onFinishTask, bottomRadius } =
     props
   const br = bottomRadius ?? 26
   // The task list's active task (for the completed/estimated session hint below).
@@ -1561,9 +1767,10 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   // "No task set" / "Break time" fallback for it; the hint below is simply
   // omitted, because there is no task whose sessions could be counted.
   const activeTask = props.tasks?.tasks.find((t) => t.id === props.tasks?.activeTaskId) ?? null
-  // See Peek: the bar's row exists only with an active task, and is fixed-height
-  // when it does (ticket 03 §7).
-  const showBar = taskProgressOn && activeTask !== null
+  // See Peek: the slot exists only with an active task, and is fixed-height when
+  // it does (ticket 03 §7). Same decision function, so the two hosts cannot drift.
+  const slot = taskSlot(taskProgressOn, atEstimate, activeTask)
+  const hasNextTask = nextTaskExists(props.tasks, activeTask)
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card.
   const wrapNotch = notch && hasNotch
@@ -1650,7 +1857,7 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           fontSize: 13.5,
           color: view.taskColor,
           fontStyle: 'normal',
-          marginBottom: showBar ? 8 : 17,
+          marginBottom: slot === 'none' ? 17 : 8,
           letterSpacing: '-0.005em',
           cursor: 'pointer',
           userSelect: 'none',
@@ -1666,14 +1873,26 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         )}
       </div>
 
-      {showBar && activeTask && (
+      {slot !== 'none' && activeTask && (
         <div style={{ marginBottom: 13 }}>
-          <TaskProgressBar
-            completed={activeTask.completedSessions}
-            estimate={activeTask.estimateSessions}
-            accent={view.accentBase}
-            rm={rm}
-          />
+          {slot === 'controls' ? (
+            <ResumeControls
+              accent={view.accentBase}
+              completed={activeTask.completedSessions}
+              estimate={activeTask.estimateSessions}
+              hasNextTask={hasNextTask}
+              rm={rm}
+              onResumeSession={onResumeSession}
+              onFinishTask={onFinishTask}
+            />
+          ) : (
+            <TaskProgressBar
+              completed={activeTask.completedSessions}
+              estimate={activeTask.estimateSessions}
+              accent={view.accentBase}
+              rm={rm}
+            />
+          )}
         </div>
       )}
 
