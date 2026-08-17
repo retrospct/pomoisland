@@ -8,7 +8,7 @@ session. **✓** finishes the task and starts the timer on the next one.
 **Blocked by:** 15 (✓ relies on the done-path auto-advance), 17 (the bar's slot is where these
 render), 18 (the stop is what summons them).
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Why this shape:** see [ticket 04 Part B](04-pause-at-planned-boundary-and-timer-state.md).
 
@@ -61,6 +61,28 @@ choice:
 unwired** — an `atEstimate` prop defaulting off on the bar component, plus a pulse keyframe.
 Either wire it (only if you overturn the replacement reading, which needs the owner) or
 **delete both**. Do not leave it unwired a second time.
+
+**Done 2026-08-17: both deleted.** The `atEstimate` prop is gone from `TaskProgressBar`, and
+`islandTaskBarPulse` / `.il-task-bar-at-estimate` are gone from `island.css`. The pulse now
+lives on the resume controls (`islandResumePulse`), which is the only thing on screen at the
+stop. Nothing references the removed names.
+
+## Two deviations from the checklist, recorded
+
+**1. The crossfade is an entry fade only.** The checklist asked the controls to swap in "via a
+crossfade". A replacement cannot literally cross-fade — once the bar is unmounted there is
+nothing on screen to fade *from*. What shipped is the half a replacement permits: the controls
+fade in over the vacated slot (`islandResumeIn`, 160ms, omitted entirely under reduced motion).
+Keeping the bar mounted at `opacity: 0` to fade it out would reinstate exactly what the
+resolution above deleted, and would leave its hover-count layer live underneath the buttons.
+
+**2. The controls carry the count, which the checklist did not ask for.** `6/4` sits beside
+them. Replacing the bar takes the only figures in the island off screen at the moment they
+carry the most weight: the bar caps at the estimate so 5/4 and 40/4 draw identically, and its
+hover reveal was the sole readout of the real number. Since the whole reason **+** refuses to
+raise the estimate is that the user stays aware of working past it, the nag needs to say "this
+is your sixth of four" rather than just "again?". Outside the pulsing wrapper — a number meant
+to be read should not breathe.
 
 Ticket 17 also deliberately left the slot as a flex row rather than hard-coding replacement,
 so putting the controls *beside* a shrunken bar remains physically possible. That is not the

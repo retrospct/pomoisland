@@ -2,6 +2,8 @@
 
 Type: grilling
 Status: deferred — decided during implementation, not on the map
+Answered: 2026-08-17, by ticket 22. The mutation names its neighbour by id, not by index, so the rendered/stored split needs no translation in either direction. Drags stay inside the incomplete group and the reducer enforces it.
+The full write-up is in issues/22-*.md under "Settled 2026-08-17".
 Blocked by: 01
 
 ## Question

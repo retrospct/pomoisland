@@ -11,7 +11,7 @@ The edit pencil joins the hover set as part of this.
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Why this shape:** see [ticket 11](11-task-row-layout-under-pressure.md), whose open questions
 are answered here with the code in front of you.
@@ -38,3 +38,27 @@ thing to fit.
 
 **Not in this ticket:** the drag handle (ticket 22) and the truncation popover (ticket 21). Both
 land on the layout this ticket settles.
+
+## Settled 2026-08-17
+
+**The space is reserved permanently.** A row is always as wide as its hover state, because that
+is the only arrangement in which hovering cannot move anything. Reserving it only while hovered
+is the original bug wearing a transition.
+
+**The one rule:** a control is always visible if its appearance carries state; a control that is
+a pure verb is hover-revealed. So the checkbox (its box *is* done-or-not) and the session count
+stay; the pencil, the − / + steppers and delete fade in. The grip ticket 22 added follows the
+same rule, and 22's worry that revealing something at the leading edge would shift the edge
+dissolves here — reveal is opacity-only, so the column is held either way.
+
+**The cost landed on the title, and was bigger than estimated.** Measured in a harness: a 320px
+docked row left the title **98px** of its 288px content width, enough to truncate "Write the
+release notes". Recovered by dropping the `sessions` unit word from task rows — 36px back, and
+the common case now fits. The word stays in the add form, where the number needs saying what it
+counts, and in the bar's hover reveal in Peek. This amends §"Already settled" only in wording:
+rows still keep their numeric count, they just no longer name the unit on every line.
+
+**Dropped with the rule:** clicking the session count to pin the steppers open. It kept visible
+something reachable only by hovering in the first place. The count is now information, not a
+control, so its click falls through to the row's set-active toggle like any other non-control
+part of the row.

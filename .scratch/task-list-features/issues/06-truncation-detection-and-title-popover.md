@@ -2,6 +2,8 @@
 
 Type: prototype
 Status: deferred — decided during implementation, not on the map
+Answered: 2026-08-17, by ticket 21. Detection is measured on hover, never tracked; the popover renders inside the row so the scroll container cannot clip it, opening upward from the lower half. No spacer trick and no window growth needed.
+The full write-up is in issues/21-*.md under "Settled 2026-08-17".
 
 **Requirement from ticket 05 §7 (closed 2026-08-16):** this ticket must **remove**
 `title={task.title}` from the title span (`TaskList.tsx:433`), not merely add a popover

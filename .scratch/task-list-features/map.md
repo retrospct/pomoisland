@@ -11,25 +11,31 @@ numbered below 13.
 
 ### Implementation tickets
 
-Vertical slices in dependency order. Blockers are **semantic**: 15, 20 and 23 all edit the task
-list and will conflict on merge, but none gates the others, so they run in parallel.
+**All twelve are implemented as of 2026-08-17.** Vertical slices in dependency order. Blockers
+were **semantic**: 15, 20 and 23 all edit the task list and conflicted on merge, but none gated
+the others, so they ran in parallel.
 
-| # | Ticket | Blocked by |
-|---|---|---|
-| [13](issues/13-extract-pure-task-reducer.md) | Extract the pure task reducer, with a characterization check script | — |
-| [14](issues/14-rename-to-estimate-sessions.md) | Rename to `estimateSessions` / `completedSessions`, tolerant read | 13 |
-| [15](issues/15-active-task-lifecycle.md) | Active-task lifecycle: done-path advance, click-to-deselect, no-task rendering | 13 |
-| [16](issues/16-skipped-sessions-credit-nothing.md) | Skipped sessions credit nothing, plus the toggle | 13 |
-| [17](issues/17-task-progress-bar.md) | Task progress bar in Peek and Expanded, plus the toggle | 14 |
-| [18](issues/18-pause-at-estimate-the-stop.md) | Pause at estimate: the stop | 14 |
-| [19](issues/19-resume-controls.md) | The + and ✓ resume controls | 15, 17, 18 |
-| [20](issues/20-row-layout-hover-reveal.md) | Task row layout: opacity hover-reveal and the edit pencil | — |
-| [21](issues/21-truncation-popover.md) | Truncation popover, and the deselect tooltip it unblocks | 15, 20 |
-| [22](issues/22-drag-reorder.md) | Drag-reorder | 13, 20 |
-| [23](issues/23-detached-window-pop-out.md) | Detached task window: pop out and pop in | — |
-| [24](issues/24-detached-window-geometry-and-pin.md) | Detached window: geometry persistence, resize grip, pin | 23 |
+| # | Ticket | Blocked by | Status |
+|---|---|---|---|
+| [13](issues/13-extract-pure-task-reducer.md) | Extract the pure task reducer, with a characterization check script | — | done |
+| [14](issues/14-rename-to-estimate-sessions.md) | Rename to `estimateSessions` / `completedSessions`, tolerant read | 13 | done |
+| [15](issues/15-active-task-lifecycle.md) | Active-task lifecycle: done-path advance, click-to-deselect, no-task rendering | 13 | done |
+| [16](issues/16-skipped-sessions-credit-nothing.md) | Skipped sessions credit nothing, plus the toggle | 13 | done |
+| [17](issues/17-task-progress-bar.md) | Task progress bar in Peek and Expanded, plus the toggle | 14 | done |
+| [18](issues/18-pause-at-estimate-the-stop.md) | Pause at estimate: the stop | 14 | done |
+| [19](issues/19-resume-controls.md) | The + and ✓ resume controls | 15, 17, 18 | done |
+| [20](issues/20-row-layout-hover-reveal.md) | Task row layout: opacity hover-reveal and the edit pencil | — | done |
+| [21](issues/21-truncation-popover.md) | Truncation popover, and the deselect tooltip it unblocks | 15, 20 | done |
+| [22](issues/22-drag-reorder.md) | Drag-reorder | 13, 20 | done |
+| [23](issues/23-detached-window-pop-out.md) | Detached task window: pop out and pop in | — | done |
+| [24](issues/24-detached-window-geometry-and-pin.md) | Detached window: geometry persistence, resize grip, pin | 23 | done |
 
-Four can start immediately: **13, 20, 23** — and 13 unblocks the widest.
+Delivered in three waves: **13, 14** by hand; **15, 16, 23** then **17, 18, 24** by parallel
+agents in worktrees; **20, 19, 21, 22** by hand in that order, since 21 and 22 both land on 20's
+row layout and a four-way fan-out into one file is not what the graph supported.
+
+**Nothing here has been run.** Every ticket is verified by typecheck, lint, the assertion scripts
+and the production build only. The list of what that cannot cover is in *Unverified* below.
 
 Two deliberate splits: **18 ships the estimate stop without its buttons** (19 adds them), and
 **23 ships a working detached window without geometry or pin** (24 adds them). Both intermediate
@@ -301,6 +307,29 @@ be escalated back to a map ticket rather than guessed at.
 [08 — The + and ✓ resume controls](issues/08-plus-and-check-resume-controls.md) is **merged
 into 04**, not deferred — its questions are product calls, so they stay on the map as Part B
 of that ticket.
+
+## Unverified
+
+**Nothing in this effort has been exercised by a running app.** Typecheck, lint, 123 + 35
+assertions and the production build are all green, and none of them can see any of the following.
+Listed so the gap is a known one rather than a discovered one:
+
+- **The detached window at all** — whether it resizes, whether the corner grip sits inside
+  AppKit's private resize band, whether pinned level 1 lands above Safari and below a floating
+  island, whether geometry survives a real restart and a monitor unplug.
+- **Every animation and hover behaviour** — the reveal fade, the truncation popover in both open
+  directions, the bar's fill transition and hover count swap, the resume controls' entry fade and
+  pulse, the drop-indicator fade, and whether reduced motion suppresses each of them.
+- **The drag itself** — pointer capture across rows, the midpoint flip line, `lostpointercapture`
+  as the sole commit path, and the drag surviving a scroll.
+- **Real geometry on real hardware** — Peek's width on a notched display, and the Settings Tasks
+  section with all three rows.
+- **The main-process wiring** — `taskStore` → `Timer`'s at-estimate getter, and the branched
+  break-over notification copy.
+
+The 320px row layout is the one thing here that *was* measured, in a static harness rather than
+the app: it is what caught the title being squeezed to 98px, and the completed rows' checkboxes
+sitting 14px left of the incomplete ones.
 
 ## Out of scope
 

@@ -2,6 +2,8 @@
 
 Type: prototype
 Status: deferred — decided during implementation, not on the map
+Answered: 2026-08-17, by ticket 20. Space is reserved permanently and reveal is opacity-only. One rule for the set: state-carrying controls always visible, pure verbs hover-revealed. The title was measured at 98px of 288px and won back 36px by dropping the repeated unit word.
+The full write-up is in issues/20-*.md under "Settled 2026-08-17".
 Blocked by: 06, 09
 
 **From ticket 03 §2 (resolved 2026-08-16):** the segmented bar does **not** come to the task

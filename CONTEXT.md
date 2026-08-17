@@ -47,6 +47,16 @@ Use these terms exactly; avoid the synonyms in parentheses.
   (not: "planned sessions", "pomodoros")
 - **Completed sessions** — focus sessions credited to a task so far. Distinct from a session's
   place in a **round** — the two counters are independent, and the receiver disambiguates them.
+- **The stop** — the timer landing idle at a focus boundary because the active task has reached
+  its estimate, with `pauseAtEstimate` on. It is **derived, never stored** (ADR-0008): there is no
+  status for it and nothing is persisted or broadcast. It happens *after* the break has run.
+  (not: "paused" — the user did not press pause)
+- **Resume controls** — the **+** and **✓** that replace the task progress bar at the stop.
+  + runs another session and never touches the estimate; ✓ finishes the task and starts on the
+  next one. (not: "the at-estimate buttons")
+- **Reorder** — dragging a task to a new position. Array position *is* the ordering, so a reorder
+  is a splice and tasks carry no `order` field. Confined to the incomplete group: dragging into
+  the completed ones would mean finishing a task, which is the checkbox's job.
 
 ### Shortcuts
 
