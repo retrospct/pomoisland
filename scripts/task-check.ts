@@ -11,9 +11,11 @@
 // Run:  node scripts/task-check.ts
 
 import {
+  activeTaskAtEstimate,
   activeTaskTitle,
   applyMutation,
   emptyTasksState,
+  isAtEstimate,
   normalizeTasksState,
   recordFocusComplete,
 } from '../src/shared/tasks.ts'
@@ -545,6 +547,131 @@ function testActiveTaskLifecycle(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Case 11: the at-estimate predicate (ticket 18)
+// ---------------------------------------------------------------------------
+// The stop is DERIVED, never stored (ADR-0008): a pure function of the active
+// task's counts and the pause-at-estimate pref, plus — for the renderers — the
+// timer's status and mode. Nothing persists it, so there is nothing to clear on
+// reset, skip or switch-mode.
+//
+// At-or-past, not equality: ticket 19's + never raises the estimate, so an
+// equality test would fire once at 4/4 and stay silent at 5/4 forever after.
+function testAtEstimate(): void {
+  console.log('\nCase 11: at-estimate predicate')
+
+  /** id-1 active, `completed` sessions done against an estimate of `estimate`. */
+  function at(completed: number, estimate: number): TasksState {
+    const s = threeTasks()
+    return {
+      ...s,
+      tasks: s.tasks.map((t) =>
+        t.id === 'id-1'
+          ? { ...t, completedSessions: completed, estimateSessions: estimate }
+          : t,
+      ),
+    }
+  }
+
+  assert(activeTaskAtEstimate(at(4, 4), true), 'true exactly at the estimate (4/4)')
+  assert(activeTaskAtEstimate(at(5, 4), true), 'true past the estimate (5/4)')
+  assert(activeTaskAtEstimate(at(12, 4), true), 'still true far past the estimate (12/4)')
+  assert(!activeTaskAtEstimate(at(3, 4), true), 'false below the estimate (3/4)')
+  assert(!activeTaskAtEstimate(at(0, 1), true), 'false on a fresh task (0/1)')
+
+  // No active task: a session can run crediting nothing, and there is no
+  // estimate to have reached.
+  assert(
+    !activeTaskAtEstimate({ ...at(4, 4), activeTaskId: null }, true),
+    'false with no active task',
+  )
+  assert(
+    !activeTaskAtEstimate({ ...at(4, 4), activeTaskId: 'gone' }, true),
+    'false when the active id matches no task',
+  )
+  assert(!activeTaskAtEstimate(emptyTasksState(TODAY), true), 'false with an empty list')
+
+  // The pref is the whole off-switch — there is no second "respects Auto-start"
+  // control, because that is this pref turned off.
+  assert(!activeTaskAtEstimate(at(4, 4), false), 'false with the pref off, even at 4/4')
+  assert(!activeTaskAtEstimate(at(12, 4), false), 'false with the pref off, even at 12/4')
+
+  // Only the ACTIVE task's counts matter: another task being over its estimate
+  // is not the user's current business.
+  const otherOver = {
+    ...at(1, 4),
+    tasks: at(1, 4).tasks.map((t) =>
+      t.id === 'id-3' ? { ...t, completedSessions: 9, estimateSessions: 2 } : t,
+    ),
+  }
+  assert(
+    !activeTaskAtEstimate(otherOver, true),
+    'false when a task you are NOT working on is over its estimate',
+  )
+
+  // Credit lands through recordFocusComplete, so the predicate must flip on the
+  // very block that reaches the estimate — that block's credit is applied before
+  // the boundary is evaluated.
+  const oneShort = at(3, 4)
+  assert(!activeTaskAtEstimate(oneShort, true), 'false one session short')
+  assert(
+    activeTaskAtEstimate(recordFocusComplete(oneShort, TODAY), true),
+    'true once the session that reaches the estimate is credited',
+  )
+  // A skipped block credits nothing (Case 9), so it cannot reach the estimate
+  // either — the predicate reads counters and nothing else.
+  assert(
+    !activeTaskAtEstimate(recordFocusComplete(oneShort, TODAY, { reason: 'skipped' }), true),
+    'a skipped block does not reach the estimate, because it credits nothing',
+  )
+
+  // Lowering the estimate below the completed count is deliberately NOT
+  // special-cased: the predicate simply becomes true, and the stop lands at the
+  // next boundary rather than at mutation time.
+  const lowered = applyMutation(at(2, 6), { type: 'update', id: 'id-1', patch: { estimateSessions: 2 } }, ids())
+  assert(
+    activeTaskAtEstimate(lowered, true),
+    'lowering an estimate to the completed count makes the predicate true',
+  )
+  // Reactivating an already over-estimate task is likewise un-special-cased.
+  const revivedOver = applyMutation(withDoneTask(at(9, 2), 'id-1'), { type: 'setActive', id: 'id-1' }, ids())
+  assert(
+    activeTaskAtEstimate(revivedOver, true),
+    'reactivating an over-estimate task leaves the predicate true',
+  )
+
+  // The full predicate adds the timer half: the stop is a timer sitting IDLE at
+  // a FOCUS boundary. This is the shape the renderers read; the timer itself
+  // reads the task half only, because the advance branch it is called from *is*
+  // the focus boundary.
+  const over = at(4, 4)
+  assert(isAtEstimate({ status: 'idle', mode: 'focus' }, over, true), 'true when idle at a focus boundary')
+  assert(
+    !isAtEstimate({ status: 'running', mode: 'focus' }, over, true),
+    'false while a focus block is running',
+  )
+  assert(
+    !isAtEstimate({ status: 'paused', mode: 'focus' }, over, true),
+    'false while paused — paused means the user pressed pause',
+  )
+  assert(
+    !isAtEstimate({ status: 'complete', mode: 'focus' }, over, true),
+    'false during the completion flourish',
+  )
+  assert(
+    !isAtEstimate({ status: 'idle', mode: 'break' }, over, true),
+    'false at a break boundary — the break runs as normal',
+  )
+  assert(
+    !isAtEstimate({ status: 'idle', mode: 'focus' }, at(3, 4), true),
+    'false below the estimate even when idle at a focus boundary',
+  )
+  assert(
+    !isAtEstimate({ status: 'idle', mode: 'focus' }, over, false),
+    'false with the pref off even when idle at a focus boundary',
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Run all cases
 // ---------------------------------------------------------------------------
 console.log('\nTask reducer check\n' + '-'.repeat(50))
@@ -558,6 +685,7 @@ testActiveTaskTitle()
 testCountFieldMigration()
 testSkippedCredit()
 testActiveTaskLifecycle()
+testAtEstimate()
 
 if (process.exitCode === 1) {
   console.log('\n✗ One or more task assertions failed.\n')

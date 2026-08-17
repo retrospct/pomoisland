@@ -686,6 +686,16 @@ const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['showDockIcon', 'Show app in Dock', 'Display the PomoIsland icon in the macOS Dock.'],
 ]
 
+// Tasks, not Behavior: these read the active task. Off for pause-at-estimate is
+// also the "respect auto-start" branch, which is why there is no third toggle.
+const TASK_PREFS: [keyof Prefs, string, string][] = [
+  [
+    'pauseAtEstimate',
+    'Pause at estimate',
+    'When a task reaches its estimated sessions, take the break and then stop instead of starting another session.',
+  ],
+]
+
 export function GeneralTab({ prefs, set }: TabProps) {
   const onPreset = (k: Prefs['preset']) =>
     set(PRESET_VALS[k] ? { preset: k, ...PRESET_VALS[k] } : { preset: k })
@@ -855,7 +865,7 @@ export function GeneralTab({ prefs, set }: TabProps) {
         </div>
       </div>
 
-      {/* Right: behavior */}
+      {/* Right: behavior, then tasks */}
       <div>
         <SectionLabel>Behavior</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
@@ -868,6 +878,21 @@ export function GeneralTab({ prefs, set }: TabProps) {
               onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)}
             />
           ))}
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <SectionLabel>Tasks</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {TASK_PREFS.map(([k, label, desc]) => (
+              <ToggleRow
+                key={k}
+                title={label}
+                desc={desc}
+                on={Boolean(prefs[k])}
+                onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
