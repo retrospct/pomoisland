@@ -94,6 +94,34 @@ body.island-body {
   }
 }
 
+/* Drop-indicator line for a reorder drag (ticket 22). It appears at a new edge
+   each time the pointer crosses a row's midpoint, so the fade is what stops it
+   reading as a hard jump between rows. Opacity only — it is absolutely positioned
+   and must never affect the geometry the drop scan is measuring. */
+@keyframes islandDropLineIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.il-task-drop-line {
+  animation: islandDropLineIn 0.1s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-drop-line {
+    animation: none;
+  }
+}
+
+/* While a drag is in flight the grip must stay visible even though the pointer has
+   left the row it belongs to — pointer capture keeps the events coming, but the
+   CSS :hover that reveals the grip does not follow. */
+.il-task-row-dragging .il-task-reveal {
+  opacity: 1;
+}
+
 /* Truncated-title popover (ticket 21). It mounts on a delay rather than fading in
    from a hover selector, so this is a one-shot entry animation, not a transition
    — there is nothing on screen to transition FROM. No exit animation for the same

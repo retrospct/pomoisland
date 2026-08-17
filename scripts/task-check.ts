@@ -672,6 +672,140 @@ function testAtEstimate(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Case 12: reorder
+// ---------------------------------------------------------------------------
+// Reorder is a splice on the stored array — there is no `order` field, so array
+// position IS the ordering (ticket 22).
+//
+// The mutation names its neighbour by **id**, never by index. The rendered list
+// is split into incomplete-then-complete, so a rendered index is not a stored
+// index, and the two ways to fix that are both worse: translating a rendered
+// index inside the reducer would put a rendering decision in the model, and
+// having the caller compute a raw index puts the model's layout in the view. Ids
+// are stable under both. They also make a stale drop safe — a task completed by a
+// finishing session, or deleted from the other window, mid-drag — where an index
+// would silently move whichever task had shuffled into that slot.
+//
+// `beforeId: null` means "last among the incomplete tasks", which is NOT the end
+// of the array whenever a completed task sits behind them.
+function testReorder(): void {
+  console.log('\nCase 12: reorder')
+  const ordered = (s: TasksState) => s.tasks.map((t) => t.id)
+
+  const s = threeTasks() // id-1, id-2, id-3 — all incomplete, id-1 active
+
+  const down = applyMutation(s, { type: 'reorder', id: 'id-1', beforeId: 'id-3' }, ids())
+  eq('moving the first task before the third lands it second', ordered(down), [
+    'id-2',
+    'id-1',
+    'id-3',
+  ])
+
+  const up = applyMutation(s, { type: 'reorder', id: 'id-3', beforeId: 'id-1' }, ids())
+  eq('moving the last task before the first lands it first', ordered(up), [
+    'id-3',
+    'id-1',
+    'id-2',
+  ])
+
+  const toEnd = applyMutation(s, { type: 'reorder', id: 'id-1', beforeId: null }, ids())
+  eq('a null beforeId moves the task to the end', ordered(toEnd), ['id-2', 'id-3', 'id-1'])
+
+  const noop = applyMutation(s, { type: 'reorder', id: 'id-2', beforeId: 'id-2' }, ids())
+  eq('dropping a task before itself changes nothing', ordered(noop), ['id-1', 'id-2', 'id-3'])
+
+  const inPlace = applyMutation(s, { type: 'reorder', id: 'id-1', beforeId: 'id-2' }, ids())
+  eq('dropping a task back where it started changes nothing', ordered(inPlace), [
+    'id-1',
+    'id-2',
+    'id-3',
+  ])
+
+  // The index-translation case, and the reason ids are the interface. Stored order
+  // is [id-1, id-2(done), id-3], so the *rendered* incomplete group is
+  // [id-1, id-3] — rendered index 1 is stored index 2.
+  const withDone = withDoneTask(threeTasks(), 'id-2')
+  const acrossDone = applyMutation(withDone, { type: 'reorder', id: 'id-3', beforeId: 'id-1' }, ids())
+  eq('reorder addresses stored positions across a completed task', ordered(acrossDone), [
+    'id-3',
+    'id-1',
+    'id-2',
+  ])
+
+  // "End of the incomplete group", not "end of the array".
+  //
+  // Asserted on the incomplete subsequence rather than the raw array, because the
+  // raw array is deliberately NOT partitioned: `add` appends, so completing a task
+  // in the middle leaves it sitting between two incomplete ones forever. Where a
+  // completed task ends up relative to the moved one is therefore unobservable —
+  // the view groups by `done` before rendering and firstIncompleteId skips them —
+  // and pinning it here would assert an arrangement the app never promised.
+  const endWithDone = applyMutation(withDone, { type: 'reorder', id: 'id-1', beforeId: null }, ids())
+  eq(
+    'a null beforeId means last incomplete, not last overall',
+    endWithDone.tasks.filter((t) => !t.done).map((t) => t.id),
+    ['id-3', 'id-1'],
+  )
+  assert(
+    endWithDone.tasks.length === 3 && endWithDone.tasks.some((t) => t.id === 'id-2' && t.done),
+    'the completed task is still there, wherever it sits',
+  )
+
+  // Guards. Each returns the state untouched rather than throwing: a drop is a
+  // gesture, and a gesture that lands nowhere is a no-op, not an error.
+  const goneSubject = applyMutation(s, { type: 'reorder', id: 'nope', beforeId: 'id-1' }, ids())
+  eq('reordering a task that no longer exists is a no-op', ordered(goneSubject), [
+    'id-1',
+    'id-2',
+    'id-3',
+  ])
+
+  const goneTarget = applyMutation(s, { type: 'reorder', id: 'id-1', beforeId: 'nope' }, ids())
+  eq('dropping before a task that no longer exists is a no-op', ordered(goneTarget), [
+    'id-1',
+    'id-2',
+    'id-3',
+  ])
+
+  // Drags are confined to the incomplete group, and the reducer enforces it
+  // rather than trusting the view: dropping an incomplete task among the
+  // completed ones would imply completing it, which is a different gesture
+  // wearing a drag costume.
+  const intoDone = applyMutation(withDone, { type: 'reorder', id: 'id-1', beforeId: 'id-2' }, ids())
+  eq('an incomplete task cannot be dropped before a completed one', ordered(intoDone), [
+    'id-1',
+    'id-2',
+    'id-3',
+  ])
+
+  const movingDone = applyMutation(withDone, { type: 'reorder', id: 'id-2', beforeId: 'id-1' }, ids())
+  eq('a completed task cannot be dragged at all', ordered(movingDone), ['id-1', 'id-2', 'id-3'])
+
+  // Reorder moves rows and nothing else. It does re-aim "the next task" for
+  // ticket 15's auto-advance and ticket 19's ✓, because both read array order —
+  // that is the point of dragging, and it happens without reorder touching
+  // activeTaskId at all.
+  assert(down.activeTaskId === 'id-1', 'reorder leaves the active task active')
+  const reAimed = applyMutation(s, { type: 'reorder', id: 'id-3', beforeId: 'id-1' }, ids())
+  const advanced = applyMutation(reAimed, { type: 'update', id: 'id-1', patch: { done: true } }, ids())
+  assert(
+    advanced.activeTaskId === 'id-3',
+    `dragging a task to the top makes it the next one the done-path advances to; got ${advanced.activeTaskId}`,
+  )
+
+  // Counts and estimates travel with the row.
+  const carried = applyMutation(
+    { ...s, tasks: s.tasks.map((t) => (t.id === 'id-1' ? { ...t, completedSessions: 2 } : t)) },
+    { type: 'reorder', id: 'id-1', beforeId: null },
+    ids(),
+  )
+  assert(
+    carried.tasks[2]?.completedSessions === 2,
+    'a moved task keeps its completed sessions',
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Run all cases
 // ---------------------------------------------------------------------------
 console.log('\nTask reducer check\n' + '-'.repeat(50))
@@ -686,6 +820,7 @@ testCountFieldMigration()
 testSkippedCredit()
 testActiveTaskLifecycle()
 testAtEstimate()
+testReorder()
 
 if (process.exitCode === 1) {
   console.log('\n✗ One or more task assertions failed.\n')

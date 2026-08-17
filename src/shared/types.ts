@@ -346,6 +346,18 @@ export type TaskMutation =
     }
   | { type: 'delete'; id: string }
   | { type: 'setActive'; id: string | null }
+  /**
+   * Move `id` so it sits immediately before `beforeId`, or last among the
+   * incomplete tasks when `beforeId` is null (ticket 22).
+   *
+   * Neighbours are named by id rather than by index on purpose. The list renders
+   * incomplete-then-complete, so a rendered index is not a stored index, and ids
+   * dodge that translation entirely instead of putting the view's split inside the
+   * reducer or the reducer's array inside the view. They also make a drop that
+   * lands on a task which has since been completed or deleted a no-op rather than
+   * a silent move of whatever shuffled into that slot.
+   */
+  | { type: 'reorder'; id: string; beforeId: string | null }
 
 /** The surface exposed to renderers via contextBridge as `window.api`. */
 export interface PomApi {

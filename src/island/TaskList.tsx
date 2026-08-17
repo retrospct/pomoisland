@@ -6,8 +6,8 @@
 // height the user gives them, and its header doubles as the window's drag region
 // since the window is frameless.
 //
-// v1 verbs: add / edit title / set estimate / mark done / delete / set active.
-// Drag-reorder is a separate fast-follow issue.
+// Verbs: add / edit title / set estimate / mark done / delete / set active /
+// reorder by dragging the leading grip.
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { hexToRgba } from '@shared/accent'
@@ -27,6 +27,38 @@ const MONO = "'IBM Plex Mono', monospace"
  * not fit, not supplementary help.
  */
 const TITLE_POPOVER_DELAY_MS = 400
+
+/**
+ * Which incomplete row the pointer is currently above, as the id to drop *before*,
+ * or null for "past them all" — the argument shape `reorder` takes (ticket 22).
+ *
+ * Reads the live row rects on every move instead of measuring the list once at
+ * drag start. Rows are a fixed height today so a cached table would work, but it
+ * would silently rot the moment a row wraps or the detached window is resized
+ * mid-drag, and this is a handful of rects on a list capped by a scroll viewport.
+ *
+ * Hand-rolled, no drag-and-drop library — the app has no runtime dependencies and
+ * this is the whole reason that is affordable.
+ *
+ * **No drag auto-scroll**, deliberately. Docked, the scroll area is 220px — about
+ * eight rows — and detached it is however tall the user made the window, which is
+ * usually the whole list. So the drags that would need it are the ones crossing
+ * more than a screenful, on a list long enough that dragging is the wrong tool for
+ * moving something that far. Add it when a real list makes it necessary; guessing
+ * at an edge-proximity scroll rate now is how drags end up feeling twitchy.
+ */
+function dropTargetAt(clientY: number, from: HTMLElement): string | null {
+  const scroller = from.closest('.il-task-scroll')
+  if (!scroller) return null
+  for (const row of scroller.querySelectorAll<HTMLElement>('[data-drag-row]')) {
+    const r = row.getBoundingClientRect()
+    // The midpoint is the flip line: above it the dragged task lands before this
+    // row, below it we keep looking. Using the midpoint rather than an edge is
+    // what makes the indicator track the pointer without hysteresis.
+    if (clientY < r.top + r.height / 2) return row.dataset.dragRow ?? null
+  }
+  return null
+}
 
 /** Where this list is living. See Prefs.tasksDetached. */
 export type TaskListMode = 'docked' | 'detached'
@@ -76,6 +108,11 @@ export function TaskList({
   // last value used) and kept as the running default within the session (MO-53).
   const [addEstimate, setAddEstimate] = useState(() => tasks.defaultEstimate ?? 1)
   const inputRef = useRef<HTMLInputElement>(null)
+  // In-flight drag (ticket 22): which task is moving, and where it would land.
+  // `beforeId` is the id to drop before, or null for last-among-incomplete —
+  // exactly the reorder mutation's argument, so the commit is a pass-through and
+  // there is no second representation of "where this lands" to keep in step.
+  const [reorder, setReorder] = useState<{ id: string; beforeId: string | null } | null>(null)
 
   function mutate(m: Parameters<typeof window.api.tasks.mutate>[0]) {
     window.api.tasks.mutate(m)
@@ -102,6 +139,20 @@ export function TaskList({
 
   function stopProp(e: React.MouseEvent | React.KeyboardEvent) {
     e.stopPropagation()
+  }
+
+  /**
+   * Commit the drag, or don't. Dropping a task onto itself is the one case worth
+   * catching here rather than in the reducer: the reducer already returns an
+   * unchanged state for it, but taskStore persists and broadcasts on every
+   * mutation regardless, so letting it through would write the file and wake all
+   * three renderers to say nothing happened.
+   */
+  function endReorder() {
+    if (reorder && reorder.beforeId !== reorder.id) {
+      mutate({ type: 'reorder', id: reorder.id, beforeId: reorder.beforeId })
+    }
+    setReorder(null)
   }
 
   const active = tasks.tasks.filter((t) => !t.done)
@@ -229,12 +280,28 @@ export function TaskList({
           </p>
         )}
 
-        {active.map((task) => (
+        {active.map((task, i) => (
           <TaskRow
             key={task.id}
             task={task}
             isActive={task.id === tasks.activeTaskId}
             accent={accent}
+            // Only the incomplete group is draggable. Dragging a task into the
+            // completed group would mean "and also finish it", which is the
+            // checkbox's job — the reducer refuses it too, so the rule holds even
+            // if a future call site forgets.
+            draggable
+            dragging={reorder !== null}
+            isDragSubject={reorder?.id === task.id}
+            dropBefore={reorder !== null && reorder.beforeId === task.id}
+            // The landing line for "past every row" has nowhere of its own to
+            // live, so the last row draws it below itself.
+            dropAfter={reorder !== null && reorder.beforeId === null && i === active.length - 1}
+            onDragStart={() => setReorder({ id: task.id, beforeId: task.id })}
+            onDragMove={(beforeId) =>
+              setReorder((d) => (d && d.beforeId !== beforeId ? { ...d, beforeId } : d))
+            }
+            onDragEnd={endReorder}
             editId={editId}
             editText={editText}
             onEditTextChange={setEditText}
@@ -618,6 +685,19 @@ interface TaskRowProps {
   task: Task
   isActive: boolean
   accent: string
+  /** Incomplete rows only: show the grip and take part in reordering. */
+  draggable?: boolean
+  /** Some row in the list is being dragged (not necessarily this one). */
+  dragging?: boolean
+  /** This is the row being dragged. */
+  isDragSubject?: boolean
+  /** Draw the landing line above this row. */
+  dropBefore?: boolean
+  /** Draw the landing line below this row — only ever the last incomplete one. */
+  dropAfter?: boolean
+  onDragStart?: () => void
+  onDragMove?: (beforeId: string | null) => void
+  onDragEnd?: () => void
   editId: string | null
   editText: string
   onEditTextChange: (t: string) => void
@@ -633,6 +713,14 @@ function TaskRow({
   task,
   isActive,
   accent,
+  draggable = false,
+  dragging = false,
+  isDragSubject = false,
+  dropBefore = false,
+  dropAfter = false,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
   editId,
   editText,
   onEditTextChange,
@@ -677,6 +765,10 @@ function TaskRow({
   function openTitlePopover() {
     const el = titleRef.current
     if (!el) return
+    // A drag sweeps the pointer across every title in the list. Pointer capture
+    // keeps the *pointer* events on the grip, but mouseenter still fires on the
+    // spans it passes over, so without this a reorder would trail popovers.
+    if (dragging) return
     // The 1px slack is for sub-pixel layout: scrollWidth and clientWidth are
     // integers rounded from fractional widths, so an untruncated title can
     // measure 1px wider than its box and would otherwise pop for no reason.
@@ -701,7 +793,7 @@ function TaskRow({
 
   return (
     <div
-      className="il-task-row"
+      className={`il-task-row${isDragSubject ? ' il-task-row-dragging' : ''}`}
       // Ticket 15's gesture, and the only place it is stated. It sits on the row
       // rather than the title so it is reachable over the title text too, which
       // is what the title's own `title={task.title}` used to block: a nested
@@ -710,6 +802,9 @@ function TaskRow({
       // below replaces it, and every control carries its own `title` so none of
       // them inherit this one and claim to deselect anything.
       title={isActive && !task.done ? 'Click to deselect' : undefined}
+      // The drop-target scan reads these off the DOM (see dropTargetAt) rather
+      // than being handed a measured table at drag start.
+      data-drag-row={draggable ? task.id : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -718,11 +813,49 @@ function TaskRow({
         margin: '1px 4px',
         borderRadius: 8,
         cursor: 'pointer',
-        // Anchors the truncation popover.
+        // Anchors the truncation popover and the drop-indicator line.
         position: 'relative',
+        // The row being dragged fades rather than moving: the list underneath
+        // stays exactly where it was, so the indicator line is the only thing
+        // claiming to know where the task lands. Neighbours shifting to open a gap
+        // is explicitly out of scope for this ticket.
+        opacity: isDragSubject ? 0.4 : 1,
       }}
       onClick={onSetActive}
     >
+      {draggable && (
+        <DragGrip
+          onPointerDown={(e) => {
+            // stopPropagation keeps the row's set-active click from firing;
+            // preventDefault suppresses the compatibility mouse events (and the
+            // text-selection drag) that would otherwise follow, which is the
+            // other half of "pointer-down on the handle does not toggle the row".
+            e.stopPropagation()
+            e.preventDefault()
+            e.currentTarget.setPointerCapture(e.pointerId)
+            onDragStart?.()
+          }}
+          onPointerMove={(e) => {
+            if (!isDragSubject) return
+            onDragMove?.(dropTargetAt(e.clientY, e.currentTarget))
+          }}
+          onPointerUp={(e) => {
+            if (!isDragSubject) return
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            onDragEnd?.()
+          }}
+          // Losing capture without a pointerup — a window blur mid-drag, or the
+          // OS taking the pointer — has to end the drag too, or the row stays
+          // faded and the indicator stays on screen with nothing driving them.
+          onLostPointerCapture={() => {
+            if (isDragSubject) onDragEnd?.()
+          }}
+        />
+      )}
+
+      {dropBefore && <DropLine accent={accent} edge="top" />}
+      {dropAfter && <DropLine accent={accent} edge="bottom" />}
+
       {/* Checkbox */}
       <button
         aria-label={task.done ? 'Mark undone' : 'Mark done'}
@@ -916,6 +1049,84 @@ function TaskRow({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Reorder grip — six dots, the conventional mark, at the row's leading edge.
+ *
+ * **Hover-revealed**, which ticket 22 warned against on the grounds that revealing
+ * something at the leading edge shifts the edge. Ticket 20 removed that: the
+ * revealed set is opacity-only with its space reserved permanently, so the grip
+ * occupies its column whether or not you can see it, and the checkbox does not
+ * move when you hover. With that gone, the grip follows the same rule as every
+ * other control on the row — a pure verb, so it fades in.
+ *
+ * `touchAction: none` is required, not decorative: without it the OS claims the
+ * gesture for panning and the pointermove stream stops partway through a drag.
+ */
+function DragGrip(props: {
+  onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void
+  onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => void
+  onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => void
+  onLostPointerCapture: (e: React.PointerEvent<HTMLDivElement>) => void
+}) {
+  return (
+    <div
+      className="il-task-reveal"
+      role="button"
+      aria-label="Drag to reorder"
+      title="Drag to reorder"
+      // Keyboard reorder is out of scope for this ticket, so the grip is
+      // deliberately not tab-focusable — a focusable control that does nothing on
+      // Enter is worse than one a keyboard user never lands on. The row's own
+      // controls remain reachable.
+      style={{
+        flexShrink: 0,
+        display: 'grid',
+        placeItems: 'center',
+        width: 9,
+        height: 16,
+        cursor: 'grab',
+        touchAction: 'none',
+        color: 'var(--il-muted)',
+      }}
+      onClick={(e) => e.stopPropagation()}
+      {...props}
+    >
+      <svg width="6" height="10" viewBox="0 0 6 10" fill="currentColor" aria-hidden>
+        <circle cx="1" cy="1" r="1" />
+        <circle cx="5" cy="1" r="1" />
+        <circle cx="1" cy="5" r="1" />
+        <circle cx="5" cy="5" r="1" />
+        <circle cx="1" cy="9" r="1" />
+        <circle cx="5" cy="9" r="1" />
+      </svg>
+    </div>
+  )
+}
+
+/**
+ * Where the dragged task will land. Absolutely positioned on the row's edge so it
+ * costs no layout — the list must not shift while a drag is in flight, or the
+ * rects the drop scan is reading would move under the pointer that is driving it.
+ */
+function DropLine({ accent, edge }: { accent: string; edge: 'top' | 'bottom' }) {
+  return (
+    <div
+      className="il-task-drop-line"
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        [edge]: -1,
+        height: 2,
+        borderRadius: 999,
+        background: accent,
+        pointerEvents: 'none',
+      }}
+    />
   )
 }
 

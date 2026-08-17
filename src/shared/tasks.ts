@@ -252,6 +252,36 @@ export function applyMutation(state: TasksState, m: TaskMutation, newId: NewId):
       const tasks = state.tasks.filter((t) => !t.done)
       return { ...state, tasks, activeTaskId: nextActiveId(tasks, state.activeTaskId) }
     }
+    case 'reorder': {
+      // A splice, because array position *is* the ordering — the task type gains
+      // no `order` field. An explicit order would be a second source of truth
+      // needing reconciliation on add, delete and clearCompleted, plus
+      // re-densification whenever two values collided, for no gain over this.
+      const moving = state.tasks.find((t) => t.id === m.id)
+      // Every guard below returns the state untouched rather than throwing. A drop
+      // is a gesture; one that lands nowhere is a no-op.
+      if (!moving) return state
+      // Drags are confined to the incomplete group, enforced here rather than
+      // trusted from the view — a completed task is never the subject, and is
+      // never a valid neighbour either. Dropping an incomplete task among the
+      // completed ones would imply completing it, which is a different gesture
+      // wearing a drag costume.
+      if (moving.done) return state
+
+      const rest = state.tasks.filter((t) => t.id !== m.id)
+      let at: number
+      if (m.beforeId === null) {
+        // Last among the incomplete tasks, which is not the end of the array when
+        // a completed task sits behind them: inserting after those would move the
+        // dragged task into the completed group.
+        at = rest.reduce((last, t, i) => (t.done ? last : i + 1), 0)
+      } else {
+        const target = rest.findIndex((t) => t.id === m.beforeId)
+        if (target === -1 || rest[target]?.done) return state
+        at = target
+      }
+      return { ...state, tasks: [...rest.slice(0, at), moving, ...rest.slice(at)] }
+    }
     default: {
       const _exhaustive: never = m
       return _exhaustive
