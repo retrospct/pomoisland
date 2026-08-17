@@ -75,9 +75,11 @@ the dragged row, which is faded to 0.4, so the line was rendering half-visible t
 parent. The same predicate suppresses the pointless persist-and-broadcast, including the
 before-the-next-row case an id-only comparison misses.
 
-**Re-aiming the next task is proved but not surfaced.** `task-check` asserts that dragging a task
-to the top makes it the one the done-path advance picks. Nothing in the UI announces that;
-"confirm it is discoverable" is left open rather than claimed.
+**Re-aiming the next task: confirmed discoverable 2026-08-17** by the owner in a running app.
+`task-check` asserts that dragging a task to the top makes it the one the done-path advance picks,
+but an assertion can only prove the behaviour, never that anyone notices it. Nothing in the UI
+announces it and nothing needs to: the list order *is* the statement, which is what made array
+position the right model in the first place.
 
 **Accessibility:** the grip is `aria-hidden` and carries no button role. Keyboard reorder and
 screen-reader drag announcements are both out of scope above, so a labelled button role would

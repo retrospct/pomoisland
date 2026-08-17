@@ -308,28 +308,38 @@ be escalated back to a map ticket rather than guessed at.
 into 04**, not deferred — its questions are product calls, so they stay on the map as Part B
 of that ticket.
 
-## Unverified
+## Verified in a running app, and what a normal session still cannot reach
 
-**Nothing in this effort has been exercised by a running app.** Typecheck, lint, 123 + 35
-assertions and the production build are all green, and none of them can see any of the following.
-Listed so the gap is a known one rather than a discovered one:
+**Run by the owner on 2026-08-17 and reported working.** That closes the gap this section used to
+open with, and it is the only evidence that carries weight for the parts typecheck, lint, the 123 +
+35 assertions and the production build are all structurally blind to.
 
-- **The detached window at all** — whether it resizes, whether the corner grip sits inside
-  AppKit's private resize band, whether pinned level 1 lands above Safari and below a floating
-  island, whether geometry survives a real restart and a monitor unplug.
-- **Every animation and hover behaviour** — the reveal fade, the truncation popover in both open
-  directions, the bar's fill transition and hover count swap, the resume controls' entry fade and
-  pulse, the drop-indicator fade, and whether reduced motion suppresses each of them.
-- **The drag itself** — pointer capture across rows, the midpoint flip line, `lostpointercapture`
-  as the sole commit path, and the drag surviving a scroll.
-- **Real geometry on real hardware** — Peek's width on a notched display, and the Settings Tasks
-  section with all three rows.
-- **The main-process wiring** — `taskStore` → `Timer`'s at-estimate getter, and the branched
-  break-over notification copy.
+Also confirmed in that session: **the reorder re-aiming is discoverable.** Ticket 22's last open
+checkbox asked someone to confirm that dragging a task to the top visibly becomes the task ✓ and
+the done-path advance pick next. The check script only ever proved the behaviour, not that anyone
+would notice it.
 
-The 320px row layout is the one thing here that *was* measured, in a static harness rather than
-the app: it is what caught the title being squeezed to 98px, and the completed rows' checkboxes
-sitting 14px left of the incomplete ones.
+**Not claimed, because a normal session does not reach them.** These need deliberate setup rather
+than use, and it is not recorded which of them the run happened to cover, so they stay listed as
+needing confirmation rather than being marked either way:
+
+- **Geometry across a real restart, and across a display change** — quit and relaunch, then unplug
+  or switch a monitor. The restore path validates, intersects against a live display, then clamps
+  size and origin in that order, and only a real display change exercises the ordering.
+- **The pin's window level against other apps** — whether relative level 1 lands above an ordinary
+  app and below a floating island. Needs another always-on-top window in front of it.
+- **Peek's width on a notched display** — only reachable on a notched Mac, snapped.
+- **Reduced motion** — every animation here is guarded, and confirming the guards means toggling
+  the OS setting and looking again: the reveal fade, the popover, the bar's fill and hover swap,
+  the resume controls' entry fade and pulse, and the drop-indicator fade.
+- **The branched break-over notification copy** — requires sitting through a break that ends on a
+  task already at its estimate.
+- **The drag surviving a scroll** — needs a list taller than the scroll viewport, so more tasks
+  than a normal list carries.
+
+The 320px row layout was measured separately, in a static harness rather than the app: it is what
+caught the title being squeezed to 98px, and the completed rows' checkboxes sitting 14px left of
+the incomplete ones.
 
 ## Out of scope
 
