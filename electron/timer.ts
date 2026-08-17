@@ -9,7 +9,6 @@ const COMPLETE_HOLD_MS = 2600 // time for the completion flourish before advanci
 
 type Getter = () => Prefs
 type Listener = (s: TimerState) => void
-type FocusCompleteHook = () => void
 type TickHook = () => void
 
 /** What just finished, whether the upcoming break (once `advance()` fires) is the long one, and why. */
@@ -20,6 +19,20 @@ export interface CompleteEvent {
   reason: 'elapsed' | 'skipped'
 }
 type CompleteHook = (e: CompleteEvent) => void
+
+/**
+ * A focus block finished. Only the reason travels: the mode is always 'focus'
+ * here, and the long-break lookahead is the general channel's business.
+ *
+ * Session credit reads this, so it has to be told *why* the block ended — a
+ * block cut short with Next is not a session. Credit stays on this channel
+ * rather than moving to `onComplete`, which would reorder it after the
+ * notification and the bring-to-front.
+ */
+export interface FocusCompleteEvent {
+  reason: CompleteEvent['reason']
+}
+type FocusCompleteHook = (e: FocusCompleteEvent) => void
 
 export class Timer {
   private state: TimerState
@@ -164,7 +177,7 @@ export class Timer {
     const nextIsLongBreak = wasFocus && (this.state.sessionIndex + 1) % p.cSessions === 0
     this.set({ remaining: 0, status: 'complete' })
     if (wasFocus) {
-      for (const hook of this.focusCompleteHooks) hook()
+      for (const hook of this.focusCompleteHooks) hook({ reason })
     }
     for (const hook of this.completeHooks)
       hook({ finishedMode: this.state.mode, nextIsLongBreak, reason })

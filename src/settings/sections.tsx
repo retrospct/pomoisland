@@ -666,6 +666,14 @@ const PRESET_VALS: Partial<Record<Prefs['preset'], Partial<Prefs>>> = {
 
 const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['autoStart', 'Auto-start next session', 'Begin the next focus or break automatically'],
+  // Behavior, not Tasks: this governs what counts as a session at all, moving the
+  // daily total, the daily-goal reveal and the milestone rings, not just the task
+  // counters.
+  [
+    'creditSkipped',
+    'Count skipped sessions',
+    'A session you end early with Next still counts toward your task estimate and daily goal.',
+  ],
   [
     'raiseOnComplete',
     'Bring timer to front when time ends',

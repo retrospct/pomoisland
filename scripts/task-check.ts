@@ -370,6 +370,82 @@ function testCountFieldMigration(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Case 9: a skipped block credits nothing
+// ---------------------------------------------------------------------------
+// Pressing Next ends the block early, and a block you cut short is not a session
+// (CONTEXT.md: "Session — one focus block"). Before this, four taps of the global
+// Next shortcut completed a four-session task and earned a milestone ring for
+// work nobody did.
+//
+// Task credit and the daily total get the SAME answer, always: splitting them
+// would let a task and the day disagree about the same minute. The
+// `creditSkipped` pref restores the old behaviour for people who used Next as a
+// "done early" button, and it too moves both counters together.
+function testSkippedCredit(): void {
+  console.log('\nCase 9: skipped blocks credit nothing')
+  const s = threeTasks()
+
+  const elapsed = recordFocusComplete(s, TODAY, { reason: 'elapsed' })
+  assert(elapsed.tasks[0]?.completedSessions === 1, 'an elapsed block credits the active task')
+  assert(elapsed.completedToday === 1, 'an elapsed block credits the daily total')
+
+  const skipped = recordFocusComplete(s, TODAY, { reason: 'skipped' })
+  assert(skipped.tasks[0]?.completedSessions === 0, 'a skipped block credits no task')
+  assert(
+    skipped.completedToday === 0,
+    `a skipped block credits no daily total; got ${skipped.completedToday}`,
+  )
+
+  // Repeated skips must stay at zero — the four-taps-completes-a-task case.
+  const fourSkips = [1, 2, 3, 4].reduce(
+    (acc) => recordFocusComplete(acc, TODAY, { reason: 'skipped' }),
+    s,
+  )
+  assert(
+    fourSkips.tasks[0]?.completedSessions === 0 && fourSkips.completedToday === 0,
+    'four skips in a row still credit nothing',
+  )
+
+  const kept = recordFocusComplete(elapsed, TODAY, { reason: 'skipped' })
+  assert(
+    kept.tasks[0]?.completedSessions === 1 && kept.completedToday === 1,
+    'a skip after a real session leaves earned credit untouched',
+  )
+
+  // A skip landing on a new date must not roll the daily counter over either: it
+  // is not a completed session, so it is not evidence of activity today.
+  const skipTomorrow = recordFocusComplete({ ...elapsed, completedToday: 7 }, '2026-08-17', {
+    reason: 'skipped',
+  })
+  assert(
+    skipTomorrow.completedToday === 7 && skipTomorrow.completedDate === TODAY,
+    'a skip on a new date neither credits nor rolls the daily counter over',
+  )
+
+  // With the pref on, a skip is a session in every respect.
+  const credited = recordFocusComplete(s, TODAY, { reason: 'skipped', creditSkipped: true })
+  assert(
+    credited.tasks[0]?.completedSessions === 1,
+    'with the pref on, a skipped block credits the active task',
+  )
+  assert(
+    credited.completedToday === 1,
+    `with the pref on, a skipped block credits the daily total; got ${credited.completedToday}`,
+  )
+
+  // The pref is about skips only — it must not change elapsed blocks at all.
+  const elapsedWithPref = recordFocusComplete(s, TODAY, {
+    reason: 'elapsed',
+    creditSkipped: true,
+  })
+  eq('the pref leaves elapsed blocks exactly as they were', elapsedWithPref, elapsed)
+
+  // The default is the strict one: an omitted pref must not silently credit.
+  const defaulted = recordFocusComplete(s, TODAY, { reason: 'skipped' })
+  eq('an omitted creditSkipped defaults to off', defaulted, skipped)
+}
+
+// ---------------------------------------------------------------------------
 // Run all cases
 // ---------------------------------------------------------------------------
 console.log('\nTask reducer check\n' + '-'.repeat(50))
@@ -381,6 +457,7 @@ testFocusComplete()
 testNormalize()
 testActiveTaskTitle()
 testCountFieldMigration()
+testSkippedCredit()
 
 if (process.exitCode === 1) {
   console.log('\n✗ One or more task assertions failed.\n')
