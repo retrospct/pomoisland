@@ -2,6 +2,11 @@
 
 ## Destination
 
+**Reached 2026-08-16.** The spec is written: [spec.md](spec.md), `Status: ready-for-agent`.
+The derived-not-modelled pattern that recurred across tickets 03, 04 and 05 is recorded as
+`docs/adr/0008-derived-state-over-modelled-state.md`. What remains is implementation, starting
+with the seven deferred tickets.
+
 A written spec at `.scratch/task-list-features/spec.md` plus implementation issues under
 `.scratch/task-list-features/issues/`, covering the task-list UI batch (detach, resize,
 hover pencil, truncation popover, drag-reorder, click-to-deselect) and the task↔timer
@@ -231,8 +236,6 @@ Four consequences for open tickets:
 
 ## Not yet specified
 
-- **The spec artifact itself.** Structure and granularity of `spec.md` and the handoff
-  implementation issues; sharpens once the decision tickets land.
 - **Tray menu implications** of no-task mode and of a detached window (`electron/tray.ts`).
 - **Whether pop-out deserves a global shortcut** (`Shortcuts`, ADR-0007) — depends on 10.
 
