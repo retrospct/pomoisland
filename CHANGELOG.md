@@ -5,6 +5,41 @@ All notable changes to PomoIsland will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/retrospct/pomoisland/compare/v0.3.1...v0.4.0) (2026-08-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* Skipping a focus block no longer counts as a session. Pressing Next used to credit the block to your active task and to your daily total. It no longer does, because a session is one focus block and a block you cut short is not one: four taps of the global shortcut could finish a four-session task and earn a milestone ring for work nobody did.
+* Skipping a focus block no longer counts as a session. Pressing Next used to credit the block to your active task and to your daily total. It no longer does, because a session is one focus block and a block you cut short is not one: four taps of the global shortcut could finish a four-session task and earn a milestone ring for work nobody did.
+
+### Features
+
+* + and ✓ resume controls at a task's estimate ([#19](https://github.com/retrospct/pomoisland/issues/19)) ([c64eeda](https://github.com/retrospct/pomoisland/commit/c64eeda369c33b6e4f8933f0af4f5cf2c4951004))
+* active-task lifecycle — done-path advance and click-to-deselect ([#15](https://github.com/retrospct/pomoisland/issues/15)) ([df990c3](https://github.com/retrospct/pomoisland/commit/df990c356a69ba62798c17b585d514dba6d4b493))
+* always-on-top toggle and bring-to-front when time ends ([#47](https://github.com/retrospct/pomoisland/issues/47)) ([2aabf28](https://github.com/retrospct/pomoisland/commit/2aabf280f8de6f00cacf7142e88f9af2de406810))
+* detached task window geometry, resize grip and pin ([#24](https://github.com/retrospct/pomoisland/issues/24)) ([6b3d9ac](https://github.com/retrospct/pomoisland/commit/6b3d9acb2a5749254fbbb7313960736eebc3f6b0))
+* drag a task to reorder it ([#22](https://github.com/retrospct/pomoisland/issues/22)) ([542b1fe](https://github.com/retrospct/pomoisland/commit/542b1fe5ab36565d8d05b7c365c440cf43759202))
+* header controls get working tooltips, and Pop in leaves the menu ([4db6f94](https://github.com/retrospct/pomoisland/commit/4db6f94e21c37db560d8802ce47958d3faa5c687))
+* pop the task list out into its own window ([#23](https://github.com/retrospct/pomoisland/issues/23)) ([fffd443](https://github.com/retrospct/pomoisland/commit/fffd44395c540f8c7fa8f2817b761495ac81d45e))
+* segmented task progress bar in Peek and Expanded ([#17](https://github.com/retrospct/pomoisland/issues/17)) ([9fd38b6](https://github.com/retrospct/pomoisland/commit/9fd38b6470955dae41e4c58e21147bc782d9d084))
+* setting to stop the island collapsing itself ([ab8a716](https://github.com/retrospct/pomoisland/commit/ab8a7160acc30d39d57b1f9de73a2882e4cda4a9))
+* setting to stop the island collapsing itself ([0401f7c](https://github.com/retrospct/pomoisland/commit/0401f7c30a5c1dd8954ec8dfdf8f74ccec0f1359))
+* skipped sessions credit nothing by default ([#16](https://github.com/retrospct/pomoisland/issues/16)) ([885422b](https://github.com/retrospct/pomoisland/commit/885422bc680d44e16a9be97b9dbc13ec6f16021a))
+* stop the timer at a task's estimate ([#18](https://github.com/retrospct/pomoisland/issues/18)) ([a072f0c](https://github.com/retrospct/pomoisland/commit/a072f0c70e0e7f9e75c9503888e7c2b8dd48a83c))
+* task estimates drive the timer, with a progress bar and a detached list ([#48](https://github.com/retrospct/pomoisland/issues/48)) ([caa200a](https://github.com/retrospct/pomoisland/commit/caa200a0233707cab80de2ce4c55c3a4fec17bd3))
+* task rows stop reflowing on hover, and long titles get a popover ([#20](https://github.com/retrospct/pomoisland/issues/20), [#21](https://github.com/retrospct/pomoisland/issues/21)) ([554fe1b](https://github.com/retrospct/pomoisland/commit/554fe1b666c74f9ca01bbe4a26a60825c1904ebb))
+
+
+### Bug Fixes
+
+* review findings across wave 3, and reclaim the task title's width ([ae97e69](https://github.com/retrospct/pomoisland/commit/ae97e69a7466a29d50ed5ad5fc3b07b476e4fb71))
+
+
+### Documentation
+
+* flag the skipped-session default as a behaviour change ([fba058e](https://github.com/retrospct/pomoisland/commit/fba058ea3c5a5625fdc525f6d091b7c2a03cf5c1))
+
 ## [0.3.1](https://github.com/retrospct/pomoisland/compare/v0.3.0...v0.3.1) (2026-07-18)
 
 
