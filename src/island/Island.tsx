@@ -18,6 +18,7 @@ import { Menu, MenuDropdown } from './Menu'
 import { Ring } from './Ring'
 import { SessionDots } from './SessionDots'
 import { TaskList } from './TaskList'
+import { TaskProgressBar } from './TaskProgressBar'
 
 export type Present = 'collapsed' | 'peek' | 'expanded' | 'tasks'
 
@@ -72,6 +73,13 @@ interface IslandProps extends Handlers {
   notchBg: string
   ripple: Ripple
   messagesOn: boolean
+  /**
+   * Prefs.taskProgress. On, Peek and Expanded show the segmented task progress
+   * bar under the task line; off, they show the "3/5" count text after the title
+   * as they did before the bar existed. Never both: the same two integers twenty
+   * pixels apart reads as a rendering mistake, not emphasis (ticket 03 §4).
+   */
+  taskProgressOn: boolean
   tasks: TasksState | null
 }
 
@@ -1301,9 +1309,26 @@ function OutlinedCard({
   )
 }
 
-function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleExpand, onPlayPause, onSkip }: IslandProps) {
+function Peek({
+  view,
+  notch,
+  hasNotch,
+  notchHeight,
+  notchWidth,
+  tasks,
+  taskProgressOn,
+  onToggleExpand,
+  onPlayPause,
+  onSkip,
+}: IslandProps) {
   const rm = useReducedMotion()
   const activeTask = tasks?.tasks.find((t) => t.id === tasks?.activeTaskId) ?? null
+  // The bar's row exists only with an active task — no reserved gap, no empty
+  // track (ticket 03 §7): a task-less island keeps its old height, and an empty
+  // track would promise a measure of a task that isn't there. With a task the slot
+  // is fixed-height, so ticket 19's swap to the resume controls can't reflow the
+  // card mid-hover.
+  const showBar = taskProgressOn && activeTask !== null
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card. On a real-notch display, widen and
   // clear the physical notch height/width — same fix as ExpandedBody — so the
@@ -1350,7 +1375,7 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleE
         >
           {view.statusLabel}
         </span>
-        <SessionDots dots={view.dots} />
+        {view.dots.length > 0 && <SessionDots dots={view.dots} />}
       </div>
       <div
         style={{
@@ -1358,14 +1383,17 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleE
           color: view.taskColor,
           fontStyle: 'normal',
           letterSpacing: '-0.005em',
-          marginBottom: 13,
+          // Tightened above the bar so the two read as one task block; the
+          // original 13 when there is no bar, so a task-less card keeps exactly
+          // its old height.
+          marginBottom: showBar ? 7 : 13,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
         }}
       >
         {view.displayTask}
-        {activeTask && (
+        {activeTask && !taskProgressOn && (
           <TaskSessions
             completed={activeTask.completedSessions}
             estimate={activeTask.estimateSessions}
@@ -1373,33 +1401,23 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleE
           />
         )}
       </div>
-      <div
-        style={{
-          height: 4,
-          borderRadius: 999,
-          background: 'var(--il-track)',
-          overflow: 'hidden',
-          marginBottom: 14,
-        }}
-      >
-        <div
-          style={{
-            height: '100%',
-            width: `${Math.round(view.frac * 100)}%`,
-            background: view.accent,
-            borderRadius: 999,
-            transition: rm
-              ? 'background 1.5s ease-in-out'
-              : 'width .35s, background 1.5s ease-in-out',
-          }}
-        />
-      </div>
+      {showBar && activeTask && (
+        <div style={{ marginBottom: 8 }}>
+          <TaskProgressBar
+            completed={activeTask.completedSessions}
+            estimate={activeTask.estimateSessions}
+            accent={view.accentBase}
+            rm={rm}
+          />
+        </div>
+      )}
       <div
         style={{
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
           gap: 12,
+          marginBottom: 14,
         }}
       >
         <div
@@ -1462,6 +1480,37 @@ function Peek({ view, notch, hasNotch, notchHeight, notchWidth, tasks, onToggleE
           </button>
         </div>
       </div>
+      {/* The block's own continuous progress, at the foot of the card. It used to
+          sit between the task line and the time; it moved below the transport
+          controls when the segmented task bar arrived, so that the two measures
+          are never adjacent and can never be read as one pair. The task bar now
+          sits directly under the task name with nothing between them, which is
+          the whole basis of ticket 03's task-adjacency decision. Reading order is
+          still task name → this task's progress → this block's progress, with the
+          controls in the middle — the familiar media-player shape. Amends ticket
+          03 §6, which placed this bar directly below the task bar.
+          The boxes above only changed order, so Peek's height is unchanged; that
+          matters because Peek is hover-revealed (MO-50). */}
+      <div
+        style={{
+          height: 4,
+          borderRadius: 999,
+          background: 'var(--il-track)',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${Math.round(view.frac * 100)}%`,
+            background: view.accent,
+            borderRadius: 999,
+            transition: rm
+              ? 'background 1.5s ease-in-out'
+              : 'width .35s, background 1.5s ease-in-out',
+          }}
+        />
+      </div>
     </div>
   )
 }
@@ -1502,7 +1551,7 @@ function TaskSessions({
 
 function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   const rm = useReducedMotion()
-  const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
+  const { view, notch, hasNotch, notchHeight, notchWidth, messagesOn, taskProgressOn, onToggleExpand, onPlayPause, onReset, onSkip, bottomRadius } =
     props
   const br = bottomRadius ?? 26
   // The task list's active task (for the completed/estimated session hint below).
@@ -1512,6 +1561,9 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
   // "No task set" / "Break time" fallback for it; the hint below is simply
   // omitted, because there is no task whose sessions could be counted.
   const activeTask = props.tasks?.tasks.find((t) => t.id === props.tasks?.activeTaskId) ?? null
+  // See Peek: the bar's row exists only with an active task, and is fixed-height
+  // when it does (ticket 03 §7).
+  const showBar = taskProgressOn && activeTask !== null
   // Snapped → flat top flush with the screen edge + inverse-rounded ears (notch
   // shape); floating → fully rounded card.
   const wrapNotch = notch && hasNotch
@@ -1563,12 +1615,19 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
         >
           {view.statusLabel}
         </span>
-        <SessionDots
-          dots={view.dots}
-          gap={6}
-          completedToday={view.completedToday}
-          dailyGoal={view.dailyGoal}
-        />
+        {/* The length guard matters here as much as the visual: without it, with
+            the dots slot off, `dots: []` still took SessionDots down its
+            two-layer branch and left a hover target revealing the daily count
+            the user had switched off (ticket 03 §5). Named consequence: with
+            dots off, this card loses the daily-goal reveal. */}
+        {view.dots.length > 0 && (
+          <SessionDots
+            dots={view.dots}
+            gap={6}
+            completedToday={view.completedToday}
+            dailyGoal={view.dailyGoal}
+          />
+        )}
       </div>
 
       {/* Task text — clicking opens the task list (non-drag hotspot per MO-6).
@@ -1591,14 +1650,14 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           fontSize: 13.5,
           color: view.taskColor,
           fontStyle: 'normal',
-          marginBottom: 17,
+          marginBottom: showBar ? 8 : 17,
           letterSpacing: '-0.005em',
           cursor: 'pointer',
           userSelect: 'none',
         }}
       >
         {view.displayTask}
-        {activeTask && (
+        {activeTask && !taskProgressOn && (
           <TaskSessions
             completed={activeTask.completedSessions}
             estimate={activeTask.estimateSessions}
@@ -1606,6 +1665,17 @@ function ExpandedBody(props: IslandProps & { bottomRadius?: string | number }) {
           />
         )}
       </div>
+
+      {showBar && activeTask && (
+        <div style={{ marginBottom: 13 }}>
+          <TaskProgressBar
+            completed={activeTask.completedSessions}
+            estimate={activeTask.estimateSessions}
+            accent={view.accentBase}
+            rm={rm}
+          />
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 20 }}>
         <Ring

@@ -171,6 +171,12 @@ export interface Prefs {
   shortcuts: Shortcuts
   // ---- General · Tasks ----
   /**
+   * Show the active task's progress as a segmented bar in Peek and Expanded.
+   * Off falls back to the "3/5" count text at the same two sites, so off is the
+   * app's previous treatment rather than dead code.
+   */
+  taskProgress: boolean
+  /**
    * Stop at the estimate. Once the active task has completed as many focus
    * sessions as it was estimated to take, the break runs as normal and then the
    * timer stops at the break → focus boundary instead of starting the next

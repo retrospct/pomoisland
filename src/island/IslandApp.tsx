@@ -335,6 +335,7 @@ export function IslandApp() {
           notchBg={notchBg}
           ripple={prefs.ripple}
           messagesOn={prefs.messages}
+          taskProgressOn={prefs.taskProgress}
           tasks={tasks}
           onToggleExpand={toggleExpand}
           onPlayPause={() => window.api.timer.action({ type: 'playPause' })}
