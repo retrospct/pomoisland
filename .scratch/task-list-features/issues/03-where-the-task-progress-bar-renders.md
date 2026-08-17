@@ -138,10 +138,15 @@ sites, and the count moves into the bar's hover reveal (ticket 07 Q3, reusing th
 twice within about twenty pixels, which reads as a rendering mistake rather than emphasis.
 
 **But `TaskSessions` is not deleted — it becomes the off-state.** With `taskProgress` off, the
-two sites render the text hint exactly as they do today. That gives the toggle the best
-possible meaning for a new-feature switch: **off is exactly the app as it ships today**, and
-on is the new treatment. It costs nothing, since the component exists and is already wired at
-both sites.
+two sites render the text hint exactly as they do today. It costs nothing, since the component
+exists and is already wired at both sites.
+
+**Amended 2026-08-17**: this section claimed off is "exactly the app as it ships today, byte
+for byte". That is no longer strictly true. §6's relocation of Peek's timer bar is
+**unconditional** — correctly, since a *task* pref has no business moving the *timer's* own
+progress bar. So with the pref off you get today's count treatment, in a Peek whose timer bar
+has moved to the foot. The toggle still means "bar or count"; it just never meant "revert the
+card".
 
 Hiding the count entirely when off was rejected: it would leave the expanded card with no
 completed/estimate readout at all.
@@ -160,7 +165,29 @@ in a file this ticket opens anyway; spinning it out costs more bookkeeping than 
 reveal. That is correct. If the daily goal deserves a home independent of the dots slot, that
 is separate design work, not a reason to leave an orphaned hover target.
 
-### 6. Position: under the task line, above the timer bar
+### 6. Position: under the task line
+
+**Amended 2026-08-17 during ticket 17's implementation.** This section originally read "under
+the task line, **above the timer bar**", with the two bars roughly fifteen pixels apart in Peek
+and §6 handing the job of distinguishing them to ticket 07. On seeing it rendered, the owner
+moved **Peek's own continuous timer bar to the card foot**, below the time and the transport
+controls.
+
+So the position is now: the segmented task bar sits **directly under the task line with nothing
+between them**, and Peek's timer bar sits at the foot of the card.
+
+This strengthens rather than weakens §1's reasoning — the whole basis for task-adjacency was
+putting the bar against the thing it measures, and now nothing separates them. The
+specific-to-general reading order survives (task name → this task's progress → this block's
+progress), just with the time and controls in the middle, which is a familiar media-player
+shape. It is height-neutral, which matters because Peek is hover-revealed.
+
+**Peek only.** ExpandedBody has no linear timer bar — its Ring is the progress indicator — so
+the two bars were only ever adjacent in Peek, and this was a single-view change.
+
+The paragraph below is kept for the record.
+
+### 6 (superseded): under the task line, above the timer bar
 
 In **Peek**, the task line (`:1337`, `marginBottom: 13`) is followed by the timer's own 4px
 continuous `--il-track` progress bar (`:1345`). The task bar goes **between** them.

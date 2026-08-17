@@ -30,12 +30,41 @@ render), 18 (the stop is what summons them).
 - [ ] Tooltips are native, matching the rest of the app: + reads "Start another session"; ✓ reads
       "Finish task and start the next", falling back to "Finish task" when no incomplete task
       remains, so the copy never promises a next that doesn't exist
-- [ ] The bar carries an over-estimate treatment while at estimate, and the controls pulse, both
-      reduced-motion guarded
+- [ ] ~~The bar carries an over-estimate treatment while at estimate~~ **struck 2026-08-17** —
+      see *The swap is a replacement* below. Only the controls pulse, reduced-motion guarded.
 - [ ] How the controls degrade in the narrower of the two hosts is settled here, with the code in
       front of you — this is the part of [ticket 11](11-task-row-layout-under-pressure.md) that
       belongs to the controls
 - [ ] Type-check and lint pass
+
+## The swap is a replacement, and the over-estimate treatment is dead
+
+**Resolved 2026-08-17, found by ticket 17's implementation.** This ticket contradicted itself:
+the controls "occupy the progress bar's slot… swapping in via a crossfade" cannot hold at the
+same time as "the bar carries an over-estimate treatment while at estimate". If the controls
+replace the bar, there is no bar to carry a treatment. The contradiction came from
+**ticket 04 §B3**, which described the bar switching treatment *and* the buttons pulsing as
+though both were on screen.
+
+**The swap is a replacement.** At the stop the bar is not rendered; the two controls are.
+
+The over-estimate treatment is dead **twice over**, which is why this is a strike and not a
+choice:
+
+1. The owner's overflow decision (2026-08-17, ticket 17) caps the bar at the estimate with
+   every segment filled and *nothing else* — so there is no distinct over-estimate state to
+   render. A 5/4 and a 40/4 both read simply as full.
+2. Even if there were, replacement means the bar is off screen at exactly the moment overrun
+   becomes relevant.
+
+**What this ticket must do about it:** ticket 17 shipped the treatment **designed but
+unwired** — an `atEstimate` prop defaulting off on the bar component, plus a pulse keyframe.
+Either wire it (only if you overturn the replacement reading, which needs the owner) or
+**delete both**. Do not leave it unwired a second time.
+
+Ticket 17 also deliberately left the slot as a flex row rather than hard-coding replacement,
+so putting the controls *beside* a shrunken bar remains physically possible. That is not the
+settled reading; it is an escape hatch if replacement looks wrong in the running app.
 
 **The nag loop is the feature, not a bug to design around.** + refusing to raise the estimate is
 the whole point: the app keeps telling you that you are working past what you estimated, and the
