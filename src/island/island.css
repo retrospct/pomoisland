@@ -42,6 +42,80 @@ body.island-body {
   }
 }
 
+/* Task rows: background and the hover-revealed control set (ticket 20).
+   --------------------------------------------------------------------
+   Both are pure CSS, replacing the React `hovered` state the row used to keep.
+   Two reasons, and the second is the ticket:
+
+   1. A row re-rendered on every pointer enter/leave, and the list re-renders on
+      every timer tick anyway — the same reasoning that put the session dots'
+      reveal in CSS.
+   2. The revealed controls used to be *unmounted* when hidden, so hovering a row
+      physically reflowed it: the − / + buttons appeared and shoved the title
+      sideways under the pointer. Opacity keeps them in layout at all times, so
+      the fade IS the fix.
+
+   THE SPACE IS RESERVED PERMANENTLY. A row is always as wide as its hover state,
+   because that is the only arrangement in which hovering cannot move anything.
+   Reserving it only while hovered is the bug above wearing a transition. The cost
+   is real and lands on the title: ~44px of a docked row's 288px content width is
+   held for controls that are usually invisible. Accepted — a stable row is worth
+   more than 44px of title, and ticket 21 gives long titles a hover popover.
+
+   `pointer-events: none` while hidden is not tidiness. The controls sit in
+   layout permanently, so without it an invisible delete button would be
+   clickable, and would also be tab-focusable ahead of the visible ones. */
+.il-task-row {
+  background: transparent;
+  transition: background 0.12s;
+}
+.il-task-row:hover {
+  background: var(--il-line);
+}
+.il-task-reveal {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.il-task-row:hover .il-task-reveal {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Keyboard users never hover. Without this the whole revealed set is unreachable
+   by tab, which `pointer-events: none` would otherwise enforce silently. */
+.il-task-reveal:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-row,
+  .il-task-reveal {
+    transition: none;
+  }
+}
+
+/* Truncated-title popover (ticket 21). It mounts on a delay rather than fading in
+   from a hover selector, so this is a one-shot entry animation, not a transition
+   — there is nothing on screen to transition FROM. No exit animation for the same
+   reason: it unmounts, and holding a row mounted to animate its own disappearance
+   would keep a stale title on screen after a rename. */
+@keyframes islandTitlePopIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.il-task-title-pop {
+  animation: islandTitlePopIn 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-title-pop {
+    animation: none;
+  }
+}
+
 /* Themed, thin scrollbar for the task list — inherits light/dark via --il-* */
 .il-task-scroll::-webkit-scrollbar {
   width: 6px;

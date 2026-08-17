@@ -9,13 +9,24 @@
 // v1 verbs: add / edit title / set estimate / mark done / delete / set active.
 // Drag-reorder is a separate fast-follow issue.
 
-import { useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { hexToRgba } from '@shared/accent'
 import type { Task, TasksState } from '@shared/types'
 import { ThumbtackGlyph } from './Glyphs'
 
 const SANS = "'Inter', sans-serif"
 const MONO = "'IBM Plex Mono', monospace"
+
+/**
+ * Hover-to-popover delay for a truncated task title (ticket 21).
+ *
+ * Long enough that dragging the pointer down a list of ten rows doesn't flash ten
+ * popovers on the way past, short enough to feel like a property of the title
+ * rather than a thing you wait for. Deliberately quicker than the ~1s the OS
+ * gives a native tooltip: this one is reading assistance for text the row could
+ * not fit, not supplementary help.
+ */
+const TITLE_POPOVER_DELAY_MS = 400
 
 /** Where this list is living. See Prefs.tasksDetached. */
 export type TaskListMode = 'docked' | 'detached'
@@ -578,6 +589,31 @@ const headerBtn: CSSProperties = {
 
 // ---- TaskRow ----
 
+/**
+ * THE ONE RULE for what a row shows at rest (ticket 20). Settled for the whole
+ * set at once, because deciding it per control is how a row ends up with four
+ * different rules and no way to place the fifth thing:
+ *
+ *   **A control is always visible if its appearance carries state. A control
+ *   that is a pure verb is hover-revealed.**
+ *
+ * Always visible: the checkbox (its box IS done-or-not) and the session count
+ * (`3/5` is the row's only readout, and a list is a comparison context — ticket
+ * 03 kept the numeric count on rows for exactly this and sent the segmented bar
+ * to the island instead).
+ *
+ * Hover-revealed: the pencil, the − / + estimate steppers, and delete. None of
+ * them tell you anything when idle; they only offer to change something. Three
+ * verbs at rest on every row is clutter that also crowds out the title.
+ *
+ * The checkbox is the case that proves the rule rather than the exception to it:
+ * it is a control, but it is drawn as its own state, so hiding it would hide
+ * information.
+ *
+ * Gestures stay unambiguous against ticket 15's row-click toggle because every
+ * control here calls `stopPropagation` — the row's own click is the fallback for
+ * "none of the above", and it means set-active / deselect.
+ */
 interface TaskRowProps {
   task: Task
   isActive: boolean
@@ -607,14 +643,73 @@ function TaskRow({
   onDelete,
   onAdjustEstimate,
 }: TaskRowProps) {
-  const [hovered, setHovered] = useState(false)
-  // Reveal the − / + estimate steppers on row hover, or persistently once the
-  // user clicks the session count to edit it.
-  const [sessionsOpen, setSessionsOpen] = useState(false)
   const isEditing = editId === task.id
+  const titleRef = useRef<HTMLSpanElement>(null)
+  const popTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // null = no popover. 'down' / 'up' is which way it opens, decided once when the
+  // hover starts — see openTitlePopover.
+  const [titlePop, setTitlePop] = useState<'down' | 'up' | null>(null)
+
+  const cancelTitlePopover = useCallback(() => {
+    if (popTimer.current !== null) {
+      clearTimeout(popTimer.current)
+      popTimer.current = null
+    }
+    setTitlePop(null)
+  }, [])
+
+  // A row unmounts while hovered on every delete, mark-done and clearCompleted,
+  // and the pending timeout would fire into a dead component.
+  useEffect(() => cancelTitlePopover, [cancelTitlePopover])
+
+  /**
+   * Decide whether this title needs a popover, and which way it opens, by
+   * measuring at the moment of hover (ticket 21).
+   *
+   * Measuring on hover rather than tracking truncation is the whole design.
+   * Truncation is a function of the title, the row's width and the panel's width,
+   * so anything that *stored* it would need invalidating when any of the three
+   * changed — a ResizeObserver per row, on a list that already re-renders every
+   * timer tick. Read at the point of use it cannot go stale: a renamed task, a
+   * resized detached window and a re-render all produce a correct answer on the
+   * next hover, with no subscription anywhere.
+   */
+  function openTitlePopover() {
+    const el = titleRef.current
+    if (!el) return
+    // The 1px slack is for sub-pixel layout: scrollWidth and clientWidth are
+    // integers rounded from fractional widths, so an untruncated title can
+    // measure 1px wider than its box and would otherwise pop for no reason.
+    if (el.scrollWidth <= el.clientWidth + 1) return
+    // Open upward from the lower half of the scroll viewport. The popover lives
+    // inside that scroller (see the render below for why), so a downward one
+    // anchored to the last visible row would be clipped by the very container
+    // that makes it un-clippable everywhere else.
+    let dir: 'down' | 'up' = 'down'
+    const scroller = el.closest('.il-task-scroll')
+    if (scroller) {
+      const r = el.getBoundingClientRect()
+      const s = scroller.getBoundingClientRect()
+      dir = r.top - s.top > s.height / 2 ? 'up' : 'down'
+    }
+    if (popTimer.current !== null) clearTimeout(popTimer.current)
+    popTimer.current = setTimeout(() => {
+      popTimer.current = null
+      setTitlePop(dir)
+    }, TITLE_POPOVER_DELAY_MS)
+  }
 
   return (
     <div
+      className="il-task-row"
+      // Ticket 15's gesture, and the only place it is stated. It sits on the row
+      // rather than the title so it is reachable over the title text too, which
+      // is what the title's own `title={task.title}` used to block: a nested
+      // native tooltip wins outright on hover, so the row's could never appear
+      // where the pointer actually goes. That attribute is gone — the popover
+      // below replaces it, and every control carries its own `title` so none of
+      // them inherit this one and claim to deselect anything.
+      title={isActive && !task.done ? 'Click to deselect' : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -622,17 +717,16 @@ function TaskRow({
         padding: '5px 12px',
         margin: '1px 4px',
         borderRadius: 8,
-        background: hovered ? 'var(--il-line)' : 'transparent',
-        transition: 'background .12s',
         cursor: 'pointer',
+        // Anchors the truncation popover.
+        position: 'relative',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={onSetActive}
     >
       {/* Checkbox */}
       <button
         aria-label={task.done ? 'Mark undone' : 'Mark done'}
+        title={task.done ? 'Mark undone' : 'Mark done'}
         onClick={(e) => { e.stopPropagation(); onToggleDone() }}
         style={{
           flexShrink: 0,
@@ -698,7 +792,9 @@ function TaskRow({
         ) : (
           <>
             <span
-              title={task.title}
+              ref={titleRef}
+              onMouseEnter={openTitlePopover}
+              onMouseLeave={cancelTitlePopover}
               style={{
                 minWidth: 0,
                 fontSize: 12.5,
@@ -714,7 +810,9 @@ function TaskRow({
               {task.title}
             </span>
             <button
+              className="il-task-reveal"
               aria-label="Edit task title"
+              title="Edit task title"
               onClick={(e) => { e.stopPropagation(); onStartEdit(task) }}
               style={iconActionBtn}
             >
@@ -735,15 +833,22 @@ function TaskRow({
       {/* Spacer pushes the session controls + delete to the right */}
       {!isEditing && <div style={{ flex: 1 }} />}
 
-      {/* Session count: interactive − / + stepper for active tasks, read-only
-          "c/e sessions" for done tasks. Fixed-ish width keeps rows aligned. */}
+      {/* Session count: interactive − / + stepper for incomplete tasks, read-only
+          "c/e sessions" for done ones — you do not re-estimate finished work.
+          The done row pads by exactly the stepper's side width so both kinds of
+          row put their count and delete button in the same column. Since ticket
+          20 reserves the stepper's space permanently, that gap is now there at
+          rest too, and without this the completed group's rows would sit 44px
+          right of the incomplete ones the moment it is expanded. */}
       {!isEditing &&
         (task.done ? (
-          <SessionCount
-            completed={task.completedSessions}
-            estimate={task.estimateSessions}
-            accent={accent}
-          />
+          <div style={{ margin: `0 ${STEPPER_SIDE_W}px`, flexShrink: 0 }}>
+            <SessionCount
+              completed={task.completedSessions}
+              estimate={task.estimateSessions}
+              accent={accent}
+            />
+          </div>
         ) : (
           <SessionStepper
             completed={task.completedSessions}
@@ -751,14 +856,15 @@ function TaskRow({
             accent={accent}
             onDec={() => onAdjustEstimate(-1)}
             onInc={() => onAdjustEstimate(1)}
-            buttonsVisible={hovered || sessionsOpen}
-            onCountClick={(e) => { e.stopPropagation(); setSessionsOpen((v) => !v) }}
+            reveal
           />
         ))}
 
       {/* Delete */}
       <button
+        className="il-task-reveal"
         aria-label="Delete task"
+        title="Delete task"
         onClick={(e) => { e.stopPropagation(); onDelete() }}
         style={{ ...iconActionBtn, color: '#ff6b6b' }}
       >
@@ -766,6 +872,49 @@ function TaskRow({
           <path d="M2 3h8M5 3V2h2v1M4.5 3v6.5h3V3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
+
+      {/* Truncation popover (ticket 21) — the full title, only when it doesn't fit.
+          It renders INSIDE the row, spanning the row's content width and wrapping,
+          which is the one geometry that cannot be clipped: the rows live in an
+          `overflow-y: auto` scroller, so anything escaping the row's own box would
+          be cut by it, and a content-sized island window offers nothing outside
+          the panel to escape into either. Neither the dropdown's invisible-spacer
+          trick nor growing the window is needed as a result.
+
+          `pointer-events: none` makes it a readout and nothing else: it overlaps
+          the row below, and without this it would steal that row's hover, its
+          click, and this row's own mouseleave — leaving the popover stuck open. */}
+      {titlePop && (
+        <div
+          className="il-task-title-pop"
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 12,
+            right: 12,
+            [titlePop === 'up' ? 'bottom' : 'top']: '100%',
+            zIndex: 5,
+            pointerEvents: 'none',
+            background: 'var(--il-bg)',
+            border: '1px solid var(--il-border)',
+            borderRadius: 8,
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.28)',
+            padding: '5px 8px',
+            fontSize: 12.5,
+            lineHeight: 1.35,
+            letterSpacing: '-0.005em',
+            color: 'var(--il-text)',
+            // Three lines is enough for any title worth reading in a 320px panel
+            // and keeps the box inside the scroll viewport in both directions.
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {task.title}
+        </div>
+      )}
     </div>
   )
 }
@@ -804,9 +953,15 @@ function SessionCount({
 }
 
 /**
- * SessionCount flanked by − / + estimate steppers. The buttons render only when
- * `buttonsVisible` is true (task rows reveal them on hover / on clicking the
- * count); the add form leaves them always visible.
+ * SessionCount flanked by − / + estimate steppers.
+ *
+ * `reveal` puts the two buttons in the row's hover-revealed set (ticket 20) —
+ * always in layout, faded out until the row is hovered. The add form passes it
+ * false: there is no row to hover there, and its stepper is the point of the
+ * form's second line rather than an incidental control.
+ *
+ * The buttons are always *rendered* either way. Mounting them on hover is what
+ * made rows reflow under the pointer, and it is the bug ticket 20 exists to fix.
  */
 function SessionStepper({
   completed,
@@ -814,45 +969,52 @@ function SessionStepper({
   accent,
   onDec,
   onInc,
-  buttonsVisible = true,
-  onCountClick,
+  reveal = false,
 }: {
   completed?: number
   estimate: number
   accent: string
   onDec: () => void
   onInc: () => void
-  buttonsVisible?: boolean
-  onCountClick?: (e: React.MouseEvent) => void
+  reveal?: boolean
 }) {
+  const cls = reveal ? 'il-task-reveal' : undefined
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-      {buttonsVisible && (
-        <button
-          type="button"
-          aria-label="Fewer sessions"
-          onClick={(e) => { e.stopPropagation(); onDec() }}
-          style={pipBtn}
-        >
-          −
-        </button>
-      )}
-      <span onClick={onCountClick} style={onCountClick ? { cursor: 'pointer' } : undefined}>
-        <SessionCount completed={completed} estimate={estimate} accent={accent} />
-      </span>
-      {buttonsVisible && (
-        <button
-          type="button"
-          aria-label="More sessions"
-          onClick={(e) => { e.stopPropagation(); onInc() }}
-          style={pipBtn}
-        >
-          +
-        </button>
-      )}
+    <div style={{ display: 'flex', alignItems: 'center', gap: PIP_GAP, flexShrink: 0 }}>
+      <button
+        type="button"
+        className={cls}
+        aria-label="Fewer sessions"
+        title="Fewer sessions"
+        onClick={(e) => { e.stopPropagation(); onDec() }}
+        style={pipBtn}
+      >
+        −
+      </button>
+      <SessionCount completed={completed} estimate={estimate} accent={accent} />
+      <button
+        type="button"
+        className={cls}
+        aria-label="More sessions"
+        title="More sessions"
+        onClick={(e) => { e.stopPropagation(); onInc() }}
+        style={pipBtn}
+      >
+        +
+      </button>
     </div>
   )
 }
+
+const PIP_W = 16
+const PIP_GAP = 6
+/**
+ * What one side of the stepper occupies: a − / + button plus its gap. Derived
+ * rather than typed twice, because a completed row pads by this to line its count
+ * up with an incomplete row's — and a 22 that silently stopped matching the
+ * buttons would misalign the two groups with nothing to point at.
+ */
+const STEPPER_SIDE_W = PIP_W + PIP_GAP
 
 const pipBtn: React.CSSProperties = {
   background: 'transparent',
@@ -860,8 +1022,8 @@ const pipBtn: React.CSSProperties = {
   borderRadius: 4,
   color: 'var(--il-muted)',
   cursor: 'pointer',
-  width: 16,
-  height: 16,
+  width: PIP_W,
+  height: PIP_W,
   fontSize: 12,
   lineHeight: 1,
   display: 'grid',
