@@ -157,6 +157,18 @@ export interface Prefs {
   showDockIcon: boolean
   /** User-rebindable global shortcuts (show/hide, play/pause, next) — see ADR-0007. */
   shortcuts: Shortcuts
+  // ---- General · Tasks ----
+  /**
+   * Stop at the estimate. Once the active task has completed as many focus
+   * sessions as it was estimated to take, the break runs as normal and then the
+   * timer stops at the break → focus boundary instead of starting the next
+   * session; the user resumes with play. Beats `autoStart` — switching this off
+   * IS the "respect auto-start" behaviour, so there is no third control.
+   *
+   * At-estimate itself is never stored: it is a predicate over this pref and the
+   * active task's counts (src/shared/tasks.ts, ADR-0008).
+   */
+  pauseAtEstimate: boolean
   // ---- Preferences · Alarm & sound ----
   sound: Sound
   volume: number

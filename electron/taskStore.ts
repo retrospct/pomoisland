@@ -76,6 +76,19 @@ export function activeTaskTitle(): string {
 }
 
 /**
+ * Is the active task at or past its estimate, with the stop switched on?
+ *
+ * The one composition point for the derived at-estimate condition: the task
+ * state and the pref are read here so the predicate itself stays pure. Passed to
+ * `Timer` as its at-estimate getter (main.ts) and read again by the break-over
+ * notification (notify.ts), so the timer's behaviour and the copy describing it
+ * can never disagree.
+ */
+export function activeTaskAtEstimate(): boolean {
+  return tasks.activeTaskAtEstimate(getTasks(), getPrefs().pauseAtEstimate)
+}
+
+/**
  * Called when a focus block completes — credits the active task and the day,
  * unless the block was skipped and the user hasn't asked for skips to count.
  * The reason comes from the timer; the pref is read here so the reducer stays

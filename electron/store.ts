@@ -35,6 +35,8 @@ export const DEFAULT_PREFS: Prefs = {
   pauseIdle: true,
   showDockIcon: true,
   shortcuts: { ...DEFAULT_SHORTCUTS },
+  // General · Tasks — the estimate is only worth making if the app acts on it.
+  pauseAtEstimate: true,
   // Preferences · Alarm & sound
   sound: 'chime',
   volume: 70,

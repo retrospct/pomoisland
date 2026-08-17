@@ -10,6 +10,14 @@ const COMPLETE_HOLD_MS = 2600 // time for the completion flourish before advanci
 type Getter = () => Prefs
 type Listener = (s: TimerState) => void
 type TickHook = () => void
+/**
+ * "Has the active task reached its estimate, with the stop switched on?" —
+ * injected in the same shape as the prefs getter so this module never imports
+ * the task store and stays constructible from a plain Node script (see
+ * scripts/at-estimate-check.ts). The predicate itself lives in
+ * src/shared/tasks.ts; ADR-0008 keeps it derived rather than stored.
+ */
+type AtEstimateGetter = () => boolean
 
 /** What just finished, whether the upcoming break (once `advance()` fires) is the long one, and why. */
 export interface CompleteEvent {
@@ -37,6 +45,7 @@ type FocusCompleteHook = (e: FocusCompleteEvent) => void
 export class Timer {
   private state: TimerState
   private readonly getPrefs: Getter
+  private readonly getAtEstimate: AtEstimateGetter
   private readonly listeners = new Set<Listener>()
   private readonly focusCompleteHooks = new Set<FocusCompleteHook>()
   private readonly completeHooks = new Set<CompleteHook>()
@@ -44,8 +53,12 @@ export class Timer {
   private interval: ReturnType<typeof setInterval> | null = null
   private completeTimer: ReturnType<typeof setTimeout> | null = null
 
-  constructor(getPrefs: Getter) {
+  // The at-estimate getter is optional and defaults to "never": a Timer built
+  // with prefs alone behaves exactly as it did before ticket 18, which is what
+  // the other check scripts construct.
+  constructor(getPrefs: Getter, getAtEstimate: AtEstimateGetter = () => false) {
     this.getPrefs = getPrefs
+    this.getAtEstimate = getAtEstimate
     const p = getPrefs()
     const total = p.cFocus * 60
     this.state = {
@@ -203,12 +216,22 @@ export class Timer {
       })
     } else {
       const total = this.focusSeconds()
+      // The stop (ticket 18). Read BEFORE p.autoStart: this line is where
+      // pause-at-estimate beating auto-start lives, mechanically. The active
+      // task has done as many sessions as it was estimated to take, so whether
+      // there is another one is the user's call — they resume with play.
+      //
+      // Evaluated here and nowhere else, which is what keeps the estimate
+      // stepper and Settings structurally unable to stop a running timer. The
+      // resulting state is a plain `idle` focus boundary: no new Status, nothing
+      // stored, nothing broadcast (ADR-0008).
+      const atEstimate = this.getAtEstimate()
       this.set({
         mode: 'focus',
         isLongBreak: false,
         total,
         remaining: total,
-        status: p.autoStart ? 'running' : 'idle',
+        status: !atEstimate && p.autoStart ? 'running' : 'idle',
       })
     }
   }

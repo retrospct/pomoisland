@@ -10,7 +10,7 @@
 // Impure inputs are parameters, never ambient: the id generator and today's date
 // are passed in, so every function here is deterministic.
 
-import type { Task, TaskMutation, TasksState } from './types'
+import type { Mode, Status, Task, TaskMutation, TasksState } from './types'
 
 /** Mints ids for newly added tasks. Injected so tests can be deterministic. */
 export type NewId = () => string
@@ -149,6 +149,55 @@ export function recordFocusComplete(
     t.id === state.activeTaskId ? { ...t, completedSessions: t.completedSessions + 1 } : t,
   )
   return { ...state, tasks, completedToday, completedDate: today }
+}
+
+/**
+ * Has the active task completed at least as many focus sessions as it was
+ * estimated to take, with the stop switched on?
+ *
+ * This is the task half of the at-estimate predicate, and the whole of what the
+ * timer needs: `electron/timer.ts` calls it (through an injected getter, so it
+ * never imports the task store) from inside the break → focus branch of its
+ * advance, which *is* the focus boundary — the status/mode half is supplied
+ * structurally by where the call sits. The renderers, which have no such
+ * position, read `isAtEstimate` instead.
+ *
+ * At-or-past, not equality: the resume control that starts another session never
+ * raises the estimate, so `===` would fire once at 4/4 and never again at 5/4.
+ *
+ * `pauseAtEstimate` is passed in rather than read, keeping this module pure. It
+ * is also the feature's entire off-switch — there is no separate "respects
+ * Auto-start" pref, because that is this one turned off.
+ */
+export function activeTaskAtEstimate(state: TasksState, pauseAtEstimate: boolean): boolean {
+  if (!pauseAtEstimate || !state.activeTaskId) return false
+  const active = state.tasks.find((t) => t.id === state.activeTaskId)
+  if (!active) return false
+  return active.completedSessions >= active.estimateSessions
+}
+
+/**
+ * Is the app sitting at the stop right now — an idle timer at a focus boundary
+ * whose active task has reached its estimate?
+ *
+ * Derived, never stored (ADR-0008): no `Status` member, no `TimerState` field,
+ * no persistence, no IPC. It therefore survives a restart for free and goes
+ * false the instant the pref is switched off or the active task changes, with
+ * nothing to clear on reset, skip or switch-mode.
+ *
+ * Accepted consequence: it cannot tell "stopped because you hit your estimate"
+ * from "idle for any other reason", so an over-estimate active task reads as at
+ * the stop after Reset and at launch. That is correct — if the active task is
+ * over its estimate and the timer sits at a focus boundary, the question is the
+ * right one however you arrived — and deliberately not suppressed with a flag.
+ */
+export function isAtEstimate(
+  timer: { status: Status; mode: Mode },
+  state: TasksState,
+  pauseAtEstimate: boolean,
+): boolean {
+  if (timer.status !== 'idle' || timer.mode !== 'focus') return false
+  return activeTaskAtEstimate(state, pauseAtEstimate)
 }
 
 export function applyMutation(state: TasksState, m: TaskMutation, newId: NewId): TasksState {

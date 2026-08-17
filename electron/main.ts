@@ -7,6 +7,7 @@ import { initNotifications } from './notify'
 import { initRaiseOnComplete } from './raiseOnComplete'
 import { configureShortcutHandlers, registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
 import { getPrefs, onPrefsChange } from './store'
+import { activeTaskAtEstimate } from './taskStore'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
 import { initAutoUpdater, onUpdateReady } from './updater'
@@ -29,7 +30,10 @@ function applyDockVisibility(show: boolean): void {
 }
 
 function bootstrap(): void {
-  timer = new Timer(getPrefs)
+  // Two plain getters: prefs, and "is the active task at its estimate?" (the
+  // stop, ticket 18). Injected rather than imported so the timer stays free of
+  // the task store — see ADR-0008.
+  timer = new Timer(getPrefs, activeTaskAtEstimate)
   configureShortcutHandlers({
     showHide: toggleIslandVisibility,
     playPause: () => timer!.action({ type: 'playPause' }),
