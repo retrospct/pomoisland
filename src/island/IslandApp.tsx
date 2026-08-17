@@ -1,5 +1,6 @@
 import { resolveNotchHeight } from '@shared/notchHeight'
 import { playSound, playStartCue, playTick } from '@shared/sound'
+import { isAtEstimate } from '@shared/tasks'
 import type { Placement, Prefs, TasksState, TimerState } from '@shared/types'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { deriveIsland } from './derive'
@@ -82,6 +83,18 @@ export function IslandApp() {
   useEffect(() => {
     prefsRef.current = prefs
   }, [prefs])
+
+  // --- Detach is exclusive (ticket 23) ---
+  // While the list has its own window the island must never render the inline
+  // panel, so the 'tasks' presentation is unreachable and every route that used
+  // to open it focuses the window instead. Popping out mid-session leaves
+  // `tasksOpen` stale; clearing it here means the island returns to the plain
+  // expanded card and the ResizeObserver shrinks the window to match, exactly
+  // as it does when the panel is closed by hand.
+  const tasksDetached = prefs?.tasksDetached ?? false
+  useEffect(() => {
+    if (tasksDetached) setTasksOpen(false)
+  }, [tasksDetached])
 
   // --- Completion alarm on transition into `complete` ---
   // Only a finished FOCUS block (session end) rings the alarm; a finished break is
@@ -191,6 +204,15 @@ export function IslandApp() {
   const view =
     state && prefs ? deriveIsland(state, prefs, effectiveTheme, tasks?.completedToday ?? 0) : null
 
+  // Is the app sitting at the stop (ticket 18)? Computed here on every render from
+  // state the renderer already subscribes to, and never stored, sent or persisted
+  // — ADR-0008. Nothing to clear on reset, skip or switch-mode, and it survives a
+  // restart for free because there was never a flag to restore.
+  const atEstimate =
+    state !== null && tasks !== null && prefs !== null
+      ? isAtEstimate(state, tasks, prefs.pauseAtEstimate)
+      : false
+
   // Notch band height honoring the user's setting — see resolveNotchHeight for
   // the mode → height mapping (shared with the settings custom-height stepper).
   const effectiveNotchHeight = !prefs
@@ -208,7 +230,7 @@ export function IslandApp() {
 
   // Determine presentation
   let present: Present = 'collapsed'
-  if (tasksOpen && expanded) present = 'tasks'
+  if (tasksOpen && expanded && !tasksDetached) present = 'tasks'
   else if (expanded) present = 'expanded'
   else if (peek && !placement.dragging) present = 'peek'
   // Kept in sync with `present` on every render so the resize-report closure
@@ -228,14 +250,35 @@ export function IslandApp() {
     }
   }
 
+  /**
+   * The single route to the task list. Both the ⋯ menu's Tasks item and the
+   * clickable task label in the expanded card come through here, so exclusivity
+   * is enforced once: detached, this focuses the window instead of opening a
+   * second copy of the list inside the island.
+   */
   const openTasks = (e: React.MouseEvent) => {
     e.stopPropagation()
     setMenuOpen(false)
+    if (tasksDetached) {
+      window.api.windows.tasksWindow('focus')
+      return
+    }
     setExpanded(true)
     setTasksOpen(true)
   }
 
   const closeTasks = () => setTasksOpen(false)
+
+  const popOutTasks = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setMenuOpen(false)
+    // Optimistically drop the inline panel so the island doesn't hold a second
+    // copy of the list on screen while the pref round-trips through main. The
+    // authoritative flip arrives via prefs.onChange.
+    setTasksOpen(false)
+    window.api.windows.tasksWindow('popOut')
+  }
+
 
   // --- Peek-trigger hover region (MO-45) ---
   // The wrapper window is much larger than the visible island (it reserves
@@ -297,11 +340,36 @@ export function IslandApp() {
           notchBg={notchBg}
           ripple={prefs.ripple}
           messagesOn={prefs.messages}
+          taskProgressOn={prefs.taskProgress}
+          atEstimate={atEstimate}
           tasks={tasks}
           onToggleExpand={toggleExpand}
           onPlayPause={() => window.api.timer.action({ type: 'playPause' })}
           onReset={() => window.api.timer.action({ type: 'reset' })}
           onSkip={() => window.api.timer.action({ type: 'skip' })}
+          // + — another session on the same task. `playPause` from an idle timer
+          // starts it, and the estimate is deliberately untouched: the task runs
+          // 5/4, then 6/4, and the stop fires again at every boundary until the
+          // user either finishes it or opens the list and revises the number.
+          onResumeSession={() => window.api.timer.action({ type: 'playPause' })}
+          // ✓ — finish and move on. Marking done is what advances the active task
+          // (ticket 15's done path), so this owns no advance logic; it just marks
+          // and starts. With nothing incomplete left the advance lands on null and
+          // the block runs crediting no task, which is the correct outcome rather
+          // than a case to special-case.
+          //
+          // Mark-then-start, in that order, so the session about to run belongs to
+          // whatever comes next rather than briefly to the task being finished.
+          onFinishTask={() => {
+            if (tasks?.activeTaskId) {
+              window.api.tasks.mutate({
+                type: 'update',
+                id: tasks.activeTaskId,
+                patch: { done: true },
+              })
+            }
+            window.api.timer.action({ type: 'playPause' })
+          }}
           menuOpen={menuOpen}
           onToggleMenu={(e) => {
             e.stopPropagation()
@@ -316,6 +384,8 @@ export function IslandApp() {
           }}
           onOpenTasks={openTasks}
           onCloseTasks={closeTasks}
+          onPopOutTasks={popOutTasks}
+          tasksDetached={tasksDetached}
           onSettings={(e) => {
             e.stopPropagation()
             setMenuOpen(false)

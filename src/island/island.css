@@ -42,6 +42,127 @@ body.island-body {
   }
 }
 
+/* Task rows: background and the hover-revealed control set (ticket 20).
+   --------------------------------------------------------------------
+   Both are pure CSS, replacing the React `hovered` state the row used to keep.
+   Two reasons, and the second is the ticket:
+
+   1. A row re-rendered on every pointer enter/leave, and the list re-renders on
+      every timer tick anyway — the same reasoning that put the session dots'
+      reveal in CSS.
+   2. The revealed controls used to be *unmounted* when hidden, so hovering a row
+      physically reflowed it: the − / + buttons appeared and shoved the title
+      sideways under the pointer. Opacity keeps them in layout at all times, so
+      the fade IS the fix.
+
+   THE SPACE IS RESERVED PERMANENTLY. A row is always as wide as its hover state,
+   because that is the only arrangement in which hovering cannot move anything.
+   Reserving it only while hovered is the bug above wearing a transition. The cost
+   is real and lands on the title: ~44px of a docked row's 288px content width is
+   held for controls that are usually invisible. Accepted — a stable row is worth
+   more than 44px of title, and ticket 21 gives long titles a hover popover.
+
+   `pointer-events: none` while hidden is not tidiness. The controls sit in
+   layout permanently, so without it an invisible delete button would be
+   clickable, and would also be tab-focusable ahead of the visible ones. */
+.il-task-row {
+  background: transparent;
+  transition: background 0.12s;
+}
+.il-task-row:hover {
+  background: var(--il-line);
+}
+.il-task-reveal {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.il-task-row:hover .il-task-reveal {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Keyboard users never hover. Without this the whole revealed set is unreachable
+   by tab, which `pointer-events: none` would otherwise enforce silently. */
+.il-task-reveal:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-row,
+  .il-task-reveal {
+    transition: none;
+  }
+}
+
+/* Drop-indicator line for a reorder drag (ticket 22). It appears at a new edge
+   each time the pointer crosses a row's midpoint, so the fade is what stops it
+   reading as a hard jump between rows. Opacity only — it is absolutely positioned
+   and must never affect the geometry the drop scan is measuring. */
+@keyframes islandDropLineIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.il-task-drop-line {
+  animation: islandDropLineIn 0.1s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-drop-line {
+    animation: none;
+  }
+}
+
+/* While a drag is in flight the grip must stay visible even though the pointer has
+   left the row it belongs to — pointer capture keeps the events coming, but the
+   CSS :hover that reveals the grip does not follow.
+
+   Scoped to the GRIP, not the whole revealed set: the row is faded to 0.4 while it
+   is being dragged, and lighting up its pencil, steppers and delete underneath that
+   fade offers three verbs that are not on offer mid-drag. `pointer-events` has to
+   come back with the opacity or the very element holding pointer capture is
+   `pointer-events: none` the moment hover leaves it. */
+.il-task-row-dragging .il-task-grip {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Header control labels. Same one-shot entry fade as the title popover below, and
+   for the same reason: they mount on a delay, so there is nothing to transition
+   from. */
+.il-header-tip {
+  animation: islandTitlePopIn 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-header-tip {
+    animation: none;
+  }
+}
+
+/* Truncated-title popover (ticket 21). It mounts on a delay rather than fading in
+   from a hover selector, so this is a one-shot entry animation, not a transition
+   — there is nothing on screen to transition FROM. No exit animation for the same
+   reason: it unmounts, and holding a row mounted to animate its own disappearance
+   would keep a stale title on screen after a rename. */
+@keyframes islandTitlePopIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.il-task-title-pop {
+  animation: islandTitlePopIn 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-task-title-pop {
+    animation: none;
+  }
+}
+
 /* Themed, thin scrollbar for the task list — inherits light/dark via --il-* */
 .il-task-scroll::-webkit-scrollbar {
   width: 6px;
@@ -112,6 +233,78 @@ body.island-body {
   .il-dots-layer,
   .il-goal-layer {
     transition: none;
+  }
+}
+
+/* Task progress bar ⇄ exact-count cross-fade. Same two-layer grid trick as the
+   session dots above: one grid cell, opacity only, so the slot is size-stable
+   under the pointer. The bar's own slot is fixed-height, so unlike the dots this
+   holds even when the count layer is the taller child. */
+.il-task-bar-layer {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+.il-task-count-layer {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.il-task-bar:hover .il-task-bar-layer {
+  opacity: 0;
+}
+.il-task-bar:hover .il-task-count-layer {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .il-task-bar-layer,
+  .il-task-count-layer {
+    transition: none;
+  }
+}
+
+/* The resume controls breathe while the timer sits stopped at a task's estimate
+   (ticket 19). This replaces the at-estimate treatment ticket 17 designed for the
+   BAR, which is deleted rather than wired: the swap is a replacement, so the bar
+   is not on screen at the moment overrun matters, and capping the bar at the
+   estimate left no distinct over state to draw in the first place.
+
+   The pulse is the whole "come back to this" signal, and it does not stop on its
+   own — the nag is the feature. Opacity only, so it cannot reflow the slot, and
+   applied to the pair rather than each button so they breathe together. The class
+   is omitted entirely under reduced motion (see ResumeControls) rather than
+   suppressed here, because an infinite animation is exactly what that setting is
+   asking about. */
+/* The controls arriving in the slot the bar just left. A one-shot entry fade, not a
+   transition, because the element mounts — and not paired with an exit fade on the
+   bar, which would mean keeping the bar mounted past the moment it stopped being
+   true. */
+@keyframes islandResumeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.il-resume-in {
+  animation: islandResumeIn 0.16s ease-out;
+}
+
+@keyframes islandResumePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.il-resume-pulse {
+  animation: islandResumePulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .il-resume-pulse {
+    animation: none;
   }
 }
 

@@ -2,16 +2,43 @@
 
 Type: grilling
 Status: deferred — decided during implementation, not on the map
-Blocked by: 03, 04
+Blocked by: nothing — 03 and 04 both resolved 2026-08-16
+
+**Ticket 04 settled the pref keys and defaults**, and added a third toggle that does *not*
+live here. Q4 below is answered; Q1–Q3 and Q5 stand.
+
+| Key | Section | Default |
+|---|---|---|
+| `taskProgress` | **Tasks** | on |
+| `pauseAtEstimate` | **Tasks** | on |
+| `creditSkipped` | **Behavior**, not Tasks | off |
+
+`creditSkipped` governs what counts as a completed session at all — it moves
+`completedToday`, the daily-goal reveal and the milestone rings, not just task counters — so
+it sits with `autoStart` and `pauseIdle` in Behavior. Its copy is settled: **"Count skipped
+sessions"** / *"A session you end early with Next still counts toward your task estimate and
+daily goal."* The Tasks section is still exactly two rows, which is what Q1's column-balance
+question was sized against.
+
+Q2's copy now also has to describe a `pauseAtEstimate` that pauses **after the break**, and
+whose **+** deliberately never raises the estimate.
+
+**Ticket 03 §4 amends Q2's stated constraint.** It said the progress-bar toggle's description
+"must make clear it only hides the bar next to the session dots: counts stay visible in the
+hover and expanded views and in the task list itself." That is now wrong on two counts: the
+bar is never next to the session dots (03 §1), and off does not merely hide it — it **falls
+back to the existing `TaskSessions` "• 3/5" text** at the same two sites. So `taskProgress`
+off is byte-for-byte today's app. The description is closer to *"Show task progress as a bar
+instead of a count."*
 
 ## Question
 
 A new **Tasks** section in the General tab, below Behavior, with exactly two toggles
-(settled): task progress bar on/off (default on) and pause-at-planned on/off (default on).
+(settled): task progress bar on/off (default on) and pause-at-estimate on/off (default on).
 Blocked because the toggle copy has to describe what tickets 03 and 04 actually decided.
 
-1. **Placement in the grid.** `GeneralTab` is a 2-column grid (`sections.tsx:708`); Behavior
-   is the *entire* right column (`sections.tsx:845`). "Below Behavior" means a sibling block
+1. **Placement in the grid.** `GeneralTab` is a 2-column grid (`sections.tsx:713`); Behavior
+   is the *entire* right column (`sections.tsx:850`). "Below Behavior" means a sibling block
    inside that right-hand `<div>`. Does adding it unbalance the columns badly enough to
    warrant moving something?
 
@@ -29,6 +56,6 @@ Blocked because the toggle copy has to describe what tickets 03 and 04 actually 
    Defaults go in `DEFAULT_PREFS` (`electron/store.ts:19`); no migration helper needed for
    plain booleans since `load()` merges over defaults.
 
-5. **Does pause-at-planned's description need to mention `autoStart`?** Its off-branch
+5. **Does pause-at-estimate's description need to mention `autoStart`?** Its off-branch
    defers to "Auto-start next session", which sits a few rows above in the same tab. Cross-
    referencing another setting in body copy is not a pattern the app uses yet.

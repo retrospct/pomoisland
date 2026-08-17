@@ -23,9 +23,40 @@ Use these terms exactly; avoid the synonyms in parentheses.
 - **Status** — the runtime lifecycle: `idle` → `running` → `paused` → `complete`. (not: "phase")
 - **Mode** — what is being timed: `focus` or `break`. A break can be short or long.
 - **Session** — one focus block. (not: "pomodoro" in code; "pomodoro" is fine in user copy)
-- **Round** — a group of focus sessions; a **long break** follows every `longEvery` sessions.
+  A session belongs to a **round**, and when a task is active, to that **task** as well.
+- **Round** — a group of focus sessions; a **long break** follows every `cSessions` sessions
+  (user-configurable, 2–8). Settings calls this "Sessions until long break".
 - **Total / remaining** — block duration and time left, in seconds.
 - **Preset** — a bundle of durations: `classic` (25/5/15), `focus` (50/10/20), `custom`.
+
+### Task domain
+
+- **Task** — a named thing to work on, with an estimate and a completion state. The main process
+  owns the list; it renders either **docked** or **detached**. (not: "todo", "item")
+- **Docked / detached** — where the task list lives. Docked is the inline panel below the timer
+  in the island; detached is the list's own window. Detach is **exclusive**: while detached the
+  island never renders the inline panel, and every route that used to open it focuses the window
+  instead. Moving between the two is **pop out** / **pop in**. (not: "pinned" for this axis)
+- **Pin** — always-on-top, and nothing else. It says where a window sits in the z-order, never
+  where the task list lives.
+- **Active task** — the one task a completed focus session is credited to. At most one, and
+  possibly none: no active task is a normal state, not an error, and a session can run without
+  one, crediting nothing.
+- **Estimate / estimated sessions** — how many focus sessions a task is expected to take. It is
+  a guess the user revises, not a commitment, so a task may exceed it (e.g. 8/7).
+  (not: "planned sessions", "pomodoros")
+- **Completed sessions** — focus sessions credited to a task so far. Distinct from a session's
+  place in a **round** — the two counters are independent, and the receiver disambiguates them.
+- **The stop** — the timer landing idle at a focus boundary because the active task has reached
+  its estimate, with `pauseAtEstimate` on. It is **derived, never stored** (ADR-0008): there is no
+  status for it and nothing is persisted or broadcast. It happens *after* the break has run.
+  (not: "paused" — the user did not press pause)
+- **Resume controls** — the **+** and **✓** that replace the task progress bar at the stop.
+  + runs another session and never touches the estimate; ✓ finishes the task and starts on the
+  next one. (not: "the at-estimate buttons")
+- **Reorder** — dragging a task to a new position. Array position *is* the ordering, so a reorder
+  is a splice and tasks carry no `order` field. Confined to the incomplete group: dragging into
+  the completed ones would mean finishing a task, which is the checkbox's job.
 
 ### Shortcuts
 
@@ -70,7 +101,8 @@ Use these terms exactly; avoid the synonyms in parentheses.
 
 ## Architecture in one breath
 
-The **main process** owns the timer runtime and persisted **prefs** (single source of truth).
-Two renderer windows — the **island** and **Settings** — subscribe via IPC and render; all
-mutations flow back through IPC. Changing accent/theme in Settings instantly reskins the island
-because both windows read the same broadcast state. See `docs/adr/`.
+The **main process** owns the timer runtime, persisted **prefs** and the **task** list (single
+source of truth). The renderer windows — the **island**, **Settings**, the snap overlay, and the
+task list when **detached** — subscribe via IPC and render; all mutations flow back through IPC.
+Changing accent/theme in Settings instantly reskins the island because every window reads the
+same broadcast state. See `docs/adr/`.

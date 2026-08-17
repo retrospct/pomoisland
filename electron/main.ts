@@ -7,10 +7,16 @@ import { initNotifications } from './notify'
 import { initRaiseOnComplete } from './raiseOnComplete'
 import { configureShortcutHandlers, registerGlobalShortcuts, unregisterGlobalShortcuts } from './shortcuts'
 import { getPrefs, onPrefsChange } from './store'
+import { activeTaskAtEstimate } from './taskStore'
 import { Timer } from './timer'
 import { createTray, destroyTray } from './tray'
 import { initAutoUpdater, onUpdateReady } from './updater'
-import { createIslandWindow, createSnapOverlayWindow, toggleIslandVisibility } from './windows'
+import {
+  createIslandWindow,
+  createSnapOverlayWindow,
+  createTasksWindow,
+  toggleIslandVisibility,
+} from './windows'
 
 let timer: Timer | null = null
 
@@ -24,7 +30,10 @@ function applyDockVisibility(show: boolean): void {
 }
 
 function bootstrap(): void {
-  timer = new Timer(getPrefs)
+  // Two plain getters: prefs, and "is the active task at its estimate?" (the
+  // stop, ticket 18). Injected rather than imported so the timer stays free of
+  // the task store — see ADR-0008.
+  timer = new Timer(getPrefs, activeTaskAtEstimate)
   configureShortcutHandlers({
     showHide: toggleIslandVisibility,
     playPause: () => timer!.action({ type: 'playPause' }),
@@ -36,6 +45,10 @@ function bootstrap(): void {
   startIdleWatcher(timer)
   createIslandWindow()
   createSnapOverlayWindow()
+  // The list was detached when we last quit — re-open its window, so the
+  // persisted bit never points at a window that isn't there (the island refuses
+  // to render the inline panel while detached).
+  if (getPrefs().tasksDetached) createTasksWindow()
   createTray(timer)
   timer.start()
 }

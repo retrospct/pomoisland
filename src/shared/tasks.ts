@@ -1,0 +1,303 @@
+// Pure task logic — no Electron, no filesystem, no listeners, so it can be driven
+// from a plain Node assertion script (scripts/task-check.ts). It lives in shared/
+// rather than electron/ because the at-estimate predicate that ADR-0008 keeps
+// derived has to be evaluated by the renderers too; today the only importers are
+// electron/taskStore.ts and the check script.
+//
+// electron/taskStore.ts is the shell around this: it owns the JSON file, the cache
+// and the subscriber list, and calls through to these functions for every decision.
+//
+// Impure inputs are parameters, never ambient: the id generator and today's date
+// are passed in, so every function here is deterministic.
+
+import type { Mode, Status, Task, TaskMutation, TasksState } from './types'
+
+/** Mints ids for newly added tasks. Injected so tests can be deterministic. */
+export type NewId = () => string
+
+/**
+ * The task to work on next: the first incomplete one, or nothing.
+ *
+ * The single answer to "which task now?", shared by every path that has to pick
+ * one (delete, clearCompleted, and the done path) — separate paths choosing
+ * independently is how they drift apart.
+ */
+function firstIncompleteId(tasks: Task[]): string | null {
+  return tasks.find((t) => !t.done)?.id ?? null
+}
+
+/**
+ * Which task should be active once `tasks` is the list. Keeps the current one if
+ * it's still there, otherwise falls through to `firstIncompleteId`.
+ *
+ * The trigger is the active task going *missing*, not its being done. Since the
+ * done path advances (see the `update` case) a live state shouldn't reach here
+ * with a completed active task — but a tasks.json written before that, or edited
+ * by hand, loads that way, and normalizeTasksState doesn't reconcile it. Such a
+ * state must survive an unrelated delete rather than being quietly re-aimed.
+ */
+function nextActiveId(tasks: Task[], current: string | null): string | null {
+  if (tasks.some((t) => t.id === current)) return current
+  return firstIncompleteId(tasks)
+}
+
+/** A fresh, empty task list. `today` is an ISO date string (YYYY-MM-DD). */
+export function emptyTasksState(today: string): TasksState {
+  return {
+    tasks: [],
+    activeTaskId: null,
+    completedToday: 0,
+    completedDate: today,
+    defaultEstimate: 1,
+  }
+}
+
+function finiteOr(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
+/**
+ * Coerce one persisted entry into a Task, or null if it isn't one.
+ *
+ * The count fields were once `estimatePomodoros` / `completedPomodoros`. Those
+ * keys are read forever as fallbacks and never written back, so the new shape
+ * lands on the next persist and the migration is self-healing. There is no
+ * `version` field on TasksState: versioning machinery earns its place when a
+ * *shape* changes, not when a key is renamed (cf. store.ts, which merges prefs
+ * over defaults with no version — ADR-0004).
+ */
+function normalizeTask(raw: unknown): Task | null {
+  if (!raw || typeof raw !== 'object') return null
+  const t = raw as Record<string, unknown>
+  if (typeof t.id !== 'string' || !t.id) return null
+  return {
+    id: t.id,
+    title: typeof t.title === 'string' ? t.title : 'Untitled task',
+    estimateSessions: finiteOr(t.estimateSessions, finiteOr(t.estimatePomodoros, 1)),
+    completedSessions: finiteOr(t.completedSessions, finiteOr(t.completedPomodoros, 0)),
+    done: t.done === true,
+  }
+}
+
+/**
+ * Coerce whatever was read off disk into a valid TasksState. tasks.json is
+ * user-writable and outlives app versions, so nothing about its shape is
+ * guaranteed — every field is validated, a tasks value that isn't an array is
+ * discarded rather than trusted, and entries that aren't tasks are dropped
+ * rather than repaired into id-less ghosts.
+ *
+ * The top-level scalars are checked as strictly as the per-task fields:
+ * `defaultEstimate` feeds Math.round() in the add path, so a junk value here
+ * would mint tasks with a NaN estimate.
+ */
+export function normalizeTasksState(parsed: unknown, today: string): TasksState {
+  const base = emptyTasksState(today)
+  if (!parsed || typeof parsed !== 'object') return base
+  const p = parsed as Record<string, unknown>
+  return {
+    tasks: Array.isArray(p.tasks)
+      ? p.tasks.map(normalizeTask).filter((t): t is Task => t !== null)
+      : [],
+    activeTaskId: typeof p.activeTaskId === 'string' ? p.activeTaskId : null,
+    completedToday: finiteOr(p.completedToday, base.completedToday),
+    completedDate: typeof p.completedDate === 'string' ? p.completedDate : today,
+    defaultEstimate: finiteOr(p.defaultEstimate, base.defaultEstimate),
+  }
+}
+
+/**
+ * The currently active task, or null.
+ *
+ * The one place the lookup happens. It was open-coded as
+ * `tasks.find((t) => t.id === activeTaskId) ?? null` in Peek, in ExpandedBody and
+ * again inside activeTaskAtEstimate below — the same "separate paths choosing
+ * independently is how they drift" this file already guards for `firstIncompleteId`,
+ * so it gets the same treatment.
+ */
+export function activeTask(state: TasksState): Task | null {
+  if (!state.activeTaskId) return null
+  return state.tasks.find((t) => t.id === state.activeTaskId) ?? null
+}
+
+/** Title of the currently active task, or an empty string if none. */
+export function activeTaskTitle(state: TasksState): string {
+  return activeTask(state)?.title ?? ''
+}
+
+/** Why a focus block ended, and whether the user has asked for skips to count. */
+export interface FocusCompleteOptions {
+  /** 'elapsed' = the clock ran out; 'skipped' = the user pressed Next. */
+  reason: 'elapsed' | 'skipped'
+  /** `Prefs.creditSkipped`, passed in rather than read: this module stays pure. */
+  creditSkipped?: boolean
+}
+
+/**
+ * Called when a focus block completes — bumps the active task's session count
+ * and the daily total, resetting the counter when the date has rolled over.
+ * The task is NOT auto-completed when it reaches its estimate; it just keeps
+ * counting (e.g. 8/7). Completion is manual (the checkbox) only.
+ *
+ * A **skipped** block credits nothing. A session is one focus block
+ * (CONTEXT.md) and a block cut short with Next is not one; crediting it let four
+ * taps of a global shortcut finish a four-session task and earn a milestone ring
+ * for work nobody did. `creditSkipped` restores the old behaviour for people who
+ * used Next as a "done early" button.
+ *
+ * Both counters always get the same answer. Splitting them — crediting the task
+ * but not the day, or the reverse — would let a task and the day disagree about
+ * the same minute.
+ *
+ * The default is deliberately the strict one, matching `complete()`'s own
+ * `reason = 'elapsed'` default in electron/timer.ts.
+ */
+export function recordFocusComplete(
+  state: TasksState,
+  today: string,
+  opts: FocusCompleteOptions = { reason: 'elapsed' },
+): TasksState {
+  if (opts.reason === 'skipped' && !opts.creditSkipped) return state
+  const completedToday = state.completedDate === today ? state.completedToday + 1 : 1
+  const tasks = state.tasks.map((t) =>
+    t.id === state.activeTaskId ? { ...t, completedSessions: t.completedSessions + 1 } : t,
+  )
+  return { ...state, tasks, completedToday, completedDate: today }
+}
+
+/**
+ * Has the active task completed at least as many focus sessions as it was
+ * estimated to take, with the stop switched on?
+ *
+ * This is the task half of the at-estimate predicate, and the whole of what the
+ * timer needs: `electron/timer.ts` calls it (through an injected getter, so it
+ * never imports the task store) from inside the break → focus branch of its
+ * advance, which *is* the focus boundary — the status/mode half is supplied
+ * structurally by where the call sits. The renderers, which have no such
+ * position, read `isAtEstimate` instead.
+ *
+ * At-or-past, not equality: the resume control that starts another session never
+ * raises the estimate, so `===` would fire once at 4/4 and never again at 5/4.
+ *
+ * `pauseAtEstimate` is passed in rather than read, keeping this module pure. It
+ * is also the feature's entire off-switch — there is no separate "respects
+ * Auto-start" pref, because that is this one turned off.
+ */
+export function activeTaskAtEstimate(state: TasksState, pauseAtEstimate: boolean): boolean {
+  if (!pauseAtEstimate) return false
+  const active = activeTask(state)
+  if (!active) return false
+  return active.completedSessions >= active.estimateSessions
+}
+
+/**
+ * Is the app sitting at the stop right now — an idle timer at a focus boundary
+ * whose active task has reached its estimate?
+ *
+ * Derived, never stored (ADR-0008): no `Status` member, no `TimerState` field,
+ * no persistence, no IPC. It therefore survives a restart for free and goes
+ * false the instant the pref is switched off or the active task changes, with
+ * nothing to clear on reset, skip or switch-mode.
+ *
+ * Accepted consequence: it cannot tell "stopped because you hit your estimate"
+ * from "idle for any other reason", so an over-estimate active task reads as at
+ * the stop after Reset and at launch. That is correct — if the active task is
+ * over its estimate and the timer sits at a focus boundary, the question is the
+ * right one however you arrived — and deliberately not suppressed with a flag.
+ */
+export function isAtEstimate(
+  timer: { status: Status; mode: Mode },
+  state: TasksState,
+  pauseAtEstimate: boolean,
+): boolean {
+  if (timer.status !== 'idle' || timer.mode !== 'focus') return false
+  return activeTaskAtEstimate(state, pauseAtEstimate)
+}
+
+export function applyMutation(state: TasksState, m: TaskMutation, newId: NewId): TasksState {
+  switch (m.type) {
+    case 'add': {
+      // Estimate comes from the add form; remember it as the default for the
+      // next added task (MO-53).
+      const estimate = Math.max(1, Math.round(m.estimate ?? state.defaultEstimate ?? 1))
+      const task: Task = {
+        id: newId(),
+        title: m.title.trim() || 'Untitled task',
+        estimateSessions: estimate,
+        completedSessions: 0,
+        done: false,
+      }
+      return {
+        ...state,
+        tasks: [...state.tasks, task],
+        // Auto-activate the first task added when nothing is active yet.
+        activeTaskId: state.activeTaskId ?? task.id,
+        defaultEstimate: estimate,
+      }
+    }
+    case 'update': {
+      // Done is manual-only: estimate changes never auto-complete or un-complete
+      // a task, so it can keep counting past its estimate (e.g. 8/7).
+      const tasks = state.tasks.map((t) => (t.id === m.id ? { ...t, ...m.patch } : t))
+      // Completing the task you were working on hands the active slot to the
+      // next incomplete one, matching delete and clearCompleted — otherwise the
+      // island keeps naming a task you just ticked off. The identity test is the
+      // whole guard: without it, ticking *any* row would re-aim the active task,
+      // so housekeeping would hijack the session.
+      const completedTheActiveTask = m.patch.done === true && state.activeTaskId === m.id
+      if (!completedTheActiveTask) return { ...state, tasks }
+      return { ...state, tasks, activeTaskId: firstIncompleteId(tasks) }
+    }
+    case 'setActive': {
+      // Activating a completed task un-completes it in the same breath: you
+      // cannot be working on something you have finished. Doing it as two
+      // mutations would commit, persist and broadcast an intermediate state that
+      // is incomplete but not yet active — one no user action asked for.
+      const tasks = state.tasks.map((t) =>
+        t.id === m.id && t.done ? { ...t, done: false } : t,
+      )
+      return { ...state, tasks, activeTaskId: m.id }
+    }
+    case 'delete': {
+      const tasks = state.tasks.filter((t) => t.id !== m.id)
+      return { ...state, tasks, activeTaskId: nextActiveId(tasks, state.activeTaskId) }
+    }
+    case 'clearCompleted': {
+      const tasks = state.tasks.filter((t) => !t.done)
+      return { ...state, tasks, activeTaskId: nextActiveId(tasks, state.activeTaskId) }
+    }
+    case 'reorder': {
+      // A splice, because array position *is* the ordering — the task type gains
+      // no `order` field. An explicit order would be a second source of truth
+      // needing reconciliation on add, delete and clearCompleted, plus
+      // re-densification whenever two values collided, for no gain over this.
+      const moving = state.tasks.find((t) => t.id === m.id)
+      // Every guard below returns the state untouched rather than throwing. A drop
+      // is a gesture; one that lands nowhere is a no-op.
+      if (!moving) return state
+      // Drags are confined to the incomplete group, enforced here rather than
+      // trusted from the view — a completed task is never the subject, and is
+      // never a valid neighbour either. Dropping an incomplete task among the
+      // completed ones would imply completing it, which is a different gesture
+      // wearing a drag costume.
+      if (moving.done) return state
+
+      const rest = state.tasks.filter((t) => t.id !== m.id)
+      let at: number
+      if (m.beforeId === null) {
+        // Last among the incomplete tasks, which is not the end of the array when
+        // a completed task sits behind them: inserting after those would move the
+        // dragged task into the completed group.
+        at = rest.reduce((last, t, i) => (t.done ? last : i + 1), 0)
+      } else {
+        const target = rest.findIndex((t) => t.id === m.beforeId)
+        if (target === -1 || rest[target]?.done) return state
+        at = target
+      }
+      return { ...state, tasks: [...rest.slice(0, at), moving, ...rest.slice(at)] }
+    }
+    default: {
+      const _exhaustive: never = m
+      return _exhaustive
+    }
+  }
+}

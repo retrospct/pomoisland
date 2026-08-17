@@ -666,6 +666,14 @@ const PRESET_VALS: Partial<Record<Prefs['preset'], Partial<Prefs>>> = {
 
 const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['autoStart', 'Auto-start next session', 'Begin the next focus or break automatically'],
+  // Behavior, not Tasks: this governs what counts as a session at all, moving the
+  // daily total, the daily-goal reveal and the milestone rings, not just the task
+  // counters.
+  [
+    'creditSkipped',
+    'Count skipped sessions',
+    'A session you end early with Next still counts toward your task estimate and daily goal.',
+  ],
   [
     'raiseOnComplete',
     'Bring timer to front when time ends',
@@ -676,6 +684,22 @@ const BEHAVIORS: [keyof Prefs, string, string][] = [
   ['hideShare', 'Hide during screen sharing', 'Auto-conceal while presenting or recording.'],
   ['pauseIdle', 'Pause when Mac is idle', 'Stop the clock if you step away or lock the screen.'],
   ['showDockIcon', 'Show app in Dock', 'Display the PomoIsland icon in the macOS Dock.'],
+]
+
+// Tasks, not Behavior: these read the active task. Off for pause-at-estimate is
+// also the "respect auto-start" branch, which is why there is no third toggle.
+// (`creditSkipped` stays in Behavior: it changes what counts as a session at all.)
+const TASK_PREFS: [keyof Prefs, string, string][] = [
+  [
+    'taskProgress',
+    'Task progress bar',
+    'Show task progress as a bar instead of a count. Hover it for the exact number.',
+  ],
+  [
+    'pauseAtEstimate',
+    'Pause at estimate',
+    'When a task reaches its estimated sessions, take the break and then stop instead of starting another session.',
+  ],
 ]
 
 export function GeneralTab({ prefs, set }: TabProps) {
@@ -847,7 +871,7 @@ export function GeneralTab({ prefs, set }: TabProps) {
         </div>
       </div>
 
-      {/* Right: behavior */}
+      {/* Right: behavior, then tasks */}
       <div>
         <SectionLabel>Behavior</SectionLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
@@ -860,6 +884,21 @@ export function GeneralTab({ prefs, set }: TabProps) {
               onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)}
             />
           ))}
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <SectionLabel>Tasks</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {TASK_PREFS.map(([k, label, desc]) => (
+              <ToggleRow
+                key={k}
+                title={label}
+                desc={desc}
+                on={Boolean(prefs[k])}
+                onClick={() => set({ [k]: !prefs[k] } as Partial<Prefs>)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

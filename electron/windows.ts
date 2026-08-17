@@ -1,10 +1,16 @@
-import { BrowserWindow, screen } from 'electron'
-import type { Display } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
+import type { Display, Rectangle } from 'electron'
 import { join } from 'node:path'
-import type { IslandResizeSize, IslandSize, Placement } from '../src/shared/types'
+import type {
+  IslandResizeSize,
+  IslandSize,
+  Placement,
+  Prefs,
+  WindowBounds,
+} from '../src/shared/types'
 import { IPC } from '../src/shared/types'
 import { getNotchMetrics } from './notch'
-import { getPrefs } from './store'
+import { getPrefs, setPrefs } from './store'
 
 const RENDERER_URL = process.env['ELECTRON_RENDERER_URL']
 const PRELOAD = join(__dirname, '../preload/preload.js')
@@ -16,6 +22,15 @@ const SNAP_Y_TOLERANCE = 56
 let islandWin: BrowserWindow | null = null
 let settingsWin: BrowserWindow | null = null
 let snapOverlayWin: BrowserWindow | null = null
+let tasksWin: BrowserWindow | null = null
+
+// Closing the detached task window pops the list back in (clears Prefs.tasksDetached)
+// — see TasksWindowAction. App shutdown closes every window too, and that must NOT
+// be read as a pop-in, or quitting while detached would silently re-dock the list.
+let quitting = false
+app.on('before-quit', () => {
+  quitting = true
+})
 
 const placement: Placement = {
   snapped: true,
@@ -502,6 +517,353 @@ export function createSettingsWindow(): BrowserWindow {
 
 export function getSettingsWindow(): BrowserWindow | null {
   return settingsWin
+}
+
+// ---------------------------------------------------------------------------
+// Detached task window (ticket 23)
+// ---------------------------------------------------------------------------
+
+/**
+ * Floor size for the detached list. Used twice, and it has to be the same value
+ * both times: as the window's minWidth/minHeight, and as the floor
+ * sanitizeTasksBounds clamps a restored size to. If they diverged, Electron's own
+ * minimum enforcement would fight the restored origin.
+ */
+const TASKS_MIN = { width: 300, height: 320 }
+
+/**
+ * Size the window opens at when prefs hold no usable geometry — a first pop-out,
+ * or a saved rect that no longer survives sanitizeTasksBounds. The width matches
+ * the docked panel's 320px so the list doesn't reflow when it moves out of the
+ * island.
+ */
+const TASKS_DEFAULT = { width: 340, height: 460 }
+
+// ---- Geometry persistence (ticket 24) ------------------------------------
+//
+// Saved bounds outlive the display that produced them, so nothing read out of
+// prefs reaches a constructor unchecked. On the way in: validate, intersect
+// against a live display, clamp size, clamp origin — in that order. On the way
+// out: getNormalBounds(), debounced, because setPrefs writes the whole
+// prefs.json synchronously and 'move'/'resize' fire per frame of a drag (on
+// macOS 'moved' is documented as an alias of 'move', so there is no "once"
+// event to lean on).
+
+/** How long a drag or resize has to settle before its rect is written. */
+const TASKS_BOUNDS_SAVE_MS = 400
+
+let tasksBoundsTimer: NodeJS.Timeout | null = null
+
+/**
+ * Clamp with the MINIMUM winning a degenerate range.
+ *
+ * `min > max` happens for real: a display whose workArea is smaller than
+ * TASKS_MIN, or an origin range for a window wider than its host. Ordering
+ * Math.max last means we'd hand back a sub-minimum size that Electron/AppKit
+ * would silently grow anyway — leaving an origin computed against the wrong
+ * size. Minimum-wins overflows the work area instead, which the user can drag
+ * out of; and for the origin clamp it pins the top-left on screen, keeping the
+ * header (the only drag handle this frameless window has) reachable.
+ */
+function clampMinWins(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max))
+}
+
+/** Do two screen rects overlap at all? Deliberately not containment. */
+function rectsIntersect(a: Rectangle, b: Rectangle): boolean {
+  return (
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+  )
+}
+
+function centeredOn(display: Display, size: { width: number; height: number }): Rectangle {
+  const wa = display.workArea
+  return {
+    x: Math.round(wa.x + (wa.width - size.width) / 2),
+    y: Math.round(wa.y + (wa.height - size.height) / 2),
+    width: size.width,
+    height: size.height,
+  }
+}
+
+/**
+ * Turn whatever is in prefs into a rect that is definitely on a display that
+ * definitely exists. The four steps are ordered, and the order is the point:
+ *
+ * (a) **Validate.** prefs.json is a plain file — it can be hand-edited, or a
+ *     partial write can leave NaN/undefined in the rect.
+ * (b) **Intersect a live display.** Overlap, not containment: a window
+ *     straddling two monitors is legal and must survive. Overlapping *nothing*
+ *     means the display it lived on is gone — an unplugged monitor, or a
+ *     rearranged desktop — which is exactly the stranded-offscreen case.
+ * (c) **Clamp size**, to the host's workArea and never below TASKS_MIN (the same
+ *     constants passed as minWidth/minHeight, or Electron's own minimum
+ *     enforcement fights the origin we compute next). Saved on a 6K, reopened on
+ *     a laptop.
+ * (d) **Clamp origin, after (c).** Doing it before the size clamp can push the
+ *     bottom-right back off the screen. workArea rather than bounds also keeps
+ *     the window clear of the menu bar and Dock, sidestepping the documented
+ *     macOS setBounds y-clamp near the tray.
+ */
+function sanitizeTasksBounds(saved: WindowBounds | null): Rectangle {
+  const primary = screen.getPrimaryDisplay()
+
+  // (a)
+  const valid =
+    saved != null &&
+    [saved.x, saved.y, saved.width, saved.height].every(
+      (n) => typeof n === 'number' && Number.isFinite(n),
+    ) &&
+    saved.width > 0 &&
+    saved.height > 0
+  if (!valid) return centeredOn(primary, TASKS_DEFAULT)
+
+  // (b)
+  const host = screen.getAllDisplays().find((d) => rectsIntersect(d.workArea, saved))
+  if (!host) return centeredOn(primary, TASKS_DEFAULT)
+  const wa = host.workArea
+
+  // (c)
+  const width = clampMinWins(Math.round(saved.width), TASKS_MIN.width, wa.width)
+  const height = clampMinWins(Math.round(saved.height), TASKS_MIN.height, wa.height)
+
+  // (d)
+  const x = clampMinWins(Math.round(saved.x), wa.x, wa.x + wa.width - width)
+  const y = clampMinWins(Math.round(saved.y), wa.y, wa.y + wa.height - height)
+
+  return { x, y, width, height }
+}
+
+/**
+ * Cancel any pending debounce and read the rect worth persisting, or null when
+ * there is no live window to read.
+ *
+ * Reads the window's NORMAL bounds, not getBounds(). The window is
+ * `maximizable: false` and `fullscreenable: false`, but it is still minimizable,
+ * and getBounds() on a minimized window does not describe where the user put it.
+ */
+function takeTasksBounds(): WindowBounds | null {
+  if (tasksBoundsTimer) {
+    clearTimeout(tasksBoundsTimer)
+    tasksBoundsTimer = null
+  }
+  if (!tasksWin || tasksWin.isDestroyed()) return null
+  const b = tasksWin.getNormalBounds()
+  return { x: b.x, y: b.y, width: b.width, height: b.height }
+}
+
+function queueTasksBoundsSave(): void {
+  if (tasksBoundsTimer) clearTimeout(tasksBoundsTimer)
+  tasksBoundsTimer = setTimeout(() => {
+    const bounds = takeTasksBounds()
+    if (bounds) setPrefs({ tasksWindowBounds: bounds })
+  }, TASKS_BOUNDS_SAVE_MS)
+}
+
+/**
+ * Re-sanitize the LIVE window after a display change. Without this, unplugging
+ * the monitor the window was on strands it until the next launch — restore-time
+ * validation only helps at restore time.
+ */
+function reflowTasksWindow(): void {
+  if (!tasksWin || tasksWin.isDestroyed()) return
+  const b = tasksWin.getNormalBounds()
+  const next = sanitizeTasksBounds({ x: b.x, y: b.y, width: b.width, height: b.height })
+  if (next.x === b.x && next.y === b.y && next.width === b.width && next.height === b.height) return
+  // setBounds fires 'move'/'resize', so the corrected rect gets persisted by the
+  // usual debounce — no explicit save here.
+  tasksWin.setBounds(next)
+}
+
+/** Registered once, for the app's lifetime, on the first pop-out. */
+let watchingDisplays = false
+function watchDisplaysForTasksWindow(): void {
+  if (watchingDisplays) return
+  watchingDisplays = true
+  // Both handlers no-op while the window is closed. 'display-metrics-changed'
+  // covers a resolution/scale/rotation change, which can shrink the work area
+  // under a window that was legally placed.
+  screen.on('display-removed', reflowTasksWindow)
+  screen.on('display-metrics-changed', reflowTasksWindow)
+}
+
+// ---- Pin (ticket 24) -----------------------------------------------------
+
+/**
+ * Last pin value pushed to the current window; `null` = nothing pushed yet, or
+ * no window. Prefs changes are broadcast on every setPrefs — including the
+ * debounced bounds writes above — so dedupe rather than re-asserting a window
+ * level a few times a second mid-drag.
+ */
+let appliedTasksPin: boolean | null = null
+
+/**
+ * Apply the pin: `setAlwaysOnTop(true, 'normal', 1)` — NSNormalWindowLevel (0)
+ * plus one.
+ *
+ * Level 1 is above every ordinary application window (level 0) and strictly
+ * below `'floating'` (3). macOS orders windows by level before focus — "even the
+ * bottom window in a level will obscure the top window of the next level down" —
+ * so this is a guarantee rather than a tendency: the pinned list can never come
+ * out above the island in any of the island's three RAISED levels, which are
+ * `'floating'` (3) when floating with alwaysTop, `'screen-saver'` (1000) when
+ * snapped, and 1001 while dragging. `'floating'` for the list would instead have
+ * *tied* the island's floating state, where ordering falls back to focus and a
+ * click could reorder them.
+ *
+ * The island's fourth state is deliberately not covered: floating with alwaysTop
+ * off makes it an ordinary level-0 window, and a pinned list then sits above it.
+ * That is the correct reading of two independent bits — the user asked for the
+ * island not to float and for the list to stay on top.
+ *
+ * Cost of the +1: getAlwaysOnTopLevel() compares against the exact NSWindow
+ * constants, so any non-zero offset reads back as `'normal'`. The pin's state
+ * comes from the `tasksAlwaysOnTop` pref, never from the getter.
+ */
+export function applyTasksWindowLevel(): void {
+  if (!tasksWin || tasksWin.isDestroyed()) {
+    appliedTasksPin = null
+    return
+  }
+  const on = getPrefs().tasksAlwaysOnTop
+  if (on === appliedTasksPin) return
+  appliedTasksPin = on
+  if (on) tasksWin.setAlwaysOnTop(true, 'normal', 1)
+  else tasksWin.setAlwaysOnTop(false)
+}
+
+/**
+ * Create (or re-show) the detached task list window.
+ *
+ * Follows the Settings singleton pattern — module-level ref, show/focus an
+ * existing window on re-open — plus the ticket-02 research recipe: frameless
+ * with a custom header, opaque `backgroundColor` so there's no white flash,
+ * `show: false` + `ready-to-show`, the shared hardened preload.
+ *
+ * Deliberately NOT set, each for a researched reason:
+ * - `transparent` stays false — transparent windows are not resizable.
+ * - no `parent: islandWin` — attaching a child NSWindow resets the child's
+ *   window level on every show (electron#44150).
+ * - no `type: 'panel'` — that's the island's non-activating trick; this window
+ *   holds a text field and *should* take focus.
+ * - no `setVisibleOnAllWorkspaces` (triggers `app.dock.hide()`), no
+ *   `enableLargerThanScreen` (island-only menu-bar hack).
+ *
+ * `resizable: true` is the whole resize story on macOS: it becomes
+ * NSWindowStyleMaskResizable, and AppKit owns the edge/corner drag from there.
+ * Electron's own frameless resize hit-testing is compiled out of macOS builds,
+ * so there is nothing to configure and no way to widen the band — the renderer's
+ * corner grip is decoration over a native region (`pointer-events: none`), not a
+ * handle. `transparent` staying false is load-bearing for this: transparent
+ * windows are not resizable.
+ *
+ * State needs no wiring: TasksState already lives in the main process and
+ * broadcasts to every window (`broadcastToAll`), so this window is fed for free.
+ */
+export function createTasksWindow(): BrowserWindow {
+  if (tasksWin) {
+    tasksWin.show()
+    tasksWin.focus()
+    return tasksWin
+  }
+
+  // Never pass prefs geometry straight through — see sanitizeTasksBounds.
+  const bounds = sanitizeTasksBounds(getPrefs().tasksWindowBounds)
+
+  tasksWin = new BrowserWindow({
+    ...bounds,
+    // The same constants sanitizeTasksBounds clamps the size to. If these two
+    // disagreed, AppKit would enforce its minimum and hand back a window bigger
+    // than the rect we asked for, whose origin we had computed for the smaller one.
+    minWidth: TASKS_MIN.width,
+    minHeight: TASKS_MIN.height,
+    frame: false,
+    resizable: true,
+    transparent: false,
+    backgroundColor: '#191b1f',
+    show: false,
+    title: 'Tasks',
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: PRELOAD,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  })
+
+  loadRoute(tasksWin, 'tasks.html')
+  tasksWin.once('ready-to-show', () => tasksWin?.show())
+  // Fresh window: forget whatever level the last one was at, then apply the pin.
+  appliedTasksPin = null
+  applyTasksWindowLevel()
+  tasksWin.on('resize', queueTasksBoundsSave)
+  tasksWin.on('move', queueTasksBoundsSave)
+  watchDisplaysForTasksWindow()
+  // Every close path — the header's ✕, ⌘W from the Window menu — pops the list
+  // back in, so the pref never points at a window that isn't there. App shutdown
+  // is exempt (see `quitting`), leaving the list detached for the next launch.
+  //
+  // The geometry flush is NOT exempt: where you left the window is worth keeping
+  // whether you popped it in or quit. It has to happen on 'close' rather than
+  // 'closed' because the window is already gone by then — this is the last
+  // moment getNormalBounds() means anything.
+  //
+  // Both land in ONE setPrefs: each one writes the whole prefs.json and
+  // broadcasts to every window, and there is no reason to do that twice on the
+  // way out.
+  tasksWin.on('close', () => {
+    const patch: Partial<Prefs> = {}
+    const bounds = takeTasksBounds()
+    if (bounds) patch.tasksWindowBounds = bounds
+    if (!quitting) patch.tasksDetached = false
+    if (Object.keys(patch).length > 0) setPrefs(patch)
+  })
+  tasksWin.on('closed', () => {
+    tasksWin = null
+    appliedTasksPin = null
+  })
+  return tasksWin
+}
+
+export function getTasksWindow(): BrowserWindow | null {
+  return tasksWin
+}
+
+/** Pop the list out of the island: set the pref, then open/raise the window. */
+export function popOutTasks(): void {
+  setPrefs({ tasksDetached: true })
+  createTasksWindow()
+}
+
+/**
+ * Pop the list back into the island: close the window. The window's own `close`
+ * handler clears the pref, so both routes (this and a bare ⌘W) agree.
+ */
+export function popInTasks(): void {
+  if (tasksWin) {
+    tasksWin.close()
+    return
+  }
+  // No window to close (shouldn't happen) — clear the pref anyway so the island
+  // can't be left refusing to render the docked panel.
+  setPrefs({ tasksDetached: false })
+}
+
+/**
+ * Show + focus the detached window. This is what the island's ⋯ → Tasks item and
+ * its clickable task label do while detached — the inline panel is unreachable,
+ * so those routes point at the window instead of opening a second copy.
+ */
+export function focusTasksWindow(): void {
+  if (!tasksWin) {
+    // Detached but somehow window-less: re-open rather than dead-ending.
+    createTasksWindow()
+    return
+  }
+  tasksWin.show()
+  tasksWin.focus()
 }
 
 export function broadcastToAll(channel: string, payload: unknown): void {

@@ -6,6 +6,7 @@ import type {
   SettingsControl,
   ShortcutAction,
   TaskMutation,
+  TasksWindowAction,
   TimerAction,
 } from '../src/shared/types'
 import { resetShortcuts, trySetShortcut } from './shortcuts'
@@ -19,13 +20,17 @@ import {
 import { activeTaskTitle, applyMutation, getTasks, onTasksChange, recordFocusComplete } from './taskStore'
 import {
   applyAlwaysOnTop,
+  applyTasksWindowLevel,
   broadcastToAll,
   createSettingsWindow,
   dragEnd,
   dragMove,
   dragStart,
+  focusTasksWindow,
   getPlacement,
   getSettingsWindow,
+  popInTasks,
+  popOutTasks,
   resizeIsland,
 } from './windows'
 import type { Timer } from './timer'
@@ -44,6 +49,10 @@ export function registerIpc(timer: Timer): void {
     broadcastToAll(IPC.prefsChanged, p)
     timer.syncPrefs()
     applyAlwaysOnTop(p.alwaysTop)
+    // The detached window's pin is a separate bit from the island's alwaysTop —
+    // see Prefs.tasksAlwaysOnTop. Self-deduping, so the debounced geometry
+    // writes flowing through here don't re-assert a window level mid-drag.
+    applyTasksWindowLevel()
   })
 
   // Tasks (MO-6 / MO-7)
@@ -61,8 +70,9 @@ export function registerIpc(timer: Timer): void {
   // Seed the timer with the persisted active task on startup.
   timer.action({ type: 'setTask', task: activeTaskTitle() })
 
-  // When a focus block completes, bump both counters.
-  timer.onFocusComplete(recordFocusComplete)
+  // When a focus block completes, bump both counters — unless it was skipped,
+  // which credits nothing unless the user has turned that back on.
+  timer.onFocusComplete((e) => recordFocusComplete(e.reason))
 
   // Island window
   ipcMain.on(IPC.islandResize, (_e, size: IslandResizeSize) => resizeIsland(size))
@@ -83,6 +93,16 @@ export function registerIpc(timer: Timer): void {
         return win.minimize()
       case 'zoom':
         return win.isMaximized() ? win.unmaximize() : win.maximize()
+    }
+  })
+  ipcMain.on(IPC.tasksWindow, (_e, action: TasksWindowAction) => {
+    switch (action) {
+      case 'popOut':
+        return popOutTasks()
+      case 'popIn':
+        return popInTasks()
+      case 'focus':
+        return focusTasksWindow()
     }
   })
 

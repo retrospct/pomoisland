@@ -1,12 +1,20 @@
 // Task store (userData/tasks.json). Mirrors the store.ts pattern — main process
 // owns task state; both renderers subscribe via IPC. Kept separate from Prefs so
 // list churn and settings writes don't interact (see PRD architecture notes).
+//
+// This module is the *shell*: the JSON file, the in-memory cache and the
+// subscriber list. Every decision about what the state should become lives in
+// src/shared/tasks.ts, which is pure and therefore drivable from a plain Node
+// assertion script (scripts/task-check.ts). Impure inputs — the id generator and
+// today's date — are supplied here and passed in.
 
 import { app } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import type { Task, TaskMutation, TasksState } from '../src/shared/types'
+import * as tasks from '../src/shared/tasks'
+import { getPrefs } from './store'
+import type { TaskMutation, TasksState } from '../src/shared/types'
 
 type Listener = (s: TasksState) => void
 const listeners = new Set<Listener>()
@@ -24,28 +32,9 @@ function filePath(): string {
 function load(): TasksState {
   try {
     const raw = readFileSync(filePath(), 'utf8')
-    const parsed = JSON.parse(raw) as Partial<TasksState>
-    const base: TasksState = {
-      tasks: [],
-      activeTaskId: null,
-      completedToday: 0,
-      completedDate: todayString(),
-      defaultEstimate: 1,
-    }
-    return {
-      ...base,
-      ...parsed,
-      // Ensure tasks is always a valid array regardless of what was persisted.
-      tasks: Array.isArray(parsed.tasks) ? (parsed.tasks as Task[]) : [],
-    }
+    return tasks.normalizeTasksState(JSON.parse(raw), todayString())
   } catch {
-    return {
-      tasks: [],
-      activeTaskId: null,
-      completedToday: 0,
-      completedDate: todayString(),
-      defaultEstimate: 1,
-    }
+    return tasks.emptyTasksState(todayString())
   }
 }
 
@@ -83,81 +72,37 @@ export function onTasksChange(cb: Listener): () => void {
 
 /** Title of the currently active task, or empty string if none. */
 export function activeTaskTitle(): string {
-  const s = getTasks()
-  if (!s.activeTaskId) return ''
-  return s.tasks.find((t) => t.id === s.activeTaskId)?.title ?? ''
+  return tasks.activeTaskTitle(getTasks())
 }
 
 /**
- * Called when a focus block completes — bumps the active task's pomodoro count
- * and the daily total, resetting the counter when the date has rolled over.
- * The task is NOT auto-completed when it reaches its estimate; it just keeps
- * counting (e.g. 8/7). Completion is manual (the checkbox) only.
+ * Is the active task at or past its estimate, with the stop switched on?
+ *
+ * The one composition point for the derived at-estimate condition: the task
+ * state and the pref are read here so the predicate itself stays pure. Passed to
+ * `Timer` as its at-estimate getter (main.ts) and read again by the break-over
+ * notification (notify.ts), so the timer's behaviour and the copy describing it
+ * can never disagree.
  */
-export function recordFocusComplete(): void {
-  const s = getTasks()
-  const today = todayString()
-  const completedToday = s.completedDate === today ? s.completedToday + 1 : 1
+export function activeTaskAtEstimate(): boolean {
+  return tasks.activeTaskAtEstimate(getTasks(), getPrefs().pauseAtEstimate)
+}
 
-  const tasks = s.tasks.map((t) =>
-    t.id === s.activeTaskId ? { ...t, completedPomodoros: t.completedPomodoros + 1 } : t,
+/**
+ * Called when a focus block completes — credits the active task and the day,
+ * unless the block was skipped and the user hasn't asked for skips to count.
+ * The reason comes from the timer; the pref is read here so the reducer stays
+ * pure.
+ */
+export function recordFocusComplete(reason: 'elapsed' | 'skipped'): void {
+  commit(
+    tasks.recordFocusComplete(getTasks(), todayString(), {
+      reason,
+      creditSkipped: getPrefs().creditSkipped,
+    }),
   )
-
-  commit({ ...s, tasks, completedToday, completedDate: today })
 }
 
 export function applyMutation(m: TaskMutation): void {
-  const s = getTasks()
-  switch (m.type) {
-    case 'add': {
-      // Estimate comes from the add form; remember it as the default for the
-      // next added task (MO-53).
-      const estimate = Math.max(1, Math.round(m.estimate ?? s.defaultEstimate ?? 1))
-      const task: Task = {
-        id: randomUUID(),
-        title: m.title.trim() || 'Untitled task',
-        estimatePomodoros: estimate,
-        completedPomodoros: 0,
-        done: false,
-      }
-      const tasks = [...s.tasks, task]
-      // Auto-activate the first task added when nothing is active yet.
-      const activeTaskId = s.activeTaskId ?? task.id
-      commit({ ...s, tasks, activeTaskId, defaultEstimate: estimate })
-      break
-    }
-    case 'update': {
-      // Done is manual-only: estimate changes never auto-complete or un-complete
-      // a task, so it can keep counting past its estimate (e.g. 8/7).
-      const tasks = s.tasks.map((t) => (t.id === m.id ? { ...t, ...m.patch } : t))
-      commit({ ...s, tasks })
-      break
-    }
-    case 'delete': {
-      const tasks = s.tasks.filter((t) => t.id !== m.id)
-      // Fall back to the first remaining incomplete task if the active one was deleted.
-      const activeTaskId =
-        s.activeTaskId === m.id ? (tasks.find((t) => !t.done)?.id ?? null) : s.activeTaskId
-      commit({ ...s, tasks, activeTaskId })
-      break
-    }
-    case 'clearCompleted': {
-      const tasks = s.tasks.filter((t) => !t.done)
-      // If the active task was among those cleared, fall back to the first
-      // remaining incomplete task (same pattern as 'delete').
-      const activeTaskId = tasks.some((t) => t.id === s.activeTaskId)
-        ? s.activeTaskId
-        : (tasks.find((t) => !t.done)?.id ?? null)
-      commit({ ...s, tasks, activeTaskId })
-      break
-    }
-    case 'setActive': {
-      commit({ ...s, activeTaskId: m.id })
-      break
-    }
-    default: {
-      const _exhaustive: never = m
-      return _exhaustive
-    }
-  }
+  commit(tasks.applyMutation(getTasks(), m, randomUUID))
 }

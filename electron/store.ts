@@ -26,6 +26,7 @@ export const DEFAULT_PREFS: Prefs = {
   dailyGoal: 8,
   // General · Behavior
   autoStart: true,
+  creditSkipped: false,
   raiseOnComplete: false,
   dnd: true,
   launchLogin: false,
@@ -34,6 +35,9 @@ export const DEFAULT_PREFS: Prefs = {
   pauseIdle: true,
   showDockIcon: true,
   shortcuts: { ...DEFAULT_SHORTCUTS },
+  // General · Tasks — the estimate is only worth making if the app acts on it.
+  taskProgress: true,
+  pauseAtEstimate: true,
   // Preferences · Alarm & sound
   sound: 'chime',
   volume: 70,
@@ -58,6 +62,13 @@ export const DEFAULT_PREFS: Prefs = {
   // Window behavior (not surfaced in SettingsPanel)
   alwaysTop: true,
   magnetic: true,
+  // The list starts docked inside the island; popping it out is opt-in.
+  tasksDetached: false,
+  // A window that outranks every other app is opt-in too.
+  tasksAlwaysOnTop: false,
+  // No geometry until the window has been placed once. Never trusted on read —
+  // electron/windows.ts sanitizes it against the live displays.
+  tasksWindowBounds: null,
   hoverRetractMs: 200,
   expandRetractMs: 800,
 }

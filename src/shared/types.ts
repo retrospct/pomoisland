@@ -97,7 +97,28 @@ export interface TimerState {
   sessionTotal: number
   /** Whether the current break is the long break. */
   isLongBreak: boolean
+  /**
+   * Denormalized mirror of the active task's title, written only by the sync in
+   * electron/ipc.ts. There is no free-text task label. An empty string means no
+   * active task — a state the user reaches by deselecting or by completing their
+   * last task, and one in which a block runs normally and credits no task.
+   *
+   * The duplication is deliberate: it gives the tray and the island's view
+   * derivation the title without either depending on the task store (ADR-0008).
+   */
   task: string
+}
+
+/**
+ * A persisted window rectangle, in screen coordinates. Structurally Electron's
+ * `Rectangle`, redeclared here because `src/shared` is imported by the renderers
+ * and must not depend on `electron`.
+ */
+export interface WindowBounds {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 /**
@@ -120,6 +141,13 @@ export interface Prefs {
   /** Auto-start the next focus/break block when one ends. */
   autoStart: boolean
   /**
+   * Count a focus block ended early with Next as a completed session. Off by
+   * default: a session is one focus block, and a block you cut short is not one.
+   * Moves both counters together — the active task's completed sessions and the
+   * daily total (and with it the daily-goal reveal and the milestone rings).
+   */
+  creditSkipped: boolean
+  /**
    * Raise the island when a block runs out (focus AND break). Raise only: the
    * island is a non-activating NSPanel (see createIslandWindow), so this shows it
    * if hidden and lifts it in the z-order without ever taking keyboard focus.
@@ -141,6 +169,24 @@ export interface Prefs {
   showDockIcon: boolean
   /** User-rebindable global shortcuts (show/hide, play/pause, next) — see ADR-0007. */
   shortcuts: Shortcuts
+  // ---- General · Tasks ----
+  /**
+   * Show the active task's progress as a segmented bar in Peek and Expanded.
+   * Off falls back to the "3/5" count text at the same two sites, so off is the
+   * app's previous treatment rather than dead code.
+   */
+  taskProgress: boolean
+  /**
+   * Stop at the estimate. Once the active task has completed as many focus
+   * sessions as it was estimated to take, the break runs as normal and then the
+   * timer stops at the break → focus boundary instead of starting the next
+   * session; the user resumes with play. Beats `autoStart` — switching this off
+   * IS the "respect auto-start" behaviour, so there is no third control.
+   *
+   * At-estimate itself is never stored: it is a predicate over this pref and the
+   * active task's counts (src/shared/tasks.ts, ADR-0008).
+   */
+  pauseAtEstimate: boolean
   // ---- Preferences · Alarm & sound ----
   sound: Sound
   volume: number
@@ -172,6 +218,50 @@ export interface Prefs {
   // ---- Window behavior (not in SettingsPanel UI; read by main) ----
   alwaysTop: boolean
   magnetic: boolean
+  /**
+   * Where the task list lives: `false` = **docked** (the inline panel below the
+   * timer in the island), `true` = **detached** (its own window). Detach is
+   * exclusive — while detached the island never renders the inline panel and
+   * every route that used to open it focuses the window instead.
+   *
+   * Persisted with no Settings UI, following the `alwaysTop` precedent (a pref
+   * the user toggles from the island's ⋯ menu, not from Settings). Restored on
+   * launch: a `true` value re-opens the window, so the bit is never dangling.
+   */
+  tasksDetached: boolean
+  /**
+   * **Pin** the detached task window: always-on-top, and nothing else.
+   *
+   * Deliberately NOT `alwaysTop`. The two are not interchangeable: `alwaysTop`
+   * is inert while the island is snapped, because `applyIslandWindowLevel()`
+   * forces `'screen-saver'` so the island can paint over the menu bar
+   * (ADR-0006). The detached window sits at level 1 instead, deliberately below
+   * the island in all three of its levels — so one bit could not mean the same
+   * thing in both places, and the ⋯ menu's "Floating only" sub-label would be a
+   * lie for the window half. Two windows, two z-order bits.
+   *
+   * Off by default: a window that outranks every other app is opt-in.
+   * Persisted with no Settings UI, following `alwaysTop` (toggled from the
+   * island's ⋯ menu and the tray, never from Settings) — here the control is
+   * the detached header's thumbtack.
+   */
+  tasksAlwaysOnTop: boolean
+  /**
+   * Size and position of the detached task window, or `null` before it has ever
+   * been placed. The first window geometry in `prefs.json`.
+   *
+   * One top-level key holding the whole rect, rather than four scalars: it is
+   * flat in the sense the rest of `Prefs` is flat (no `tasksWindow` grouping
+   * object), and keeping the rect atomic means "never placed yet" is exactly one
+   * state. Four nullable scalars would make half-written geometry representable,
+   * and `Prefs` already has object-valued keys (`shortcuts`, `islandPlacement`).
+   *
+   * Written from `getNormalBounds()`, debounced. NOT trusted on read — a saved
+   * rect outlives the display that produced it, so `electron/windows.ts`
+   * validates, intersects it against a live display, then clamps size and origin
+   * in that order before it reaches a constructor.
+   */
+  tasksWindowBounds: WindowBounds | null
   /** Delay (ms) before collapsing from peek after cursor leaves. */
   hoverRetractMs: number
   /** Delay (ms) before collapsing from expanded after cursor leaves. */
@@ -227,10 +317,10 @@ export interface IslandResizeSize extends IslandSize {
 export interface Task {
   id: string
   title: string
-  /** Target focus sessions for this task. */
-  estimatePomodoros: number
+  /** Target focus sessions for this task — the user's estimate, which they revise. */
+  estimateSessions: number
   /** Focus sessions completed while this task was active. */
-  completedPomodoros: number
+  completedSessions: number
   done: boolean
 }
 
@@ -252,10 +342,22 @@ export type TaskMutation =
   | {
       type: 'update'
       id: string
-      patch: Partial<Pick<Task, 'title' | 'estimatePomodoros' | 'done'>>
+      patch: Partial<Pick<Task, 'title' | 'estimateSessions' | 'done'>>
     }
   | { type: 'delete'; id: string }
   | { type: 'setActive'; id: string | null }
+  /**
+   * Move `id` so it sits immediately before `beforeId`, or last among the
+   * incomplete tasks when `beforeId` is null (ticket 22).
+   *
+   * Neighbours are named by id rather than by index on purpose. The list renders
+   * incomplete-then-complete, so a rendered index is not a stored index, and ids
+   * dodge that translation entirely instead of putting the view's split inside the
+   * reducer or the reducer's array inside the view. They also make a drop that
+   * lands on a task which has since been completed or deleted a no-op rather than
+   * a silent move of whatever shuffled into that slot.
+   */
+  | { type: 'reorder'; id: string; beforeId: string | null }
 
 /** The surface exposed to renderers via contextBridge as `window.api`. */
 export interface PomApi {
@@ -288,6 +390,8 @@ export interface PomApi {
   windows: {
     openSettings(): void
     settingsControl(action: SettingsControl): void
+    /** Pop the task list out / back in, or focus the detached window. */
+    tasksWindow(action: TasksWindowAction): void
   }
   app: {
     /** Quit the whole application (matches the tray's "Quit PomoIsland"). */
@@ -318,6 +422,22 @@ export interface PomApi {
 
 export type SettingsControl = 'close' | 'minimize' | 'zoom'
 
+/**
+ * Verbs on the detached task window (ticket 23).
+ *
+ * - `popOut` — move the list out of the island into its own window (sets
+ *   `Prefs.tasksDetached`). A **move**, never a clone.
+ * - `popIn` — move it back into the island (clears the pref, closes the window).
+ * - `focus` — show and focus the existing window. This is what the island's ⋯ →
+ *   Tasks item and its clickable task label do while detached, since the inline
+ *   panel is unreachable then.
+ *
+ * `popIn` is also what the detached header's close button means: closing the
+ * window pops the list back in, so `tasksDetached` is one bit that can never
+ * point at a window that isn't there.
+ */
+export type TasksWindowAction = 'popOut' | 'popIn' | 'focus'
+
 /** Auto-update state surfaced to the renderer + native menus (MO-57). */
 export interface UpdateStatus {
   /** A newer signed build has downloaded and is ready to install on restart. */
@@ -344,6 +464,7 @@ export const IPC = {
   islandDragEnd: 'island:dragEnd',
   openSettings: 'windows:openSettings',
   settingsControl: 'windows:settingsControl',
+  tasksWindow: 'windows:tasksWindow',
   appQuit: 'app:quit',
   checkUpdates: 'updates:check',
   updateGet: 'updates:get',

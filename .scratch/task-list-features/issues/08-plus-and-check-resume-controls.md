@@ -1,12 +1,15 @@
 # 08 — The + and ✓ resume controls
 
 Type: grilling
-Status: merged into 04 — its questions are Part B of that ticket
-Blocked by: 04
+Status: resolved via 04 — see that ticket's "Resolution — Part B"
+Blocked by: 04 (closed 2026-08-16)
+
+Q1–Q4 and Q6 are answered in 04 §B1–B4. Q5 (where the buttons render per host, and whether
+the pause state degrades in narrow views) was deferred to **ticket 11**.
 
 ## Question
 
-When pause-at-planned fires, two buttons occupy the progress bar's slot: **+** (add and
+When pause-at-estimate fires, two buttons occupy the progress bar's slot: **+** (add and
 start another session) and **✓** (complete this task, start the timer on the next one).
 Ticket 04 decides *when* they appear; this decides what they do.
 

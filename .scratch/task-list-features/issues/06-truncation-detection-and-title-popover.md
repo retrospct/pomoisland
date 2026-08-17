@@ -2,6 +2,15 @@
 
 Type: prototype
 Status: deferred — decided during implementation, not on the map
+Answered: 2026-08-17, by ticket 21. Detection is measured on hover, never tracked; the popover renders inside the row so the scroll container cannot clip it, opening upward from the lower half. No spacer trick and no window growth needed.
+The full write-up is in issues/21-*.md under "Settled 2026-08-17".
+
+**Requirement from ticket 05 §7 (closed 2026-08-16):** this ticket must **remove**
+`title={task.title}` from the title span (`TaskList.tsx:433`), not merely add a popover
+alongside it. Ticket 05 puts a native `title="Click to deselect"` on the *active row*, and a
+nested `title` wins on hover — so leaving the span's attribute in place would make the row
+tooltip appear only when the pointer is off the text, which is worse than having none. Fold
+this into Q5's reuse-or-build answer.
 
 ## Question
 
@@ -17,7 +26,7 @@ Show the full task title on hover **only when it is actually truncated**. Hand-r
 2. **Positioning, and the clipping problem.** The docked panel lives inside the island
    `BrowserWindow`, which auto-sizes to content via `ResizeObserver` → `island:resize`
    (`IslandApp.tsx:126`). A popover that overflows gets **clipped by the window**, which is
-   exactly why `Menu.tsx`'s dropdown needs an invisible spacer at `Island.tsx:121` to
+   exactly why `Menu.tsx`'s dropdown needs an invisible spacer at `Island.tsx:129` to
    reserve room. Does the title popover need the same trick, does it render inside the
    panel bounds only, or does it force the window to grow?
 
@@ -28,7 +37,7 @@ Show the full task title on hover **only when it is actually truncated**. Hand-r
    interaction with the row's existing `hovered` state (`TaskList.tsx:342`) which drives
    both the row background and the +/− reveal.
 
-5. **Reuse or build?** `Menu.tsx:174` has a hand-rolled popover style block; `SessionDots`
+5. **Reuse or build?** `Menu.tsx:241` has a hand-rolled popover style block; `SessionDots`
    has a pure-CSS two-layer hover reveal built specifically to avoid React hover state and
    container resize (the MO-50 flicker fix). Either could be the base.
 

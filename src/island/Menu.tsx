@@ -1,3 +1,5 @@
+import { ThumbtackGlyph } from './Glyphs'
+
 // The ⋯ menu from the expanded panel.
 // Menu         — trigger button only (rendered inline in the controls row).
 // MenuDropdown — item list, rendered in normal flow by Expanded so the window
@@ -20,6 +22,10 @@ interface DropdownProps {
   /** Accent color for the check glyph. */
   accent?: string
   onTasks: (e: React.MouseEvent) => void
+  /** Pop the task list out into its own window. Docked only. */
+  onPopTasks: (e: React.MouseEvent) => void
+  /** Prefs.tasksDetached — while true the row is omitted entirely. */
+  tasksDetached: boolean
   onSettings: (e: React.MouseEvent) => void
   onCheckUpdates: (e: React.MouseEvent) => void
   onQuit: (e: React.MouseEvent) => void
@@ -67,6 +73,8 @@ export function MenuDropdown({
   snapped,
   accent,
   onTasks,
+  onPopTasks,
+  tasksDetached,
   onSettings,
   onCheckUpdates,
   onQuit,
@@ -89,16 +97,9 @@ export function MenuDropdown({
         aria-checked={alwaysTop}
         style={menuItem}
       >
-        {/* Thumbtack — "pin this on top". */}
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flex: '0 0 auto' }}>
-          <path
-            d="M5.8 1.5h3.4l-.5 3.3 2.3 2.3H4l2.3-2.3z"
-            stroke="var(--il-icon)"
-            strokeWidth="1.3"
-            strokeLinejoin="round"
-          />
-          <path d="M7.5 7.1v6.2" stroke="var(--il-icon)" strokeWidth="1.3" strokeLinecap="round" />
-        </svg>
+        {/* Thumbtack — "pin this on top". Shared with the detached task
+            window's pin so the two can't drift apart; see src/island/Glyphs.tsx. */}
+        <ThumbtackGlyph />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block' }}>Always on Top</span>
           {snapped && (
@@ -167,6 +168,35 @@ export function MenuDropdown({
         </svg>
         Tasks
       </button>
+      {/* Pop OUT only. Docked, this is the one route to detaching without first
+          opening the panel, so it earns its row. Detached, the row used to flip to
+          "Pop in" and is now omitted: the detached window is by definition on
+          screen whenever it could be popped in, and its own header carries that
+          control, so the menu row was a second way to do a thing already in front
+          of you. MENU_ALLOWANCE is unaffected — it sizes the worst case, which is
+          still the docked six rows. */}
+      {!tasksDetached && (
+        <button className="island-menu-item" onClick={onPopTasks} style={menuItem}>
+          {/* Arrow leaving the frame toward the top-right. */}
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M6 2.5H2.5v9h9V8"
+              stroke="var(--il-icon)"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M8.5 2.5h3v3M11.5 2.5 7 7"
+              stroke="var(--il-icon)"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Pop out
+        </button>
+      )}
       <button className="island-menu-item" onClick={onSettings} style={menuItem}>
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
           <path

@@ -1,5 +1,5 @@
 // View-model derivation for the Island, ported from Island.dc.html renderVals.
-import { accentHex, hexToRgba, resolveAccent } from '@shared/accent'
+import { accentHex, hexToRgba, resolveAccent, resolveAccentColor } from '@shared/accent'
 import { fmtTime, frac as fracOf } from '@shared/format'
 import type { FloatingLayout, Prefs, TimerState, TimerStyle } from '@shared/types'
 import { ISLAND_NEUTRAL } from './palette'
@@ -11,6 +11,12 @@ export interface IslandView {
   accent: string
   accentBright: string
   accentSoft: string
+  /**
+   * The user's chosen accent, theme-adapted but NOT shifted by the current block
+   * (no break clay, no final-minute amber). Used by the task progress bar, which
+   * measures the task rather than this block — see TaskProgressBar.tsx note 4.
+   */
+  accentBase: string
   frac: number
   timeStr: string
   statusLabel: string
@@ -100,6 +106,13 @@ export function deriveIsland(
   else if (frac < 0.85) micro = 'Nice, past the halfway mark.'
   else micro = 'Almost there \u2014 hold the line.'
 
+  // No active task is a state the user reaches deliberately — by deselecting the
+  // active row, or by completing their last task — so it is rendered, not left
+  // blank. `state.task` is the mirror of the active task's title, so an empty
+  // string is the whole signal; there is nothing else to consult (ADR-0008).
+  // One string covers both an empty list and a fully completed one: the nuance
+  // isn't readable in a truncating single line, and it stays in the task list,
+  // which is where it is actionable.
   const rawTask = (state.task ?? '').trim()
   const hasTask = rawTask.length > 0
   const displayTask = hasTask ? rawTask : isBreak ? 'Break time' : 'No task set'
@@ -129,6 +142,7 @@ export function deriveIsland(
     accent,
     accentBright,
     accentSoft,
+    accentBase: resolveAccentColor(accentHex(prefs.accent), resolvedTheme),
     frac,
     timeStr,
     statusLabel,
